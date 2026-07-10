@@ -45,7 +45,7 @@ class RecommendService:
     @staticmethod
     def recommend(conversation_id):
 
-        profile = ProfileService.get_profile(conversation_id)
+        profile = ProfileService.get_by_conversation_id(conversation_id)
 
         if not profile:
             return {

@@ -1,56 +1,41 @@
 """
 智能留学顾问系统 - 配置文件
+读取 .env 中的环境变量，提供数据库与大模型客户端配置。
 """
 import os
+from dotenv import load_dotenv
 
-# ============================================
-# MySQL 数据库配置
-# ============================================
+# 加载项目根目录的 .env
+load_dotenv()
+
+
 class Config:
+    # ============================================
+    # MySQL 数据库配置
+    # ============================================
     MYSQL_HOST = os.getenv("DB_HOST", "localhost")
     MYSQL_PORT = int(os.getenv("MYSQL_PORT", 3306))
     MYSQL_USER = os.getenv("MYSQL_USER", "root")
     MYSQL_PASSWORD = os.getenv("MYSQL_PASSWORD", "123456")
     MYSQL_DATABASE = os.getenv("MYSQL_DATABASE", "dify_pro")
-    DEBUG = True # 默认使用普通cursor，需要dict时在方法中指定
+    DEBUG = True
 
-#
-# # ============================================
-# # API 服务配置
-# # ============================================
-# API_HOST = os.getenv("API_HOST", "0.0.0.0")
-# API_PORT = int(os.getenv("API_PORT", 8005))
-#
-# # ============================================
-# # 课程推荐匹配规则配置
-# # ============================================
-# # 语言成绩不足时的阈值（仅德国和新加坡）
-# LANGUAGE_THRESHOLD = {
-#     "德国": {"德语B2": True, "TestDaF": 4, "TOEFL": 80, "IELTS": 6.0},
-#     "新加坡": {"TOEFL": 85, "IELTS": 6.0},
-# }
-#
-# # 合作国家列表
-# SUPPORTED_COUNTRIES = ["德国", "新加坡"]
-#
-# # 德国留学的语言考试类型
-# GERMAN_LANGUAGE_TESTS = ["TestDaF", "DSH", "Goethe", "telc", "德语"]
-#
-# # GPA 偏低阈值（低于此值推荐背景提升）
-# GPA_LOW_THRESHOLD = 2.80
-#
-# # 高预算阈值（超过此值推荐高端方案）
-# HIGH_BUDGET_THRESHOLD = 300000
-#
-# # 留学方案预算比例建议
-# BUDGET_RATIO = {
-#     "tuition": 0.6,  # 学费占比
-#     "living": 0.35,  # 生活费占比
-#     "other": 0.05,   # 其他费用
-# }
-#
-# # 各国预算建议（元/年）
-# COUNTRY_BUDGET_GUIDE = {
-#     "德国": {"low": 80000, "mid": 150000, "high": 250000, "note": "公立大学免学费，主要支出为生活费"},
-#     "新加坡": {"low": 100000, "mid": 200000, "high": 350000, "note": "含学费+生活费，公立大学有政府补贴"},
-# }
+    # ============================================
+    # 大模型（LongCat，OpenAI 兼容协议）配置
+    # ============================================
+    LONGCAT_API_KEY = os.getenv("LONGCAT_API_KEY", "")
+    LONGCAT_BASE_URL = "https://api.longcat.chat/openai"
+    LONGCAT_MODEL = "LongCat-2.0"
+
+    # ============================================
+    # NL2SQL 安全配置
+    # ============================================
+    # 允许 NL2SQL 查询的表（白名单）
+    NL2SQL_ALLOWED_TABLES = ["user_profiles", "courses", "consultations"]
+    # 单条查询最大返回行数
+    NL2SQL_MAX_ROWS = 200
+    # 是否允许写操作（INSERT / UPDATE / DELETE）
+    NL2SQL_ALLOW_WRITE = True
+
+
+config = Config()
