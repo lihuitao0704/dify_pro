@@ -9,7 +9,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from starlette.middleware.base import BaseHTTPMiddleware
 from pydantic import BaseModel
 
-from Event_Lecture import nl2sql
+from Event_Lecture import nl2sql, _ensure_unique_constraints
 
 
 class UTF8JSONResponse(JSONResponse):
@@ -34,6 +34,13 @@ app = FastAPI(
     version="1.0.0",
     default_response_class=UTF8JSONResponse,
 )
+
+
+@app.on_event("startup")
+def _startup():
+    """启动时确保所有表的唯一约束存在（防重复插入兜底）。"""
+    _ensure_unique_constraints()
+
 
 # ── 中间件（注意顺序：后添加的先执行）──
 app.add_middleware(UTF8Middleware)
@@ -89,6 +96,20 @@ def nl2sql_endpoint(req: NL2SQLRequest):
     if result["type"] == "select" and (not result.get("data") or len(result.get("data", [])) == 0):
         result["type"] = "error"
         result["message"] = "没有查询到相关记录，请检查查询条件（如日期、关键词）是否正确"
+
+    # ── 根据结果类型确定 HTTP 状态码 ──────────────────────
+    #   200 → 成功（select / dml）
+    #   409 → 重复插入（数据已存在）
+    #   400 → 其他错误（查询无结果、删除/更新 0 行、SQL 异常等）
+    if result["type"] == "error":
+        msg = result.get("message", "")
+        if "重复" in msg or "已存在" in msg:
+            http_status = 409  # Conflict：重复插入
+        else:
+            http_status = 400  # Bad Request：其他错误
+    else:
+        http_status = 200
+
     payload = {
         "query": out["query"],
         "sql": out["sql"],
@@ -96,11 +117,13 @@ def nl2sql_endpoint(req: NL2SQLRequest):
         "data": result["data"],
         "message": result["message"],
         "polished": out.get("polished", ""),
+        "status_code": http_status,
     }
     # 手动序列化为 UTF-8 字节，彻底避开框架默认编码
     body = _json.dumps(payload, ensure_ascii=False, default=_json_default).encode("utf-8")
     return Response(
         content=body,
+        status_code=http_status,
         media_type="application/json; charset=utf-8",
         headers={"Content-Type": "application/json; charset=utf-8"},
     )

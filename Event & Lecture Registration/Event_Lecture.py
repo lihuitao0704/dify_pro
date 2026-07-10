@@ -13,10 +13,11 @@ load_dotenv()
 
 # ── MySQL 连接配置 ──────────────────────────────────────────
 DB_CONFIG = {
-    # "host": "192.168.48.121",
-    "host": "127.0.0.1",
+    "host": "192.168.48.121",
+    # "host": "127.0.0.1",
     "port": 3306,
-    "user": "root",
+    "user": "offer",
+    # "user": "root",
     "password": "123456",
     "database": "dify_pro",
     "charset": "utf8mb4",
@@ -74,6 +75,69 @@ def get_conn():
 
     conn = pymysql.connect(**DB_CONFIG)
     return conn
+
+
+def _ensure_unique_constraints():
+    """启动时确保 4 张表有唯一约束（防重复插入的数据库层兜底）。"""
+    conn = get_conn()
+    try:
+        with conn.cursor() as c:
+            # 需要检查/添加的表及约束名、列
+            constraints = [
+                ("lecture_registrations", "uk_lecture_reg", "( lecture_id, name, phone )"),
+                ("activity_registrations", "uk_activity_reg", "( activity_id, name, phone )"),
+                ("lectures", "uk_lectures", "( title, event_time )"),
+                ("activities", "uk_activities", "( title, event_time )"),
+            ]
+            for table, cname, cols in constraints:
+                # information_schema 查询该约束是否已存在（跨数据库通用）
+                c.execute(
+                    "SELECT COUNT(*) FROM information_schema.TABLE_CONSTRAINTS "
+                    "WHERE TABLE_SCHEMA = %s AND TABLE_NAME = %s AND CONSTRAINT_NAME = %s",
+                    (DB_CONFIG["database"], table, cname),
+                )
+                exists = c.fetchone()[0] > 0
+                if not exists:
+                    try:
+                        c.execute(
+                            f"ALTER TABLE {table} "
+                            f"ADD CONSTRAINT {cname} UNIQUE {cols}"
+                        )
+                    except Exception:
+                        # 表里已有重复数据，先清再建
+                        _deduplicate_table(c, table)
+                        c.execute(
+                            f"ALTER TABLE {table} "
+                            f"ADD CONSTRAINT {cname} UNIQUE {cols}"
+                        )
+            conn.commit()
+    finally:
+        conn.close()
+
+
+def _deduplicate_table(cursor, table: str):
+    """按各表业务键去重，保留第一条，删除后续重复行。"""
+    dedupe_sql = {
+        "lecture_registrations": """DELETE lr1 FROM lecture_registrations lr1
+            INNER JOIN lecture_registrations lr2
+            WHERE lr1.lecture_id = lr2.lecture_id AND lr1.name = lr2.name AND lr1.phone = lr2.phone
+            AND lr1.registration_id > lr2.registration_id""",
+        "activity_registrations": """DELETE ar1 FROM activity_registrations ar1
+            INNER JOIN activity_registrations ar2
+            WHERE ar1.activity_id = ar2.activity_id AND ar1.name = ar2.name AND ar1.phone = ar2.phone
+            AND ar1.registration_id > ar2.registration_id""",
+        "lectures": """DELETE l1 FROM lectures l1
+            INNER JOIN lectures l2
+            WHERE l1.title = l2.title AND l1.event_time = l2.event_time
+            AND l1.lecture_id > l2.lecture_id""",
+        "activities": """DELETE a1 FROM activities a1
+            INNER JOIN activities a2
+            WHERE a1.title = a2.title AND a1.event_time = a2.event_time
+            AND a1.activity_id > a2.activity_id""",
+    }
+    sql = dedupe_sql.get(table)
+    if sql:
+        cursor.execute(sql)
 
 
 # ════════════════════════════════════════════════════════════
@@ -548,7 +612,22 @@ def execute_sql(sql: str) -> dict:
                     "message": f"执行成功，共影响 {total_affected} 行",
                 }
     except Exception as e:
-        return {"type": "error", "data": None, "message": str(e)}
+        err_msg = str(e)
+        # 兜底：数据库唯一约束冲突（竞态条件或 Python 层漏判时）
+        # pymysql 异常形如: (1062, \"Duplicate entry 'xxx' for key 'uk_xxx'\")
+        is_duplicate = (
+            "Duplicate" in err_msg
+            or "1062" in err_msg
+            or "UNIQUE" in err_msg.upper()
+            or "unique constraint" in err_msg.lower()
+        )
+        if is_duplicate:
+            return {
+                "type": "error",
+                "data": None,
+                "message": "数据已存在：该记录已存在于数据库中，请勿重复添加",
+            }
+        return {"type": "error", "data": None, "message": err_msg}
     finally:
         conn.close()
 
