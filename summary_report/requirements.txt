@@ -1,0 +1,18 @@
+# 全域经营分析汇总报告 API / 依赖清单
+# 安装：pip install -r requirements.txt
+
+# Web 框架
+fastapi>=0.110.0
+uvicorn[standard]>=0.27.0
+
+# 数据校验
+pydantic>=2.6.0
+
+# 数据库
+PyMySQL>=1.1.0
+
+# 大模型 SDK（OpenAI 兼容协议）
+openai>=1.30.0
+
+# 环境变量加载
+python-dotenv>=1.0.0
