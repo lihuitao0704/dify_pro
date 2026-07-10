@@ -13,11 +13,11 @@ load_dotenv()
 
 # ── MySQL 连接配置 ──────────────────────────────────────────
 DB_CONFIG = {
-    "host": "192.168.48.121",
-    # "host": "127.0.0.1",
+    # "host": "192.168.48.121",
+    "host": "127.0.0.1",
     "port": 3306,
-    "user": "offer",
-    # "user": "root",
+    # "user": "offer",
+    "user": "root",
     "password": "123456",
     "database": "dify_pro",
     "charset": "utf8mb4",

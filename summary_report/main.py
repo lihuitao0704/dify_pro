@@ -8,7 +8,7 @@ FastAPI 应用入口。
     ``uvicorn summary_report.main:app`` 启动
 
 运行方式（项目根目录）：
-    uvicorn summary_report.main:app --host 0.0.0.0 --port 8000
+    uvicorn summary_report.main:app --host 0.0.0.0 --port 8001
 """
 
 from fastapi import FastAPI
