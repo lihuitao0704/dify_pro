@@ -1,7 +1,5 @@
 import pymysql
-
 from pymysql.cursors import DictCursor
-
 from config import Config
 
 
@@ -58,4 +56,4 @@ class Database:
         self.conn.close()
 
 
-db = Database()
+db=Database()

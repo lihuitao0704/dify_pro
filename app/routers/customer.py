@@ -28,12 +28,12 @@ def add_customer(req: CustomerAddRequest, db: Session = Depends(get_db)):
             customer_source=req.customer_source,
             customer_demand=req.customer_demand,
             sales_user_id=req.current_user_id,
-            status="意向中",
+            current_status="意向中",  # ✅ 改成 current_status
         )
         db.add(customer)
         db.commit()
         db.refresh(customer)
-        return {"code": 0, "msg": "success", "data": {"customer_id": customer.id}}
+        return {"code": 0, "msg": "success", "data": {"customer_id": customer.customer_id}}  # ✅ 改成 customer_id
     except Exception as e:
         db.rollback()
         return {"code": 500, "msg": str(e), "data": None}
@@ -67,16 +67,16 @@ def list_customers(
                 )
             )
 
-        # 状态筛选
+        # 状态筛选 ✅ 改成 current_status
         if status:
-            query = query.filter(IntentionCustomer.status == status)
+            query = query.filter(IntentionCustomer.current_status == status)
 
         # 按更新时间倒序
         customers = query.order_by(IntentionCustomer.update_time.desc()).all()
 
         data = [
             {
-                "id": c.id,
+                "customer_id": c.customer_id,  # ✅ 改成 customer_id
                 "customer_name": c.customer_name,
                 "customer_age": c.customer_age,
                 "customer_gender": c.customer_gender,
@@ -84,7 +84,7 @@ def list_customers(
                 "customer_source": c.customer_source,
                 "customer_demand": c.customer_demand,
                 "sales_user_id": c.sales_user_id,
-                "status": c.status,
+                "current_status": c.current_status,  # ✅ 改成 current_status
                 "follow_record": c.follow_record,
                 "create_time": c.create_time.strftime("%Y-%m-%d %H:%M:%S") if c.create_time else None,
                 "update_time": c.update_time.strftime("%Y-%m-%d %H:%M:%S") if c.update_time else None,
@@ -109,7 +109,7 @@ def get_customer(
             return {"code": 403, "msg": "无权限操作", "data": None}
 
         customer = db.query(IntentionCustomer).filter(
-            IntentionCustomer.id == customer_id
+            IntentionCustomer.customer_id == customer_id  # ✅ 改成 customer_id
         ).first()
         if not customer:
             return {"code": 404, "msg": "客户不存在", "data": None}
@@ -119,7 +119,7 @@ def get_customer(
             return {"code": 403, "msg": "无权限操作", "data": None}
 
         data = {
-            "id": customer.id,
+            "customer_id": customer.customer_id,  # ✅ 改成 customer_id
             "customer_name": customer.customer_name,
             "customer_age": customer.customer_age,
             "customer_gender": customer.customer_gender,
@@ -127,7 +127,7 @@ def get_customer(
             "customer_source": customer.customer_source,
             "customer_demand": customer.customer_demand,
             "sales_user_id": customer.sales_user_id,
-            "status": customer.status,
+            "current_status": customer.current_status,  # ✅ 改成 current_status
             "follow_record": customer.follow_record,
             "create_time": customer.create_time.strftime("%Y-%m-%d %H:%M:%S") if customer.create_time else None,
             "update_time": customer.update_time.strftime("%Y-%m-%d %H:%M:%S") if customer.update_time else None,
@@ -145,7 +145,7 @@ def update_customer_status(req: CustomerStatusRequest, db: Session = Depends(get
             return {"code": 403, "msg": "无权限操作", "data": None}
 
         customer = db.query(IntentionCustomer).filter(
-            IntentionCustomer.id == req.customer_id
+            IntentionCustomer.customer_id == req.customer_id  # ✅ 改成 customer_id
         ).first()
         if not customer:
             return {"code": 404, "msg": "客户不存在", "data": None}
@@ -154,7 +154,7 @@ def update_customer_status(req: CustomerStatusRequest, db: Session = Depends(get
         if req.current_user_type == "员工" and customer.sales_user_id != req.current_user_id:
             return {"code": 403, "msg": "无权限操作", "data": None}
 
-        customer.status = req.new_status
+        customer.current_status = req.new_status  # ✅ 改成 current_status
         db.commit()
         return {"code": 0, "msg": "success", "data": None}
     except Exception as e:
@@ -170,7 +170,7 @@ def follow_customer(req: CustomerFollowRequest, db: Session = Depends(get_db)):
             return {"code": 403, "msg": "无权限操作", "data": None}
 
         customer = db.query(IntentionCustomer).filter(
-            IntentionCustomer.id == req.customer_id
+            IntentionCustomer.customer_id == req.customer_id  # ✅ 改成 customer_id
         ).first()
         if not customer:
             return {"code": 404, "msg": "客户不存在", "data": None}
