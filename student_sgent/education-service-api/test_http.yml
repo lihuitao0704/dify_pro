@@ -1,0 +1,130 @@
+# 测试：start -> http-request(POST) -> answer
+# 如果崩溃，则 http-request 节点 schema 有问题
+
+app:
+  description: ''
+  icon: 🤖
+  icon_background: '#FFEAD5'
+  icon_type: emoji
+  mode: advanced-chat
+  name: HTTP测试
+  use_icon_as_answer_icon: false
+dependencies:
+- current_identifier: null
+  type: marketplace
+  value:
+    marketplace_plugin_unique_identifier: langgenius/tongyi:0.2.3@966063fe991c50e5ac82106e65fc1949f852b2989ab2433ac028f0d25c6f92b1
+    version: null
+kind: app
+version: 0.6.0
+workflow:
+  conversation_variables: []
+  environment_variables:
+  - name: FASTAPI_BASE_URL
+    value_type: string
+    value: http://localhost:8000
+    description: FastAPI
+  features:
+    file_upload:
+      allowed_file_extensions: [.JPG, .JPEG, .PNG, .GIF, .WEBP, .SVG]
+      allowed_file_types: [image]
+      allowed_file_upload_methods: [remote_url, local_file]
+      enabled: false
+      fileUploadConfig:
+        attachment_image_file_size_limit: 2
+        audio_file_size_limit: 50
+        batch_count_limit: 5
+        file_size_limit: 15
+        file_upload_limit: 20
+        image_file_batch_limit: 10
+        image_file_size_limit: 10
+        single_chunk_attachment_limit: 10
+        video_file_size_limit: 100
+        workflow_file_upload_limit: 10
+      image:
+        enabled: false
+        number_limits: 3
+        transfer_methods: [local_file, remote_url]
+      number_limits: 3
+    opening_statement: ''
+    retriever_resource:
+      enabled: false
+    sensitive_word_avoidance:
+      enabled: false
+    speech_to_text:
+      enabled: false
+    suggested_questions: []
+    suggested_questions_after_answer:
+      enabled: false
+    text_to_speech:
+      enabled: false
+      language: ''
+      voice: ''
+  graph:
+    nodes:
+    - id: '1000000000001'
+      type: custom
+      position: {x: 0, y: 0}
+      positionAbsolute: {x: 0, y: 0}
+      selected: false
+      sourcePosition: right
+      targetPosition: left
+      height: 72
+      width: 241
+      data: {type: start, title: 开始, selected: false, variables: [{variable: test_val, label: 测试值, type: text-input, required: false}]}
+    - id: '1000000000002'
+      type: custom
+      position: {x: 300, y: 0}
+      positionAbsolute: {x: 300, y: 0}
+      selected: false
+      sourcePosition: right
+      targetPosition: left
+      height: 130
+      width: 241
+      data:
+        type: http-request
+        title: HTTP请求
+        selected: false
+        method: post
+        url: "{{FASTAPI_BASE_URL}}/api/v1/dify/tools/init-session"
+        authorization: {type: no-auth}
+        headers: 'Content-Type: application/json'
+        params: ''
+        body:
+          type: json
+          data: '{"student_id": 1, "agent_type": "student"}'
+        timeout:
+          connect: 10
+          read: 60
+          write: 30
+    - id: '1000000000003'
+      type: custom
+      position: {x: 600, y: 0}
+      positionAbsolute: {x: 600, y: 0}
+      selected: false
+      sourcePosition: right
+      targetPosition: left
+      height: 102
+      width: 241
+      data: {type: answer, title: 直接回复, selected: false, answer: '{{#1000000000002.body#}}', variables: []}
+    edges:
+    - data: {isInLoop: false, sourceType: start, targetType: http-request}
+      id: e1-s-to-h
+      selected: false
+      source: '1000000000001'
+      sourceHandle: source
+      target: '1000000000002'
+      targetHandle: target
+      type: custom
+      zIndex: 0
+    - data: {isInLoop: false, sourceType: http-request, targetType: answer}
+      id: e2-h-to-a
+      selected: false
+      source: '1000000000002'
+      sourceHandle: source
+      target: '1000000000003'
+      targetHandle: target
+      type: custom
+      zIndex: 0
+    viewport: {x: 0, y: 0, zoom: 1}
+  rag_pipeline_variables: []
