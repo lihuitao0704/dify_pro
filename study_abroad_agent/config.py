@@ -15,6 +15,17 @@ DB_CONFIG = {
     "charset": "utf8mb4",
     "cursorclass": None,  # 默认使用普通cursor，需要dict时在方法中指定
 }
+# import os
+
+# class Config:
+#     # MySQL配置
+#     MYSQL_HOST = os.getenv("MYSQL_HOST", "127.0.0.1")
+#     MYSQL_PORT = int(os.getenv("MYSQL_PORT", 3306))
+#     MYSQL_USER = os.getenv("MYSQL_USER", "root")
+#     MYSQL_PASSWORD = os.getenv("MYSQL_PASSWORD", "123456")
+#     MYSQL_DATABASE = os.getenv("MYSQL_DATABASE", "study_agent")
+#     DEBUG = True
+
 
 # ============================================
 # API 服务配置

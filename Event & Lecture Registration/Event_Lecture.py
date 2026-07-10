@@ -13,9 +13,10 @@ load_dotenv()
 
 # ── MySQL 连接配置 ──────────────────────────────────────────
 DB_CONFIG = {
-    "host": "192.168.48.121",
+    # "host": "192.168.48.121",
+    "host": "127.0.0.1",
     "port": 3306,
-    "user": "offer",
+    "user": "root",
     "password": "123456",
     "database": "dify_pro",
     "charset": "utf8mb4",
@@ -159,6 +160,11 @@ def call_qwen_sql(user_query: str) -> str:
                 # 省略本/下 → 默认下周
                 resolved[m.group(0)] = _d(days_next[target_wd])
         return resolved
+
+    # 本周X 天数差（本周内，含今天；今天是X则=0）
+    days_this = {}
+    for i in range(7):
+        days_this[i] = (i - _today_wd) % 7  # 0=今天, 自然向后推进
 
     _resolved = _resolve_time_in_query(user_query)
 

@@ -75,6 +75,14 @@ def nl2sql_endpoint(req: NL2SQLRequest):
     生成 SQL 并执行，返回结果。
     """
     import json as _json
+    from datetime import datetime, date
+
+    def _json_default(obj):
+        """处理 datetime / date 等 JSON 不可序列化的类型。"""
+        if isinstance(obj, (datetime, date)):
+            return obj.strftime("%Y-%m-%d %H:%M:%S")
+        return str(obj)
+
     out = nl2sql(req.query)
     result = out["result"]
     # 查询结果为 0 条时，统一视为 error 类型返回给前端
@@ -90,7 +98,7 @@ def nl2sql_endpoint(req: NL2SQLRequest):
         "polished": out.get("polished", ""),
     }
     # 手动序列化为 UTF-8 字节，彻底避开框架默认编码
-    body = _json.dumps(payload, ensure_ascii=False).encode("utf-8")
+    body = _json.dumps(payload, ensure_ascii=False, default=_json_default).encode("utf-8")
     return Response(
         content=body,
         media_type="application/json; charset=utf-8",
@@ -108,4 +116,4 @@ def health():
 if __name__ == "__main__":
     import uvicorn
 
-    uvicorn.run("el_api:app", host="0.0.0.0", port=8010, reload=True)
+    uvicorn.run("Event_Lecture_api:app", host="0.0.0.0", port=8011, reload=True)
