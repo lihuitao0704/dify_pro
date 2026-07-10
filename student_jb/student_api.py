@@ -124,8 +124,8 @@ async def lifespan(app: FastAPI):
     print("[启动] 正在初始化辅助表...")
     init_supporting_tables()
     print("[启动] 初始化完成，服务就绪")
-    print(f"[启动] API 文档: http://localhost:8010/docs")
-    print(f"[启动] 接口地址: http://localhost:8010")
+    print(f"[启动] API 文档: http://localhost:8004/docs")
+    print(f"[启动] 接口地址: http://localhost:8004")
     yield
 
 
@@ -828,4 +828,4 @@ def init_supporting_tables():
 
 if __name__ == "__main__":
     import uvicorn
-    uvicorn.run(app, host="0.0.0.0", port=8006)
+    uvicorn.run("student_api:app", host="0.0.0.0", port=8004)

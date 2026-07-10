@@ -3,32 +3,39 @@
 -- 数据库：dify_pro
 -- ============================================
 
-CREATE DATABASE IF NOT EXISTS dify_pro DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+# CREATE DATABASE IF NOT EXISTS dify_pro DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 USE dify_pro;
 
 -- ============================================
 -- 1. 用户信息表
 -- ============================================
 DROP TABLE IF EXISTS `user_profiles`;
-CREATE TABLE `user_profiles` (
-    `id` INT AUTO_INCREMENT PRIMARY KEY,
-    `name` VARCHAR(50) DEFAULT '' COMMENT '用户姓名',
+CREATE TABLE user_profiles (
+    id BIGINT PRIMARY KEY AUTO_INCREMENT,
+    conversation_id VARCHAR(100) NOT NULL UNIQUE COMMENT 'Dify会话ID',
+    name VARCHAR(50) DEFAULT NULL COMMENT '姓名',
     `age` INT DEFAULT NULL COMMENT '年龄',
-    `education` VARCHAR(50) DEFAULT '' COMMENT '学历背景：高中/本科/硕士/博士',
-    `major` VARCHAR(100) DEFAULT '' COMMENT '专业方向',
-    `gpa` DECIMAL(3,2) DEFAULT NULL COMMENT 'GPA成绩',
-    `target_country` VARCHAR(100) DEFAULT '' COMMENT '意向留学国家',
-    `target_major` VARCHAR(100) DEFAULT '' COMMENT '意向专业',
-    `budget` DECIMAL(12,2) DEFAULT NULL COMMENT '预算(元)',
-    `language_level` VARCHAR(50) DEFAULT '' COMMENT '语言水平',
-    `language_score` VARCHAR(50) DEFAULT '' COMMENT '语言成绩(如IELTS 6.5)',
-    `phone` VARCHAR(20) DEFAULT '' COMMENT '手机号',
-    `wechat` VARCHAR(50) DEFAULT '' COMMENT '微信号',
-    `contact_method` VARCHAR(20) DEFAULT '' COMMENT '首选联系方式：phone/wechat',
-    `consultation_status` VARCHAR(20) DEFAULT 'pending' COMMENT '咨询状态：pending/contacted/following_up/closed',
-    `created_at` DATETIME DEFAULT CURRENT_TIMESTAMP,
-    `updated_at` DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='用户信息表';
+    major VARCHAR(100) DEFAULT NULL COMMENT '专业',
+    education VARCHAR(50) DEFAULT NULL COMMENT '学历（必填）',
+    target_major VARCHAR(100) DEFAULT NULL COMMENT '意向专业（必填）',
+    language_score VARCHAR(50) DEFAULT NULL COMMENT '语言成绩（必填）',
+    target_country VARCHAR(50) DEFAULT NULL COMMENT '目标国家',
+    gpa DECIMAL(3,2) DEFAULT NULL COMMENT 'GPA',
+    budget INT DEFAULT NULL COMMENT '预算（人民币）',
+    phone VARCHAR(30) DEFAULT NULL COMMENT '手机号',
+    wechat VARCHAR(50) DEFAULT NULL COMMENT '微信',
+    email VARCHAR(100) DEFAULT NULL COMMENT '邮箱',
+    consultation_status ENUM(
+        'collecting',
+        'recommended',
+        'finished'
+    ) DEFAULT 'collecting',
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        ON UPDATE CURRENT_TIMESTAMP
+
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='用户信息表';;
+
 
 -- ============================================
 -- 2. 课程表
@@ -113,7 +120,7 @@ INSERT INTO `courses` (`course_name`, `category`, `sub_category`, `country`, `ta
 -- ============================================
 -- 插入测试用户数据
 -- ============================================
-INSERT INTO `user_profiles` (`name`, `age`, `education`, `major`, `gpa`, `target_country`, `target_major`, `budget`, `language_level`, `language_score`, `consultation_status`) VALUES
-('测试用户A', 22, '本科', '机械工程', 3.50, '德国', '车辆工程', 200000.00, '良好', 'TestDaF 4', 'pending'),
-('测试用户B', 20, '本科', '计算机科学', 2.80, '新加坡', '人工智能', 300000.00, '一般', 'IELTS 5.5', 'contacted'),
-('测试用户C', 18, '高中', '理科', 3.80, '德国', '电气工程', 250000.00, '良好', '德语B1', 'following_up');
+INSERT INTO `user_profiles` (conversation_id,`name`, `age`, major,education,target_major,language_score ,target_country,`gpa`, `budget`,phone, wechat, email, `consultation_status`) VALUES
+(1,'测试用户A', 22, '车辆工程','本科','车辆工程','TestDaF 4','德国', 3.50, 200000.00, 13060642199 ,13060642199 ,null, 'collecting'),
+(2,'测试用户B', 20, '车辆工程','本科', '人工智能', 'IELTS 5.5','新加坡',2.80,   300000.00,  13060642198, 13060642198,null,  'collecting'),
+(3,'测试用户C', 18, '车辆工程','高中','电气工程','德语B1', '德国',3.80,  250000.00,  13060642197 , 13060642197 ,null, 'finished');
