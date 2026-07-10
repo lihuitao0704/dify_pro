@@ -1,0 +1,50 @@
+INFO:     Will watch for changes in these directories: ['D:\\dify_pro\\Event & Lecture Registration']
+INFO:     Uvicorn running on http://0.0.0.0:8011 (Press CTRL+C to quit)
+INFO:     Started reloader process [32] using StatReload
+INFO:     Started server process [17736]
+INFO:     Waiting for application startup.
+INFO:     Application startup complete.
+INFO:     127.0.0.1:63789 - "POST /nl2sql HTTP/1.1" 200 OK
+INFO:     127.0.0.1:63803 - "POST /nl2sql HTTP/1.1" 200 OK
+INFO:     127.0.0.1:63954 - "GET /docs HTTP/1.1" 200 OK
+INFO:     127.0.0.1:63954 - "GET /openapi.json HTTP/1.1" 200 OK
+INFO:     127.0.0.1:63955 - "POST /nl2sql HTTP/1.1" 200 OK
+INFO:     192.168.222.1:65111 - "POST /nl2sql HTTP/1.1" 200 OK
+INFO:     192.168.222.1:65250 - "POST /nl2sql HTTP/1.1" 200 OK
+INFO:     192.168.222.1:65371 - "POST /nl2sql HTTP/1.1" 200 OK
+INFO:     192.168.222.1:65527 - "POST /nl2sql HTTP/1.1" 200 OK
+INFO:     192.168.222.1:58056 - "POST /nl2sql HTTP/1.1" 200 OK
+INFO:     192.168.222.1:58941 - "POST /nl2sql HTTP/1.1" 200 OK
+INFO:     192.168.222.1:59563 - "POST /nl2sql HTTP/1.1" 200 OK
+INFO:     192.168.222.1:61015 - "POST /nl2sql HTTP/1.1" 422 Unprocessable Entity
+INFO:     192.168.222.1:61016 - "POST /nl2sql HTTP/1.1" 422 Unprocessable Entity
+INFO:     192.168.222.1:61017 - "POST /nl2sql HTTP/1.1" 422 Unprocessable Entity
+INFO:     192.168.222.1:61019 - "POST /nl2sql HTTP/1.1" 422 Unprocessable Entity
+INFO:     192.168.222.1:61330 - "POST /nl2sql HTTP/1.1" 200 OK
+INFO:     192.168.222.1:61367 - "POST /nl2sql HTTP/1.1" 200 OK
+INFO:     192.168.222.1:61562 - "POST /nl2sql HTTP/1.1" 422 Unprocessable Entity
+INFO:     192.168.222.1:61617 - "POST /nl2sql HTTP/1.1" 422 Unprocessable Entity
+INFO:     192.168.48.120:57770 - "GET / HTTP/1.1" 404 Not Found
+INFO:     192.168.48.120:57770 - "GET /favicon.ico HTTP/1.1" 404 Not Found
+INFO:     192.168.48.120:57771 - "GET /docs HTTP/1.1" 200 OK
+INFO:     192.168.48.120:57817 - "GET /openapi.json HTTP/1.1" 200 OK
+INFO:     192.168.222.1:62655 - "POST /nl2sql HTTP/1.1" 200 OK
+INFO:     192.168.222.1:62712 - "POST /nl2sql HTTP/1.1" 422 Unprocessable Entity
+INFO:     192.168.222.1:62806 - "POST /nl2sql HTTP/1.1" 200 OK
+INFO:     192.168.222.1:62899 - "POST /nl2sql HTTP/1.1" 200 OK
+INFO:     192.168.222.1:63365 - "POST /nl2sql HTTP/1.1" 200 OK
+INFO:     192.168.222.1:63584 - "POST /nl2sql HTTP/1.1" 422 Unprocessable Entity
+INFO:     192.168.222.1:63746 - "POST /nl2sql HTTP/1.1" 422 Unprocessable Entity
+INFO:     192.168.222.1:63936 - "POST /nl2sql HTTP/1.1" 200 OK
+INFO:     192.168.222.1:64693 - "POST /nl2sql HTTP/1.1" 200 OK
+INFO:     192.168.222.1:64828 - "POST /nl2sql HTTP/1.1" 422 Unprocessable Entity
+INFO:     192.168.222.1:49390 - "POST /nl2sql HTTP/1.1" 200 OK
+INFO:     192.168.222.1:52963 - "POST /nl2sql HTTP/1.1" 200 OK
+INFO:     192.168.222.1:53067 - "POST /nl2sql HTTP/1.1" 200 OK
+INFO:     192.168.222.1:53118 - "POST /nl2sql HTTP/1.1" 200 OK
+WARNING:  StatReload detected changes in 'Event_Lecture.py'. Reloading...
+ INFO:     192.168.222.1:62325 - "POST /nl2sql HTTP/1.1" 200 OK
+INFO:     192.168.222.1:62576 - "POST /nl2sql HTTP/1.1" 200 OK
+INFO:     192.168.222.1:62659 - "POST /nl2sql HTTP/1.1" 200 OK
+INFO:     192.168.222.1:62897 - "POST /nl2sql HTTP/1.1" 200 OK
+INFO:     192.168.222.1:63547 - "POST /nl2sql HTTP/1.1" 200 OK
