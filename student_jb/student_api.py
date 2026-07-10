@@ -3,7 +3,7 @@
 格式参照 nl2sql5.py，提供 Dify Chatflow 所需的全部接口
 
 数据库：student_assistant（4 张核心表 + 3 张辅助表）
-启动：uvicorn main:app --reload --host 0.0.0.0 --port 8000
+启动：uvicorn main:app --reload --host 0.0.0.0 --port 8004
 测试：curl -X POST http://localhost:8000/api/leave/submit -H "Content-Type: application/json" -H "Authorization: Bearer your-secret-api-key-change-me" -d '{"student_id":1001,"student_name":"张三","leave_type":"病假","start_time":"2026-07-10 14:00:00","end_time":"2026-07-10 18:00:00","reason":"感冒发烧"}'
 """
 import os
@@ -124,8 +124,8 @@ async def lifespan(app: FastAPI):
     print("[启动] 正在初始化辅助表...")
     init_supporting_tables()
     print("[启动] 初始化完成，服务就绪")
-    print(f"[启动] API 文档: http://localhost:8010/docs")
-    print(f"[启动] 接口地址: http://localhost:8010")
+    print(f"[启动] API 文档: http://localhost:8004/docs")
+    print(f"[启动] 接口地址: http://localhost:8004")
     yield
 
 
@@ -828,4 +828,4 @@ def init_supporting_tables():
 
 if __name__ == "__main__":
     import uvicorn
-    uvicorn.run(app, host="0.0.0.0", port=8006)
+    uvicorn.run(app, host="0.0.0.0", port=8004)
