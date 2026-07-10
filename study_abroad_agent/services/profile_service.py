@@ -1,4 +1,4 @@
-from study_abroad_agent.database import  db
+from study_abroad_agent.database import db
 
 class ProfileService:
 
