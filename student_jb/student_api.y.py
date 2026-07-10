@@ -78,7 +78,7 @@ def execute(sql: str, params: tuple = None):
 # ========== Pydantic 模型 ==========
 
 class LeaveSubmitRequest(BaseModel):
-    student_id: int
+    student_id: int | str
     student_name: str
     leave_type: str
     start_time: str
@@ -87,14 +87,14 @@ class LeaveSubmitRequest(BaseModel):
 
 
 class MentalProfileUpdateRequest(BaseModel):
-    student_id: int
+    student_id: int | str
     current_emotion: str
     risk_score: int
     risk_level: str
 
 
 class MentalAlertCreateRequest(BaseModel):
-    student_id: int
+    student_id: int | str
     student_name: str
     trigger_reason: str
     risk_level: str
@@ -104,7 +104,7 @@ class MentalAlertCreateRequest(BaseModel):
 
 
 class TicketCreateRequest(BaseModel):
-    student_id: int
+    student_id: int | str
     student_name: str
     title: str
     content: str
@@ -193,7 +193,7 @@ def submit_leave(body: LeaveSubmitRequest, request: Request):
 
 
 @app.get("/api/leave/status/{student_id}")
-def get_leave_status(student_id: int, request: Request):
+def get_leave_status(student_id: int | str, request: Request):
     """
     查询学生请假记录 → 从 student_admin_service 表读取
     Dify 调用：（备用）查询请假审批状态
@@ -220,7 +220,7 @@ def get_leave_status(student_id: int, request: Request):
 # ==================== 分支2：心理关怀 ====================
 
 @app.get("/api/mental/profile/{student_id}")
-def get_mental_profile(student_id: int, request: Request):
+def get_mental_profile(student_id: int | str, request: Request):
     """
     查询学生心理画像 → 从 student_mental_profile 表读取
     Dify 调用：（备用）查询心理状态历史
@@ -360,7 +360,7 @@ def create_ticket(body: TicketCreateRequest, request: Request):
 
 
 @app.get("/api/ticket/status/{student_id}")
-def get_ticket_status(student_id: int, request: Request):
+def get_ticket_status(student_id: int | str, request: Request):
     """
     查询学生工单进度 → 从 student_feedback_ticket 表读取
     Dify 调用：（备用）查询历史工单
@@ -387,7 +387,7 @@ def get_ticket_status(student_id: int, request: Request):
 # ==================== 分支4：学业考务 ====================
 
 @app.get("/api/academic/deadlines/{student_id}")
-def get_academic_deadlines(student_id: int, request: Request):
+def get_academic_deadlines(student_id: int | str, request: Request):
     """
     查询学生学业 DDL → 从 academic_deadlines 表读取
     Dify 调用：分支4 → 考务-查DDL
@@ -417,7 +417,7 @@ def get_academic_deadlines(student_id: int, request: Request):
 # ==================== 分支5：进度追踪 ====================
 
 @app.get("/api/application/progress/{student_id}")
-def get_application_progress(student_id: int, request: Request):
+def get_application_progress(student_id: int | str, request: Request):
     """
     查询学生留学申请进度 → 从 application_progress 表读取
     Dify 调用：分支5 → 进度-查CRM
@@ -467,7 +467,7 @@ def get_application_progress(student_id: int, request: Request):
 # ==================== 分支7：增值转化 ====================
 
 @app.get("/api/student/profile/{student_id}")
-def get_student_profile(student_id: int, request: Request):
+def get_student_profile(student_id: int | str, request: Request):
     """
     查询学生综合画像 → 聚合多表数据
     Dify 调用：分支7 → 转化-查画像
