@@ -435,6 +435,20 @@ def _handle_feedback(student_id: int, message: str, params: dict, context: list)
                 lines.append(f"  处理：{t['resolution'][:80]}")
         return "\n".join(lines)
 
+    # 检查是否信息不足 → 追问
+    vague_keywords = ["我要反馈", "我想反馈", "我要投诉", "我想投诉", "我有问题", "有问题反馈"]
+    is_vague = any(kw in message for kw in vague_keywords) and len(message) <= 15
+    if is_vague:
+        return (
+            "好的，我来帮你提交反馈 📝\n\n"
+            "请告诉我具体遇到了什么问题？\n"
+            "比如：\n"
+            "• \"宿舍空调坏了一周报修没人来\"\n"
+            "• \"签证材料提交两周了没反馈\"\n"
+            "• \"对课程安排有建议想说\"\n\n"
+            "越详细越好，我会帮你整理成工单提交～"
+        )
+
     # 新建工单
     title = params.get("title", message[:50])
     summary = llm.summarize(message)

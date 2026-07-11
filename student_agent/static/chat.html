@@ -125,6 +125,32 @@ body{font-family:"PingFang SC","Microsoft YaHei","Helvetica Neue",sans-serif;bac
   </div>
 </div>
 
+<!-- 投诉弹窗 -->
+<div class="modal-overlay" id="fbModal">
+  <div class="modal-box">
+    <h3>我要反馈</h3>
+    <label>反馈类型 *</label>
+    <select id="fbCat">
+      <option value="生活服务">生活服务</option>
+      <option value="签证办理">签证办理</option>
+      <option value="院校申请">院校申请</option>
+      <option value="教学质量">教学质量</option>
+      <option value="其他">其他</option>
+    </select>
+    <label>标题 *</label>
+    <input type="text" id="fbTitle" placeholder="简要概括你的问题">
+    <label>详细描述 *</label>
+    <textarea id="fbContent" placeholder="请详细描述你遇到的问题"></textarea>
+    <label>紧急程度</label>
+    <select id="fbUrgency"><option value="normal">普通</option><option value="urgent">紧急</option></select>
+    <div class="hint">* 为必填项，提交后24小时内跟进处理</div>
+    <div class="btn-row">
+      <button class="btn-cancel" type="button" id="fbCancel">取消</button>
+      <button class="btn-submit" type="button" id="fbSubmit">提交工单</button>
+    </div>
+  </div>
+</div>
+
 <div class="login-overlay" id="loginOverlay">
   <div class="login-box">
     <div class="logo"></div>
@@ -170,7 +196,7 @@ body{font-family:"PingFang SC","Microsoft YaHei","Helvetica Neue",sans-serif;bac
       <h4>快捷入口</h4>
       <button class="quick-btn" type="button" id="btnLeave">📝 在线请假</button>
       <button class="quick-btn" type="button" id="btnDDL">📅 我的考试DDL</button>
-      <button class="quick-btn" type="button" id="btnFeedback">💬 我要反馈</button>
+      <button class="quick-btn" type="button" id="btnFeedback">💬 我要反馈/投诉</button>
       <button class="quick-btn" type="button" id="btnProgress">📊 申请进度</button>
       <button class="quick-btn" type="button" id="btnUpgrade">🎓 升学深造</button>
     </div>
@@ -238,6 +264,30 @@ document.getElementById("lvSubmit").addEventListener("click",async function(){
     if(txt.indexOf("true")>0){document.getElementById("leaveModal").style.display="none";addMsg("assistant","请假申请已提交！\n\n类型："+tp+"\n时间："+st+" ~ "+ed+"\n原因："+rs+"\n\n等待班主任审批中，审批完成后会通知你。");}
     else{alert("提交失败，请重试");}
   }catch(e){btn.disabled=false;btn.textContent="提交申请";alert("网络异常，请重试");}
+});
+
+// ====== 投诉弹窗 ======
+document.getElementById("btnFeedback").addEventListener("click",function(){
+  if(!student){alert("请先登录");return;}
+  document.getElementById("fbTitle").value="";document.getElementById("fbContent").value="";
+  document.getElementById("fbModal").style.display="flex";
+});
+document.getElementById("fbCancel").addEventListener("click",function(){document.getElementById("fbModal").style.display="none";});
+document.getElementById("fbSubmit").addEventListener("click",async function(){
+  var cat=document.getElementById("fbCat").value;
+  var title=document.getElementById("fbTitle").value.trim();
+  var content=document.getElementById("fbContent").value.trim();
+  var urg=document.getElementById("fbUrgency").value;
+  if(!title||!content){alert("请填写标题和描述");return;}
+  if(!student){alert("请先登录");return;}
+  var btn=document.getElementById("fbSubmit");btn.disabled=true;btn.textContent="提交中...";
+  try{
+    var body=JSON.stringify({student_id:student.id,category:cat,title:title,content:content,urgency:urg});
+    var r=await fetch("/feedback/submit",{method:"POST",headers:{"Content-Type":"application/json"},body:body});
+    var txt=await r.text();btn.disabled=false;btn.textContent="提交工单";
+    if(txt.indexOf("true")>0){document.getElementById("fbModal").style.display="none";addMsg("assistant","工单已创建！\n\n类型："+cat+"\n标题："+title+"\n状态：处理中\n\n我们会在24小时内跟进处理。");}
+    else{alert("提交失败，请重试");}
+  }catch(e){btn.disabled=false;btn.textContent="提交工单";alert("网络异常，请重试");}
 });
 
 // ====== 提醒 ======
