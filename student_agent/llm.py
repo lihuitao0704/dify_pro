@@ -106,7 +106,7 @@ def classify_intent(user_msg: str, context: list[dict] = None) -> list[dict]:
             recent = [m for m in context[-6:] if m.get("role") in ("user", "assistant")]
             if recent:
                 ctx_text = "\n".join([f"{m['role']}: {m['content'][:200]}" for m in recent])
-                messages.append({"role": "system", "content": f"最近对话上下文（如果当前消息是上文的继续，比如预约/联系/怎么申请，意图应该跟上一轮保持一致）：\n{ctx_text}"})
+                messages.append({"role": "system", "content": f"最近对话上下文。重要规则：如果当前消息看起来像是对上一轮的追问/继续（比如上一轮聊升学，这一轮说怎么联系/有没有项目/多少钱），意图必须跟上一轮保持一致：\n{ctx_text}"})
         messages.append({"role": "user", "content": user_msg})
 
         try:
@@ -131,7 +131,7 @@ def _keyword_intent(user_msg: str) -> list[dict]:
         (["考试", "DDL", "deadline", "论文", "截止", "选课", "成绩", "考务", "日程"], "academic"),
         (["申请进度", "offer", "签证", "到哪一步", "流程走到"], "progress"),
         (["看病", "医院", "医保", "租房", "交通", "银行卡", "电话卡", "大使馆", "紧急"], "life_guide"),
-        (["读博", "读硕", "深造", "升学", "学历提升", "再读", "预约顾问", "预约咨询"], "upgrade"),
+        (["读博", "读硕", "深造", "升学", "学历提升", "再读", "预约顾问", "联系顾问", "怎么申请", "有没有", "推荐"], "upgrade"),
         (["查", "记录", "统计", "有多少", "帮我看看", "显示"], "nl2sql"),
     ]
     matched = []

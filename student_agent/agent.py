@@ -52,6 +52,24 @@ def process_message(student_id: int, message: str, session_id: str = None) -> di
     emotion_history = _conv.get_emotion_history(student_id, days=14)
     emotion_result = llm.analyze_emotion(message, emotion_history)
 
+    # ── 上下文意图纠正：短追问继承上一轮主意图 ──
+    follow_words = ["帮我", "预约", "联系", "怎么", "多少钱", "多久", "什么时候", "能不能", "还要", "有没有", "处理"]
+    if len(message) <= 20 and any(kw in message for kw in follow_words) and sorted_intents:
+        current_intent = sorted_intents[0]["intent"]
+        if current_intent in ("life_guide", "chat"):
+            # LLM把追问判错了，从context推断真实意图
+            # 简单策略：查conversation_session的main_intents
+            # 直接从对话日志推断
+            if session_id:
+                sess = _db.query_one(
+                    "SELECT main_intents FROM conversation_session WHERE session_id = %s",
+                    (session_id,)
+                )
+                if sess and sess.get("main_intents"):
+                    prev = sess["main_intents"].split(",")[0].strip()
+                    if prev and prev not in ("chat", "life_guide"):
+                        sorted_intents[0]["intent"] = prev
+
     # ── Step 4: 多意图编排 ──
     actions = []
     partial_replies = []
@@ -625,8 +643,7 @@ def _handle_upgrade(student_id: int, message: str, params: dict, context: list) 
             "📞 预约留学顾问一对一免费咨询\n"
             "📋 获取详细的项目手册和申请条件\n"
             "📅 了解最新的申请截止日期\n\n"
-            "你可以直接告诉我你想了解的方向，我会尽快安排顾问联系你～\n"
-            "或者你也可以在快捷入口点「🎓 升学深造」重新发起咨询。"
+            "告诉我你想了解的方向，我马上安排顾问联系你～"
         )
 
     # 检查是否已有意向 → 不重复插入
