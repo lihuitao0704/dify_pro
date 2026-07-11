@@ -29,7 +29,8 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 DB_CONFIG = {
-    "host": os.getenv("DB_HOST", "192.168.48.121"),
+    # "host": os.getenv("DB_HOST", "192.168.48.121"),
+    "host": os.getenv("DB_HOST", "127.0.0.1"),
     "port": int(os.getenv("DB_PORT", 3306)),
     "user": os.getenv("DB_USER", "offer"),
     "password": os.getenv("DB_PASSWORD", "123456"),
@@ -148,7 +149,7 @@ def _build_project_scoring_prompt(rules, project_id):
     lines.append('你是 SQL 专家。根据以下 project_id={} 的评分规则，生成一个 MySQL 评分表达式。'.format(project_id))
     lines.append('')
     lines.append('【user_profiles 可用字段】')
-    lines.append('id, name, age, education, major, gpa, target_country, target_major, budget, language_score, phone, wechat, email, consultation_status, status')
+    lines.append('id, name, age, education, major, gpa, target_country, target_major, budget, language_score, phone, wechat, email, consultation_status, assess')
     lines.append('')
     lines.append('【评分规则】（满分 {} 分）'.format(total_max))
     lines.append(rules_text)
@@ -209,7 +210,7 @@ def generate_project_expression(rules: list[dict], project_id: int) -> dict:
     # 校验字段合法性
     valid_fields = {"id", "name", "age", "education", "major", "gpa", "target_country",
                     "target_major", "budget", "language_score", "phone", "wechat", "email",
-                    "consultation_status", "status", "conversation_id", "created_at", "updated_at"}
+                    "consultation_status", "assess", "conversation_id", "created_at", "updated_at"}
     expr = data.get("expression", "")
     used = set(re.findall(r'`(\w+)`', expr))
     bad = [c for c in used if c not in valid_fields]
@@ -451,9 +452,9 @@ def parse_intent(user_query: str) -> dict:
  "reason": "判断理由"}}
 
 约束：
-- 全部/所有/整个 → evaluate_all，names=[]
-- 给了具体名字 → evaluate_one，names=[那些名字]
-- 模糊输入 → evaluate_all
+- 全部/所有/整个/所有用户 → evaluate_all，names=[]
+- 明确提到具体名字 → evaluate_one，names=[那些名字]
+- 无法识别出任何名字、也不是"全部"指令 → evaluate_one，names=[]（禁止模糊降级为全量扫描）
 """
     try:
         response = _get_client().chat.completions.create(
@@ -506,7 +507,10 @@ def run_targeted_assessment(sql_filter: str) -> str:
     :param sql_filter: WHERE 条件片段（空串表示全部）
     :return: 自然语言结果
     """
-    # 1. 获取目标用户（先精确匹配，无结果则模糊匹配）
+    # 1. 获取目标用户（严格精确匹配，禁止模糊 LIKE 兜底）
+    #    安全说明：原代码在精确匹配落空时会退回 LIKE '%name%' 模糊匹配，
+    #    导致任意 2 个中文字符都可能命中大量无关用户（如"无敌"→"王无敌""张无敌"），
+    #    现已删除此兜底，sql_filter 必须精准命中，否则直接报错。
     conn = get_conn()
     try:
         with conn.cursor() as cur:
@@ -516,16 +520,6 @@ def run_targeted_assessment(sql_filter: str) -> str:
             base_sql += " ORDER BY id"
             cur.execute(base_sql)
             users = cur.fetchall()
-            
-            # 精确匹配无结果，尝试模糊匹配（用 OR LIKE 拼接所有名字）
-            if not users and sql_filter:
-                # 从 sql_filter 中提取名字列表
-                import re
-                name_matches = re.findall(r"'([^']+)'", sql_filter)
-                if name_matches:
-                    like_conditions = " OR ".join(["name LIKE '%{}%'".format(n.replace("'", "''")) for n in name_matches])
-                    cur.execute("SELECT id, name FROM user_profiles WHERE name IS NOT NULL AND name != '' AND (" + like_conditions + ") ORDER BY id")
-                    users = cur.fetchall()
     finally:
         conn.close()
 
@@ -611,10 +605,10 @@ def run_targeted_assessment(sql_filter: str) -> str:
                             "rule_scores": rule_scores,
                         })
                     else:
-                        # 未达标：status 改为 '已研判'
+                        # 未达标：assess 改为 '已研判'
                         cur.execute(
-                            "UPDATE user_profiles SET status = '已研判' WHERE id = %s "
-                            "AND (status IS NULL OR status != '已研判')",
+                            "UPDATE user_profiles SET assess = '已研判' WHERE id = %s "
+                            "AND (assess IS NULL OR assess != '已研判')",
                             (uid,)
                         )
 
