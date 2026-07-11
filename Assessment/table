@@ -1,0 +1,43 @@
+CREATE TABLE `intention_diagnosis` (
+  `diag_id` int NOT NULL AUTO_INCREMENT,
+  `user_id` bigint NOT NULL,
+  `project_id` int NOT NULL,
+  `score` int NOT NULL DEFAULT '0',
+  `rule_details` text,
+  `diag_time` datetime DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`diag_id`),
+  UNIQUE KEY `uk_user_project` (`user_id`,`project_id`),
+  KEY `idx_user` (`user_id`),
+  KEY `idx_project` (`project_id`)
+) ENGINE=InnoDB AUTO_INCREMENT=16 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='意向诊断结果表'
+
+CREATE TABLE `portrait_rule` (
+  `rule_id` int NOT NULL AUTO_INCREMENT COMMENT '规则ID',
+  `project_id` int NOT NULL COMMENT '关联项目ID',
+  `rule_category` varchar(50) NOT NULL COMMENT '规则大类',
+  `rule_subcategory` varchar(50) NOT NULL COMMENT '规则子类',
+  `rule_key` varchar(100) NOT NULL COMMENT '规则维度',
+  `rule_value` text NOT NULL COMMENT '规则说明',
+  `score_max` int NOT NULL DEFAULT '0' COMMENT '该项满分',
+  `score_desc` text COMMENT '打分标准',
+  `match_condition` varchar(200) DEFAULT NULL COMMENT '匹配条件',
+  `sort_order` int DEFAULT '10' COMMENT '排序',
+  `is_active` tinyint DEFAULT '1' COMMENT '是否启用',
+  `create_time` datetime DEFAULT CURRENT_TIMESTAMP,
+  `update_time` datetime DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`rule_id`),
+  KEY `idx_project_id` (`project_id`)
+) ENGINE=InnoDB AUTO_INCREMENT=17 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='用户画像研判+打分规则表'
+
+CREATE TABLE `study_project` (
+  `project_id` int NOT NULL AUTO_INCREMENT COMMENT '项目ID',
+  `project_code` varchar(50) NOT NULL COMMENT '项目编码',
+  `project_name` varchar(100) NOT NULL COMMENT '项目名称',
+  `country` varchar(50) NOT NULL COMMENT '目标国家',
+  `project_type` varchar(50) NOT NULL COMMENT '项目类型',
+  `description` text COMMENT '项目说明',
+  `create_time` datetime DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  `update_time` datetime DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+  PRIMARY KEY (`project_id`),
+  UNIQUE KEY `uk_project_code` (`project_code`)
+) ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='留学项目基础表'

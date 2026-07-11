@@ -45,13 +45,16 @@ class RecommendService:
     @staticmethod
     def recommend(conversation_id):
 
-        profile = ProfileService.get_profile(conversation_id)
+        profiles = ProfileService.get_by_conversation_id(conversation_id)
 
-        if not profile:
+        if not profiles:
             return {
                 "success": False,
                 "message": "用户不存在"
             }
+
+        # 取第一条 profile 进行推荐
+        profile = profiles[0]
 
         courses = RecommendService.get_courses()
 

@@ -1,38 +1,58 @@
+"""
+FastAPI 应用入口
+"""
 import sys
 from pathlib import Path
 
-# 将项目根目录加入 sys.path，使 study_abroad_agent 包可被导入
+# 将项目根目录的父目录加入 sys.path，使 study_abroad_agent 包可被导入
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
-from flask import Flask
-from flask_cors import CORS
-from api.dify import dify
+from fastapi import FastAPI, Request
+from fastapi.responses import JSONResponse
+from fastapi.middleware.cors import CORSMiddleware
+from study_abroad_agent.api import ROUTERS
+from study_abroad_agent.api.dify import router as dify_router
+from study_abroad_agent.utils.logger import logger
 
 
-def create_app():
+def create_app() -> FastAPI:
+    app = FastAPI(
+        title="智能留学顾问系统 (NL2SQL + CRUD)",
+        description=(
+            "基于 FastAPI、MySQL 的留学课程推荐后端服务。\n\n"
+            "- `/api/v1/*`：新版 CRUD + NL2SQL 接口\n"
+            "- `/api/dify/*`：旧版 Dify 工作流兼容接口"
+        ),
+        version="3.0.0",
+    )
 
-    app = Flask(__name__)
+    # ── CORS ──────────────────────────────────────────────
+    app.add_middleware(
+        CORSMiddleware,
+        allow_origins=["*"],
+        allow_methods=["*"],
+        allow_headers=["*"],
+    )
 
-    CORS(app)
+    # ── 新版 v1 路由 ──────────────────────────────────────
+    for prefix, router in ROUTERS:
+        app.include_router(router, prefix="/api/v1" + prefix)
 
-    app.register_blueprint(dify)
+    # ── 兼容旧版 /api/dify 路由 ────────────────────────────
+    app.include_router(dify_router, prefix="/api/dify")
 
-    # ── 错误处理（必须在注册蓝图之后、app.run 之前）──
-    @app.errorhandler(Exception)
-    def handle_error(e):
-        return {
-            "code": 500,
-            "message": str(e),
-            "data": None
-        }, 500
+    # ── 全局错误处理 ──────────────────────────────────────
+    @app.exception_handler(Exception)
+    async def handle_all(_: Request, exc: Exception):
+        logger.exception("Unhandled error: %s", exc)
+        return JSONResponse(
+            status_code=500,
+            content={"code": 500, "data": None, "message": str(exc)},
+        )
 
-    @app.errorhandler(404)
-    def not_found(e):
-        return {
-            "code": 404,
-            "message": "API不存在",
-            "data": None
-        }, 404
+    @app.on_event("startup")
+    async def on_startup():
+        logger.info("✅ FastAPI 已就绪，Swagger 文档: /docs")
 
     return app
 
@@ -41,9 +61,6 @@ app = create_app()
 
 
 if __name__ == "__main__":
+    import uvicorn
 
-    app.run(
-        host="0.0.0.0",
-        port=5000,
-        debug=True
-    )
+    uvicorn.run(app, host="0.0.0.0", port=5000)
