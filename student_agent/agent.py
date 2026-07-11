@@ -600,31 +600,53 @@ def _handle_progress(student_id: int, message: str, params: dict, context: list)
 # ============================================================
 
 def _handle_life_guide(student_id: int, message: str, params: dict, context: list) -> str:
-    """处理海外生活指南（使用知识库检索）"""
-    # 延迟导入避免循环依赖
+    """海外生活指南：FAQ优先 → RAG检索 → 智能降级"""
+    # 泛问 → 展示菜单
+    generic_words = ["海外生活", "生活指南", "海外指南", "生活支持"]
+    if any(kw in message for kw in generic_words) and len(message) <= 15:
+        return (
+            "关于海外的学习生活，我了解以下信息～\n\n"
+            "🏥 医疗就医\n"
+            "🏠 租房住宿\n"
+            "🚇 交通出行\n"
+            "💳 银行卡与通讯\n"
+            "🆘 紧急求助\n"
+            "📚 留学政策\n"
+            "🎓 升学项目\n\n"
+            "直接告诉我想了解哪方面，我给你详细解答～"
+        )
+
+    # Step1: FAQ精确匹配
     try:
         from .knowledge import get_kb
         kb = get_kb()
         if kb and kb.is_loaded():
+            faq_ans = kb.faq_match(message)
+            if faq_ans:
+                return faq_ans
+            # Step2: RAG检索
             docs = kb.search(message, top_k=3)
             if docs:
-                context_text = "\n\n".join(docs)
-                instruction = (
-                    f"以下是知识库中检索到的相关信息，请基于这些信息回答学生问题。"
-                    f"如果信息不够完整，如实告知。\n\n知识库内容：\n{context_text}"
-                )
+                ctx = "\n\n".join(docs)
+                instruction = f"基于以下知识库内容回答学生问题。如果信息不够，如实说。\n\n{ctx}"
                 return llm.agent_chat(message, context, extra_instruction=instruction)
     except ImportError:
         pass
 
-    # 无知识库时的降级回复
-    return (
-        "关于海外的学习生活，我了解一些基本信息～\n"
-        "你可以问我：\n"
-        "🏥 医疗就医  |  🏠 租房住宿  |  🚇 交通出行\n"
-        "💳 银行卡办理  |  🆘 紧急求助  |  📱 通讯网络\n"
-        "具体想问哪方面的呢？"
-    )
+    # Step3: 智能降级——根据关键词引导到具体问题
+    topic_hints = {
+        "医疗": "试试问:新加坡看病流程 或 怎么用医保",
+        "住房": "试试问:新加坡租房要注意什么",
+        "交通": "试试问:新加坡怎么坐地铁",
+        "银行": "试试问:新加坡怎么办银行卡",
+        "紧急": "试试问:新加坡紧急求助电话",
+        "签证": "试试问:学生签证怎么续签",
+    }
+    for kw, hint in topic_hints.items():
+        if kw in message:
+            return f"关于这方面，{hint}，我给你更详细的回答～"
+
+    return "这方面我暂时了解不够全面，你可以换个方式问我，比如:新加坡怎么看病、德国有哪些专业~"
 
 
 # ============================================================
@@ -638,6 +660,13 @@ def _handle_upgrade(student_id: int, message: str, params: dict, context: list) 
     is_followup = any(kw in message for kw in follow_keywords) or len(message) <= 5
 
     if is_followup:
+        prev_followup_count = sum(1 for m in context[-6:] if m.get("role") == "assistant" and ("预约留学顾问" in m.get("content", "") or "我可以帮你" in m.get("content", "")))
+        if prev_followup_count > 0:
+            # 学生确认了 → 更新意向状态为 interested（更新该学生最近一条identified）
+            latest = _db.query_one("SELECT id FROM upgrade_interest WHERE student_id = %s AND conversion_status = 'identified' ORDER BY id DESC LIMIT 1", (student_id,))
+            if latest:
+                _db.update("upgrade_interest", {"id": latest["id"]}, {"conversion_status": "interested", "contacted_at": datetime.now().strftime("%Y-%m-%d %H:%M:%S")})
+            return "好的！已经为你登记了顾问预约需求 📋\n\n顾问会在1-2个工作日内联系你，届时可以详细沟通你的升学方向、申请条件和时间规划。\n\n如果还有其他问题随时找我～"
         return (
             "好的！关于升学深造的具体事宜，我可以帮你：\n\n"
             "📞 预约留学顾问一对一免费咨询\n"

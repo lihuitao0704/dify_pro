@@ -175,24 +175,58 @@ MRT地铁：覆盖全岛，运营约5:30-24:00，票价SGD 1.00-2.50。主要线
     # ================================================================
 
     def search(self, query: str, top_k: int = 3) -> list[str]:
-        """关键词+子串匹配，返回相关文本片段"""
+        """关键词+标题+子串三重匹配"""
         query_keywords = extract_keywords(query)
         if not self.chunks:
             return []
 
+        # 主题映射：学生问法 → 文档标题关键词
+        topic_map = {
+            "医疗": ["医疗", "医院", "看病", "医保", "就诊", "诊所", "药"],
+            "租房": ["租房", "住房", "住宿", "房租", "宿舍", "HDB"],
+            "交通": ["交通", "地铁", "公交", "出行", "MRT", "巴士", "打车"],
+            "银行卡": ["银行卡", "银行", "通讯", "电话卡", "手机卡", "SIM"],
+            "紧急": ["紧急", "求助", "报警", "大使馆", "领事"],
+            "签证": ["签证", "Student Pass", "续签", "居留"],
+            "打工": ["打工", "工作", "兼职", "实习"],
+            "语言": ["语言", "英语", "雅思", "IELTS", "托福"],
+            "院校": ["院校", "大学", "学校", "申请", "录取"],
+        }
+
+        # 先用主题映射确定相关文档标题
+        relevant_titles = set()
+        for topic, keywords in topic_map.items():
+            if any(kw in query for kw in keywords):
+                relevant_titles.add(topic)
+
         scored = []
         for chunk in self.chunks:
-            score = len(query_keywords & chunk["keywords"])
-            if any(kw in chunk["title"] for kw in query_keywords):
-                score += 3
+            score = 0
+            # 标题相关性（最高权重）
+            title_lower = chunk["title"].lower()
+            for topic in relevant_titles:
+                if topic.lower() in title_lower:
+                    score += 10
+            # 关键词重合
+            score += len(query_keywords & chunk["keywords"]) * 2
+            # 子串匹配
             for qw in query_keywords:
                 if qw in chunk["text"]:
-                    score += 2
+                    score += 3
+            # 查询词在标题中
+            for qw in query_keywords:
+                if qw in title_lower:
+                    score += 5
             if score > 0:
                 scored.append((score, chunk))
 
         scored.sort(key=lambda x: x[0], reverse=True)
-        return [c["text"] for _, c in scored[:top_k]]
+        results = [c["text"] for _, c in scored[:top_k]]
+        if results:
+            return results
+
+        # 完全没匹配：返回所有内置指南让Agent能答点东西
+        return [c["text"] for c in self.chunks[:3]]
 
     def faq_match(self, query: str) -> str | None:
         """FAQ匹配：精配→模糊→None"""
