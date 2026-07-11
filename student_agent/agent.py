@@ -634,8 +634,8 @@ def _handle_life_guide(student_id: int, message: str, params: dict, context: lis
 def _handle_upgrade(student_id: int, message: str, params: dict, context: list) -> str:
     """处理升学意向"""
     # 检查是继续聊还是新意向
-    follow_keywords = ["预约", "联系", "报名", "怎么申请", "怎么报", "多少钱", "费用", "多久", "什么时候"]
-    is_followup = any(kw in message for kw in follow_keywords)
+    follow_keywords = ["预约", "联系", "报名", "怎么申请", "怎么报", "多少钱", "费用", "多久", "什么时候", "顾问", "一对一"]
+    is_followup = any(kw in message for kw in follow_keywords) or len(message) <= 5
 
     if is_followup:
         return (
