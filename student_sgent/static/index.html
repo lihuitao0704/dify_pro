@@ -1,0 +1,626 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>VibeX 留学 — 学生智能助手</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:#0f0f1a;color:#e0e0e0;min-height:100vh}
+.header{background:#1a1025;border-bottom:1px solid #2a1a3a;padding:16px 24px;display:flex;align-items:center;gap:12px}
+.header h1{font-size:20px;background:linear-gradient(135deg,#a78bfa,#6d28d9);-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+.header .badge{background:#2a1a3a;color:#a78bfa;padding:4px 12px;border-radius:20px;font-size:12px}
+.layout{display:flex;height:calc(100vh - 61px)}
+.sidebar{width:260px;background:#1a1025;border-right:1px solid #2a1a3a;padding:16px;display:flex;flex-direction:column;gap:4px}
+.sidebar button{background:transparent;border:none;color:#a0a0b8;padding:10px 14px;text-align:left;border-radius:8px;cursor:pointer;font-size:14px;transition:all .2s}
+.sidebar button:hover,.sidebar button.active{background:#2a1a3a;color:#a78bfa}
+.main{flex:1;display:flex;flex-direction:column;overflow:hidden}
+.tab-content{display:none;flex:1;flex-direction:column;overflow:hidden}
+.tab-content.active{display:flex}
+.toolbar{background:#1a1025;padding:12px 24px;border-bottom:1px solid #2a1a3a;display:flex;gap:12px;align-items:center;flex-wrap:wrap}
+.toolbar input,.toolbar select{background:#2a1a3a;border:1px solid #3a2a4a;color:#e0e0e0;padding:8px 14px;border-radius:6px;font-size:13px}
+.toolbar input:focus{border-color:#a78bfa;outline:none}
+.btn{padding:8px 18px;border-radius:6px;border:none;cursor:pointer;font-size:13px;font-weight:600;transition:all .2s}
+.btn-primary{background:#7c3aed;color:#fff}.btn-primary:hover{background:#6d28d9}
+.btn-danger{background:#dc2626;color:#fff}.btn-success{background:#059669;color:#fff}
+.chat-area{flex:1;overflow-y:auto;padding:20px 24px;display:flex;flex-direction:column;gap:16px}
+.msg{display:flex;gap:12px;max-width:85%}.msg.user{align-self:flex-end}.msg.assistant{align-self:flex-start}
+.msg .avatar{width:36px;height:36px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0}
+.msg.user .avatar{background:#7c3aed}.msg.assistant .avatar{background:#2a1a3a}
+.msg .bubble{background:#1a1025;padding:12px 16px;border-radius:12px;font-size:14px;line-height:1.6}
+.msg.user .bubble{background:#2d1b69}
+.chat-input-area{padding:16px 24px;background:#1a1025;border-top:1px solid #2a1a3a;display:flex;gap:8px}
+.chat-input-area input{flex:1;padding:12px 16px;border-radius:8px;border:1px solid #3a2a4a;background:#0f0f1a;color:#e0e0e0;font-size:14px}
+.chat-input-area input:focus{border-color:#a78bfa;outline:none}
+.data-table{width:100%;border-collapse:collapse;font-size:13px}
+.data-table th{background:#2a1a3a;color:#a78bfa;padding:10px 14px;text-align:left;position:sticky;top:0;z-index:1}
+.data-table td{padding:8px 14px;border-bottom:1px solid #1a1025}
+.data-table tr:hover{background:#1a1025}
+.data-area{flex:1;overflow-y:auto;padding:20px 24px}
+.empty-state{display:flex;flex-direction:column;align-items:center;justify-content:center;height:100%;color:#606080;gap:12px}
+.empty-state .icon{font-size:48px;opacity:.3}
+.n2q-area{padding:24px;display:flex;flex-direction:column;gap:16px;flex:1;overflow-y:auto}
+.n2q-input-row{display:flex;gap:12px}
+.n2q-input-row input{flex:1}
+.n2q-result{background:#1a1025;border-radius:8px;padding:16px;overflow-x:auto}
+.n2q-result h4{color:#a78bfa;margin-bottom:8px}
+.n2q-sql{background:#0d0d16;padding:12px;border-radius:6px;font-family:monospace;font-size:12px;color:#a0a0b8;overflow-x:auto;margin:8px 0}
+.tag{display:inline-block;padding:2px 8px;border-radius:4px;font-size:11px}
+.tag-low{background:#065f46;color:#6ee7b7}
+.tag-medium{background:#78350f;color:#fbbf24}
+.tag-high{background:#7f1d1d;color:#fca5a5}
+.toast{position:fixed;top:20px;right:20px;padding:12px 20px;border-radius:8px;color:#fff;font-size:13px;z-index:999;animation:fadeIn .3s}
+.toast-error{background:#7f1d1d}
+.toast-success{background:#065f46}
+@keyframes fadeIn{from{opacity:0;transform:translateY(-10px)}to{opacity:1;transform:translateY(0)}}
+.loading{display:inline-block;width:16px;height:16px;border:2px solid #606080;border-top-color:#a78bfa;border-radius:50%;animation:spin .6s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+.token-row{display:flex;align-items:center;gap:8px;margin-left:auto}
+.token-row label{font-size:12px;color:#a0a0b8}
+.token-row input{background:#2a1a3a;border:1px solid #3a2a4a;color:#e0e0e0;padding:6px 12px;border-radius:6px;font-size:12px;width:180px}
+.token-row .token-status{font-size:12px}
+.token-ok{color:#6ee7b7}
+.token-bad{color:#fca5a5}
+</style>
+</head>
+<body>
+
+<div class="header">
+  <h1>VibeX 留学</h1>
+  <span class="badge">学生智能助手</span>
+  <span style="font-size:12px;color:#606080">纯 Python 实现 · 无需 Dify</span>
+  <div class="token-row">
+    <label>学生ID：</label>
+    <input type="number" id="global-student-id" value="1" style="width:80px" onchange="onStudentIdChange()">
+    <label>API Token：</label>
+    <input type="text" id="api-token" value="dev-token" placeholder="输入 API Token" onchange="onTokenChange()">
+    <span id="token-status" class="token-status token-ok">✓</span>
+  </div>
+</div>
+
+<div class="layout">
+  <div class="sidebar">
+    <button class="active" data-tab="chat">💬 AI 对话</button>
+    <button data-tab="nl2sql">🔍 智能查询 (NL2SQL)</button>
+    <button data-tab="schedule">📅 学业日程</button>
+    <button data-tab="applications">🎓 申请进度</button>
+    <button data-tab="feedback">📝 投诉反馈</button>
+    <button data-tab="psych">🧠 心理画像</button>
+  </div>
+
+  <div class="main">
+    <!-- Chat Tab -->
+    <div id="tab-chat" class="tab-content active">
+      <div class="toolbar">
+        <label>学生ID：</label>
+        <input type="number" id="chat-student-id" value="1" style="width:100px">
+        <button class="btn btn-primary" onclick="createSession()">新建会话</button>
+        <span id="session-info" style="font-size:12px;color:#606080;margin-left:8px">未连接会话</span>
+      </div>
+      <div class="chat-area" id="chat-messages"></div>
+      <div class="chat-input-area">
+        <input type="text" id="chat-input" placeholder="输入消息..." onkeydown="if(event.key==='Enter')sendMessage()">
+        <button class="btn btn-primary" onclick="sendMessage()">发送</button>
+      </div>
+    </div>
+
+    <!-- NL2SQL Tab -->
+    <div id="tab-nl2sql" class="tab-content">
+      <div class="n2q-area">
+        <div class="n2q-input-row">
+          <input id="n2q-query" placeholder="输入自然语言查询，如：查询学生 1 的最近对话记录">
+          <label>学生ID：</label>
+          <input type="number" id="n2q-student-id" value="1" style="width:100px">
+          <button class="btn btn-primary" onclick="nl2sqlQuery()">查询</button>
+        </div>
+        <div style="font-size:12px;color:#606080">
+          试试：查看心理状态 | 查询DDL | 统计申请数量 | 查询投诉记录
+        </div>
+        <div id="n2q-result"></div>
+      </div>
+    </div>
+
+    <!-- Schedule Tab -->
+    <div id="tab-schedule" class="tab-content">
+      <div class="toolbar">
+        <label>学生ID：</label>
+        <input type="number" id="sched-student-id" value="1" style="width:100px">
+        <button class="btn btn-primary" onclick="loadSchedules()">加载日程</button>
+        <button class="btn btn-success" onclick="showAddSchedule()">添加日程</button>
+      </div>
+      <div class="data-area" id="sched-data"></div>
+    </div>
+
+    <!-- Applications Tab -->
+    <div id="tab-applications" class="tab-content">
+      <div class="toolbar">
+        <label>学生ID：</label>
+        <input type="number" id="app-student-id" value="1" style="width:100px">
+        <button class="btn btn-primary" onclick="loadApplications()">加载申请</button>
+      </div>
+      <div class="data-area" id="app-data"></div>
+    </div>
+
+    <!-- Feedback Tab -->
+    <div id="tab-feedback" class="tab-content">
+      <div class="toolbar">
+        <label>学生ID：</label>
+        <input type="number" id="fb-student-id" value="1" style="width:100px">
+        <button class="btn btn-primary" onclick="loadFeedback()">加载工单</button>
+        <button class="btn btn-success" onclick="showAddFeedback()">提交工单</button>
+      </div>
+      <div class="data-area" id="fb-data"></div>
+    </div>
+
+    <!-- Psych Tab -->
+    <div id="tab-psych" class="tab-content">
+      <div class="toolbar">
+        <label>学生ID：</label>
+        <input type="number" id="psych-student-id" value="1" style="width:100px">
+        <button class="btn btn-primary" onclick="loadPsych()">加载画像</button>
+      </div>
+      <div class="data-area" id="psych-data"></div>
+    </div>
+  </div>
+</div>
+
+<div id="toast"></div>
+
+<script>
+const API = '/api/v1';
+let currentSessionId = null;
+let apiToken = 'dev-token';
+
+// ========== Token 管理 ==========
+function getAuthHeaders() {
+  return {
+    'Content-Type': 'application/json',
+    'Authorization': 'Bearer ' + apiToken,
+  };
+}
+
+function onTokenChange() {
+  apiToken = document.getElementById('api-token').value.trim();
+  const statusEl = document.getElementById('token-status');
+  if (!apiToken) {
+    statusEl.textContent = '✗';
+    statusEl.className = 'token-status token-bad';
+  } else {
+    statusEl.textContent = '✓';
+    statusEl.className = 'token-status token-ok';
+  }
+}
+
+function onStudentIdChange() {
+  studentId = parseInt(document.getElementById('global-student-id').value) || 1;
+}
+
+function getStudentId() {
+  // 优先读全局 ID，如果当前 tab 有自己的输入框则用 tab 的
+  const tabInput = document.querySelector('.tab-content.active input[id$="-student-id"]');
+  if (tabInput) {
+    return parseInt(tabInput.value) || studentId;
+  }
+  return studentId;
+}
+
+// ========== Navigation ==========
+document.querySelectorAll('.sidebar button').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.sidebar button').forEach(b => b.classList.remove('active'));
+    document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
+    btn.classList.add('active');
+    document.getElementById('tab-' + btn.dataset.tab).classList.add('active');
+  });
+});
+
+// ========== Toast ==========
+function toast(msg, type = 'success') {
+  const el = document.getElementById('toast');
+  el.innerHTML = `<div class="toast toast-${type}">${msg}</div>`;
+  setTimeout(() => el.innerHTML = '', 3000);
+}
+
+// ========== Chat ==========
+async function createSession() {
+  const sid = getStudentId();
+  studentId = sid;
+  try {
+    const r = await fetch(`${API}/chat/sessions`, {
+      method: 'POST',
+      headers: getAuthHeaders(),
+      body: JSON.stringify({ student_id: sid })
+    });
+    if (r.status === 401 || r.status === 403) {
+      toast('认证失败，请检查 API Token', 'error');
+      return;
+    }
+    const data = await r.json();
+    currentSessionId = data.session_id;
+    document.getElementById('session-info').innerHTML = `会话: ${currentSessionId} | 消息: <strong>${data.message_count ?? 0}</strong> 条`;
+    document.getElementById('chat-messages').innerHTML = '';
+    document.getElementById('chat-input').focus();
+    toast('会话已创建');
+  } catch (e) {
+    toast('创建会话失败: ' + e.message, 'error');
+  }
+}
+
+async function sendMessage() {
+  if (!currentSessionId) {
+    toast('请先创建会话', 'error');
+    return;
+  }
+  const input = document.getElementById('chat-input');
+  const content = input.value.trim();
+  if (!content) return;
+
+  const chatArea = document.getElementById('chat-messages');
+  chatArea.innerHTML += `<div class="msg user"><div class="avatar">U</div><div class="bubble">${escapeHtml(content)}</div></div>`;
+  chatArea.innerHTML += `<div class="msg assistant"><div class="avatar">AI</div><div class="bubble"><span class="loading"></span> 思考中...</div></div>`;
+  chatArea.scrollTop = chatArea.scrollHeight;
+  input.value = '';
+  input.disabled = true;
+
+  try {
+    // 情绪分析由 Dify/LLM 侧通过 API 回填，前端不编造假数据
+    const r = await fetch(`${API}/chat/messages`, {
+      method: 'POST',
+      headers: getAuthHeaders(),
+      body: JSON.stringify({
+        session_id: currentSessionId,
+        role: 'user',
+        content: content,
+        intent: 'general_chat'
+      })
+    });
+    if (r.status === 401 || r.status === 403) {
+      toast('认证失败，请检查 API Token', 'error');
+      input.disabled = false;
+      // 移除 loading 消息
+      const msgs = chatArea.querySelectorAll('.msg.assistant');
+      const loadingMsg = msgs[msgs.length - 1];
+      if (loadingMsg) loadingMsg.remove();
+      return;
+    }
+    const msg = await r.json();
+
+    // Remove loading
+    const msgs = chatArea.querySelectorAll('.msg.assistant');
+    const loadingMsg = msgs[msgs.length - 1];
+    if (loadingMsg) loadingMsg.remove();
+
+    // 仅当消息包含数据查询关键词时才调 NL2SQL
+    const queryKeywords = /查询|查看|我的|DDL|ddl|截止|deadline|日程|课程|申请|进度|offer|录取|心理|情绪|预警|投诉|工单|统计|汇总|趋势|对话|记录|消息|历史|档案|信息|资料|详情|安排|课表|考试|意向|计划|目标|方向/;
+    let reply = '';
+    if (queryKeywords.test(content)) {
+      try {
+        const n2q = await fetch(`${API}/nl2sql/query`, {
+          method: 'POST',
+          headers: getAuthHeaders(),
+          body: JSON.stringify({ query: content, student_id: getStudentId(), use_template: true })
+        });
+        const n2qData = await n2q.json();
+        if (n2qData.row_count > 0) {
+          reply = `查询到 ${n2qData.row_count} 条结果：\n\n`;
+          reply += n2qData.data.slice(0, 5).map(r => JSON.stringify(r, null, 2)).join('\n---\n');
+          reply += n2qData.data.length > 5 ? `\n\n... 还有 ${n2qData.data.length - 5} 条结果` : '';
+        } else {
+          reply = '查询完成，暂无匹配数据。';
+        }
+      } catch (e) {
+        console.error('NL2SQL error:', e);
+        reply = '查询失败，请稍后重试。';
+      }
+    } else {
+      // 闲聊：传入后端分析出的情绪数据，让回复更自然
+      const emo = { tag: msg.emotion_tag, score: msg.emotion_score };
+      reply = casualReply(content, emo);
+    }
+
+    // Save assistant response
+    await fetch(`${API}/chat/messages`, {
+      method: 'POST',
+      headers: getAuthHeaders(),
+      body: JSON.stringify({
+        session_id: currentSessionId,
+        role: 'assistant',
+        content: reply,
+        intent: 'nl2sql_response'
+      })
+    });
+
+    chatArea.innerHTML += `<div class="msg assistant"><div class="avatar">AI</div><div class="bubble"><pre style="white-space:pre-wrap;font-family:inherit">${escapeHtml(reply)}</pre></div></div>`;
+    chatArea.scrollTop = chatArea.scrollHeight;
+  } catch (e) {
+    toast('发送失败: ' + e.message, 'error');
+  }
+  input.disabled = false;
+  input.focus();
+}
+
+// ========== NL2SQL ==========
+async function nl2sqlQuery() {
+  const query = document.getElementById('n2q-query').value.trim();
+  const sid = getStudentId();
+  if (!query) return;
+  const resultDiv = document.getElementById('n2q-result');
+  resultDiv.innerHTML = '<span class="loading"></span> 处理中...';
+  try {
+    const r = await fetch(`${API}/nl2sql/query`, {
+      method: 'POST',
+      headers: getAuthHeaders(),
+      body: JSON.stringify({ query, student_id: sid, use_template: true })
+    });
+    if (r.status === 401 || r.status === 403) {
+      resultDiv.innerHTML = '<div class="n2q-result" style="color:#fca5a5">认证失败，请检查 API Token</div>';
+      return;
+    }
+    const data = await r.json();
+    let html = `<div class="n2q-result">
+      <h4>📊 查询结果 (${data.row_count} 条, ${data.elapsed_ms}ms)</h4>`;
+    if (data.matched_template) {
+      html += `<div style="color:#6ee7b7;margin-bottom:8px">✅ 命中模板: ${data.matched_template}</div>`;
+    }
+    html += `<div class="n2q-sql">${escapeHtml(data.generated_sql)}</div>`;
+    if (data.row_count > 0) {
+      html += '<table class="data-table"><tr>';
+      Object.keys(data.data[0]).forEach(k => html += `<th>${escapeHtml(k)}</th>`);
+      html += '</tr>';
+      data.data.forEach(row => {
+        html += '<tr>';
+        Object.values(row).forEach(v => html += `<td>${escapeHtml(String(v ?? ''))}</td>`);
+        html += '</tr>';
+      });
+      html += '</table>';
+    } else {
+      html += '<p style="color:#606080">暂无数据</p>';
+    }
+    html += '</div>';
+    resultDiv.innerHTML = html;
+  } catch (e) {
+    resultDiv.innerHTML = `<div class="n2q-result" style="color:#fca5a5">查询失败: ${e.message}</div>`;
+  }
+}
+
+// ========== Schedules ==========
+async function loadSchedules() {
+  const sid = getStudentId();
+  const el = document.getElementById('sched-data');
+  try {
+    const r = await fetch(`${API}/student/schedules?student_id=${sid}`, { headers: getAuthHeaders() });
+    const data = await r.json();
+    if (data.length === 0) {
+      el.innerHTML = '<div class="empty-state"><div class="icon">📅</div>暂无日程，点击添加</div>';
+      return;
+    }
+    renderTable(el, data, ['id', 'schedule_type', 'title', 'start_time', 'end_time', 'location', 'status']);
+  } catch (e) {
+    el.innerHTML = `<div class="empty-state">加载失败: ${e.message}</div>`;
+  }
+}
+
+async function showAddSchedule() {
+  const sid = getStudentId();
+  const title = prompt('日程标题：');
+  if (!title) return;
+  const type = prompt('类型 (course/exam/task/personal)：', 'course') || 'course';
+  const start = prompt('开始时间 (如 2026-07-15 09:00:00)：') || new Date().toISOString().slice(0, 16).replace('T', ' ') + ':00';
+  try {
+    const r = await fetch(`${API}/student/schedules`, {
+      method: 'POST',
+      headers: getAuthHeaders(),
+      body: JSON.stringify({ student_id: sid, title, schedule_type: type, start_time: start })
+    });
+    if (r.status === 401 || r.status === 403) {
+      toast('认证失败，请检查 API Token', 'error');
+      return;
+    }
+    toast('日程已添加');
+    loadSchedules();
+  } catch (e) {
+    toast('添加失败', 'error');
+  }
+}
+
+// ========== Applications ==========
+async function loadApplications() {
+  const sid = getStudentId();
+  const el = document.getElementById('app-data');
+  try {
+    const r = await fetch(`${API}/student/applications?student_id=${sid}`, { headers: getAuthHeaders() });
+    const data = await r.json();
+    if (data.length === 0) {
+      el.innerHTML = '<div class="empty-state"><div class="icon">🎓</div>暂无申请记录</div>';
+      return;
+    }
+    // 使用 renderers 映射为 stage 列渲染彩色标签
+    const stageColors = { document_prep: 'tag-medium', submitted: 'tag-medium', under_review: 'tag-medium', offer_received: 'tag-low', visa_processing: 'tag-low', enrolled: 'tag-low' };
+    renderTable(el, data, ['id', 'target_school', 'target_major', 'stage', 'deadline', 'status', 'update_time'], {
+      stage: (val) => `<span class="tag ${stageColors[val] || 'tag-medium'}">${escapeHtml(val)}</span>`,
+    });
+  } catch (e) {
+    el.innerHTML = `<div class="empty-state">加载失败: ${e.message}</div>`;
+  }
+}
+
+// ========== Feedback ==========
+async function loadFeedback() {
+  const sid = getStudentId();
+  const el = document.getElementById('fb-data');
+  try {
+    const r = await fetch(`${API}/student/feedback-tickets?student_id=${sid}`, { headers: getAuthHeaders() });
+    const data = await r.json();
+    if (data.length === 0) {
+      el.innerHTML = '<div class="empty-state"><div class="icon">📝</div>暂无工单，点击提交</div>';
+      return;
+    }
+    // 为 priority 和 status 渲染彩色标签，展示 resolved_time
+    const priorityColors = { low: 'tag-low', medium: 'tag-medium', high: 'tag-high', urgent: 'tag-high' };
+    const statusColors = { pending: 'tag-medium', processing: 'tag-medium', resolved: 'tag-low', closed: 'tag-low' };
+    renderTable(el, data, ['id', 'ticket_type', 'title', 'status', 'priority', 'satisfaction', 'resolved_time', 'create_time'], {
+      status: (val) => `<span class="tag ${statusColors[val] || 'tag-medium'}">${escapeHtml(val)}</span>`,
+      priority: (val) => `<span class="tag ${priorityColors[val] || 'tag-medium'}">${escapeHtml(val)}</span>`,
+    });
+  } catch (e) {
+    el.innerHTML = `<div class="empty-state">加载失败: ${e.message}</div>`;
+  }
+}
+
+async function showAddFeedback() {
+  const sid = getStudentId();
+  const content = prompt('反馈内容：');
+  if (!content) return;
+  const type = prompt('类型 (complaint/suggestion/consult)：', 'complaint') || 'complaint';
+  try {
+    const r = await fetch(`${API}/student/feedback-tickets`, {
+      method: 'POST',
+      headers: getAuthHeaders(),
+      body: JSON.stringify({ student_id: sid, content, ticket_type: type })
+    });
+    if (r.status === 401 || r.status === 403) {
+      toast('认证失败，请检查 API Token', 'error');
+      return;
+    }
+    toast('工单已提交');
+    loadFeedback();
+  } catch (e) {
+    toast('提交失败', 'error');
+  }
+}
+
+// ========== Psych ==========
+async function loadPsych() {
+  const sid = getStudentId();
+  const el = document.getElementById('psych-data');
+  try {
+    const [profileRes, alertsRes] = await Promise.all([
+      fetch(`${API}/student/psych/profile?student_id=${sid}`, { headers: getAuthHeaders() }),
+      fetch(`${API}/student/psych/alerts?student_id=${sid}&limit=10`, { headers: getAuthHeaders() })
+    ]);
+    const profile = await profileRes.json();
+    const alerts = await alertsRes.json();
+
+    const riskColors = { low: 'tag-low', medium: 'tag-medium', high: 'tag-high' };
+    let html = '<div class="n2q-result"><h4>🧠 心理画像</h4>';
+    html += `<p>情绪标签: <strong>${escapeHtml(String(profile.latest_emotion_tag ?? '无'))}</strong></p>`;
+    html += `<p>情绪分值: <strong>${profile.emotion_score ?? '-'} / 100</strong></p>`;
+    html += `<p>风险等级: <span class="tag ${riskColors[profile.risk_level] || 'tag-medium'}">${escapeHtml(profile.risk_level)}</span></p>`;
+    html += `<p>最近交互: ${escapeHtml(String(profile.last_interaction_time ?? '无'))}</p>`;
+    if (profile.emotion_history && profile.emotion_history.length > 0) {
+      html += '<p style="margin-top:8px;color:#a78bfa">📈 情绪变化历史：</p>';
+      profile.emotion_history.slice(-10).forEach(h => {
+        const tagClass = h.risk === 'high' ? 'tag-high' : (h.risk === 'medium' ? 'tag-medium' : 'tag-low');
+        html += `<p style="font-size:12px;color:#a0a0b8;margin:2px 0">
+          ${escapeHtml(h.date)} — ${escapeHtml(h.tag || '-')} (${h.score ?? '-'}分)
+          <span class="tag ${tagClass}" style="font-size:10px">${escapeHtml(h.risk)}</span>
+        </p>`;
+      });
+    }
+    html += '</div>';
+
+    if (alerts.length > 0) {
+      html += '<div class="n2q-result" style="margin-top:12px"><h4>⚠️ 心理预警</h4>';
+      html += '<table class="data-table"><tr><th>ID</th><th>风险</th><th>标签</th><th>状态</th><th>原因</th><th>时间</th></tr>';
+      alerts.forEach(a => {
+        const tagsHtml = a.risk_tags && a.risk_tags.length > 0
+          ? a.risk_tags.map(t => `<span class="tag tag-high" style="margin:1px">${escapeHtml(t)}</span>`).join('')
+          : '<span style="color:#606080">-</span>';
+        html += `<tr>
+          <td>${a.id}</td>
+          <td><span class="tag ${riskColors[a.risk_level] || 'tag-medium'}">${escapeHtml(a.risk_level)}</span></td>
+          <td>${tagsHtml}</td>
+          <td>${escapeHtml(a.status)}</td>
+          <td>${escapeHtml((a.trigger_reason || '').substring(0, 60))}</td>
+          <td>${escapeHtml(String(a.create_time ?? ''))}</td>
+        </tr>`;
+      });
+      html += '</table></div>';
+    }
+    el.innerHTML = html || '<div class="empty-state"><div class="icon">🧠</div>暂无心理数据</div>';
+  } catch (e) {
+    el.innerHTML = `<div class="empty-state">加载失败: ${e.message}</div>`;
+  }
+}
+
+// ========== Casual Chat ==========
+function casualReply(text, emo) {
+  const greetings = ['你好','嗨','hi','hello','早上好','下午好','晚上好','在吗','在不在'];
+  const howAreYou = ['怎么样','如何','还好吗','好吗','最近','今天'];
+  const thanks = ['谢谢','感谢','多谢','辛苦'];
+  const bye = ['拜拜','再见','bye','晚安','回头见'];
+
+  const t = text.toLowerCase();
+
+  // 高危情绪优先响应
+  if (emo && emo.tag === '高危') {
+    return '我注意到你的情绪似乎不太好。如果你正在经历困难，请不要独自承受——可以联系你的班主任或心理咨询师，他们随时愿意帮助你。';
+  }
+  if (emo && emo.tag === '焦虑' && emo.score < 40) {
+    return '听起来你最近压力挺大的。留学路上确实不容易，需要聊聊或者帮你梳理一下最近的安排吗？';
+  }
+
+  if (greetings.some(w => t.includes(w))) {
+    const gs = ['你好！有什么可以帮你的？','嗨！今天想了解什么？留学申请、课程安排还是签证进度？','你好呀！我是你的留学助手，随时为你服务~'];
+    return gs[Math.floor(Math.random() * gs.length)];
+  }
+  if (howAreYou.some(w => t.includes(w))) {
+    const hs = ['我很好，谢谢关心！你今天想查点什么吗？比如申请进度或者近期日程？','一切正常！如果你想了解留学相关的问题，随时问我~'];
+    return hs[Math.floor(Math.random() * hs.length)];
+  }
+  if (thanks.some(w => t.includes(w))) {
+    return '不客气！还有什么可以帮你的吗？';
+  }
+  if (bye.some(w => t.includes(w))) {
+    return '再见！祝你一切顺利，有问题随时找我~';
+  }
+  const fallbacks = [
+    '收到！如果你想查询留学相关信息，可以试试：\n"查看我的申请进度"\n"查询最近对话"\n"我的日程安排"\n"查询DDL"',
+    '明白了。需要我帮你查什么吗？比如申请进度、心理状态、课程安排都可以问我。',
+    '好的，我记下了。有什么数据需要我帮你查的吗？'
+  ];
+  return fallbacks[Math.floor(Math.random() * fallbacks.length)];
+}
+
+// ========== Helpers ==========
+function escapeHtml(text) {
+  const div = document.createElement('div');
+  div.textContent = text;
+  return div.innerHTML;
+}
+
+/**
+ * 渲染数据表格
+ *
+ * @param el         容器元素
+ * @param data       数据数组
+ * @param columns    要显示的列名列表
+ * @param renderers  列渲染器映射 { columnName: (value, row) => htmlString }
+ *                   renderer 返回的 HTML 不会被转义，用于渲染标签、链接等。
+ *                   普通文本列仍会自动转义。
+ */
+function renderTable(el, data, columns, renderers) {
+  renderers = renderers || {};
+  let html = '<table class="data-table"><tr>';
+  columns.forEach(c => html += `<th>${escapeHtml(c)}</th>`);
+  html += '</tr>';
+  data.forEach(row => {
+    html += '<tr>';
+    columns.forEach(c => {
+      const rawVal = row[c];
+      if (renderers[c]) {
+        // 自定义渲染器 — 返回的 HTML 原样插入（不转义）
+        html += `<td>${renderers[c](rawVal, row)}</td>`;
+      } else {
+        // 普通文本 — 转义后插入
+        html += `<td>${escapeHtml(String(rawVal ?? ''))}</td>`;
+      }
+    });
+    html += '</tr>';
+  });
+  html += '</table>';
+  el.innerHTML = html;
+}
+</script>
+</body>
+</html>
