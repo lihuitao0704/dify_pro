@@ -11,7 +11,7 @@
   如后续 QPS 升高，可无缝替换为连接池（如 DBUtils.PooledDB）而不影响上层。
 """
 
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, Set
 
 import pymysql
 from pymysql.cursors import DictCursor
@@ -46,6 +46,39 @@ def fetch_table_names() -> List[str]:
                 (DB_CONFIG["database"],),
             )
             return [row["TABLE_NAME"] for row in cursor.fetchall()]
+    finally:
+        conn.close()
+
+
+def fetch_db_schema() -> Dict[str, Set[str]]:
+    """
+    从 information_schema 查询当前数据库的真实表-列结构。
+
+    返回 {table_name: {col_name, ...}, ...}，全部 lowercase。
+
+    用于 SQL 语义校验：对比真实库结构，可发现"schema 文本描述
+    与真实库不一致"的漂移问题（如列在 schema 文本中存在但库中实际不存在）。
+
+    Raises:
+        pymysql.MySQLError: 查询失败时向上抛。
+    """
+    conn = get_connection()
+    try:
+        with conn.cursor() as cursor:
+            cursor.execute(
+                """
+                SELECT TABLE_NAME, COLUMN_NAME
+                FROM information_schema.COLUMNS
+                WHERE TABLE_SCHEMA = %s
+                """,
+                (DB_CONFIG["database"],),
+            )
+            tables: Dict[str, Set[str]] = {}
+            for row in cursor.fetchall():
+                tbl = row["TABLE_NAME"].lower()
+                col = row["COLUMN_NAME"].lower()
+                tables.setdefault(tbl, set()).add(col)
+            return tables
     finally:
         conn.close()
 

@@ -317,6 +317,7 @@ def dify_list_deadlines(
     """
     deadlines = student_service.list_deadlines(db, student_id, upcoming_days)
     return {
+        "success": True,
         "count": len(deadlines),
         "items": [
             {
@@ -417,8 +418,9 @@ def dify_progress_lookup(
     """
     student = student_service.get_student(db, student_id)
     if not student:
-        return {"found": False, "error": f"学生 {student_id} 不存在"}
+        return {"success": False, "found": False, "error": f"学生 {student_id} 不存在"}
     return {
+        "success": True,
         "found": True,
         "student": {"id": student.id, "name": student.name, "grade": student.grade},
         "application_stages": [
@@ -470,8 +472,9 @@ def dify_overseas_context(
     """
     student = student_service.get_student(db, student_id)
     if not student:
-        return {"found": False, "error": f"学生 {student_id} 不存在"}
+        return {"success": False, "found": False, "error": f"学生 {student_id} 不存在"}
     return {
+        "success": True,
         "found": True,
         "country": student.target_country or "未设置",
         "name": student.name,

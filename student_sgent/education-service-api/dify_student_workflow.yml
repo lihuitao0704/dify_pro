@@ -54,11 +54,10 @@ workflow:
         - local_file
         - remote_url
       number_limits: 3
-    opening_statement: '👋 你好！我是你的专属学习助手。可以帮你：
-
+    opening_statement: |-
+      👋 你好！我是你的专属学习助手。可以帮你：
       📝 请假申请  🧠 情绪关怀  📣 投诉建议
-
-      📚 学业DDL查询  📈 申请进度  🌏 海外生活  🎓 增值项目'
+      📚 学业DDL查询  📈 申请进度  🌏 海外生活  🎓 增值项目
     retriever_resource:
       enabled: false
     sensitive_word_avoidance:
@@ -155,7 +154,11 @@ workflow:
         title: 解析session_id
         selected: false
         code_language: python3
-        code: "import json\ndef main(init_session_body: str) -> dict:\n    data = json.loads(init_session_body or \"{}\")\n    return {\"session_id\": data.get(\"session_id\", 0)}"
+        code: |-
+          import json
+          def main(init_session_body: str) -> dict:
+              data = json.loads(init_session_body or "{}")
+              return {"session_id": data.get("session_id", 0)}
         variables:
         - variable: init_session_body
           value_selector:
@@ -190,24 +193,17 @@ workflow:
         prompt_template:
         - id: 7737950b-385e-47d5-93a8-17deaeee4465
           role: system
-          text: '你是一个学生助手意图分类器。根据用户输入，只输出意图代码：
-
+          text: |-
+            你是一个学生助手意图分类器。根据用户输入，只输出意图代码：
             leave_request — 请假
-
             emotion_chat — 情绪关怀
-
             feedback_submit — 投诉建议
-
             academic_query — 学业查询(DDL/论文/考试)
-
             progress_query — 申请进度
-
             overseas_life — 海外生活
-
             upselling — 增值转化
 
-
-            只输出意图代码，不要输出其他内容。'
+            只输出意图代码，不要输出其他内容。
         context:
           enabled: false
           variable_selector: []
@@ -284,11 +280,10 @@ workflow:
         prompt_template:
         - id: 3fdf5c00-de52-4409-80ad-cc0e3e1f94f2
           role: system
-          text: '你是学生助手。请假API返回了JSON结果：{{#1000000000005.body#}}
-
+          text: |-
+            你是学生助手。请假API返回了JSON结果：{{#1000000000005.body#}}
             如果success为true，告诉学生申请已提交等待审批。
-
-            如果success为false，解释原因并安抚学生。'
+            如果success为false，解释原因并安抚学生。
         context:
           enabled: true
           variable_selector:
@@ -367,11 +362,10 @@ workflow:
         prompt_template:
         - id: 89d46bbc-76a3-4856-9aa5-eef80f569262
           role: system
-          text: '你是温暖的心理辅导助手。请先倾听学生的倾诉。
-
+          text: |-
+            你是温暖的心理辅导助手。请先倾听学生的倾诉。
             情绪记录API返回：{{#1000000000007.body#}}
-
-            如果alert_triggered为true，特别安抚并建议联系心理老师。'
+            如果alert_triggered为true，特别安抚并建议联系心理老师。
         context:
           enabled: true
           variable_selector:
@@ -450,11 +444,10 @@ workflow:
         prompt_template:
         - id: 5fbbe4d8-efdc-431f-aec4-8ff1d13467be
           role: system
-          text: '投诉工单API返回：{{#1000000000009.body#}}
-
+          text: |-
+            投诉工单API返回：{{#1000000000009.body#}}
             success为true时告知工单ID和SLA截止时间。
-
-            success为false时致歉并请稍后重试。'
+            success为false时致歉并请稍后重试。
         context:
           enabled: true
           variable_selector:
@@ -660,22 +653,517 @@ workflow:
         type: answer
         title: 回复
         selected: false
-        answer: '已收到你的请求，后端正在处理。
-
+        answer: |-
+          已收到你的请求，后端正在处理。
 
           👉 导入后请将本节点的输出内容改为对应场景的变量：
-
           - 请假分支：{{#1000000000006.text#}}
-
           - 情绪分支：{{#1000000000008.text#}}
-
           - 工单分支：{{#1000000000010.text#}}
-
           - DDL/进度/海外/营销分支：{{#1000000000015.body#}}
 
-
-          或使用变量聚合器统一输出。'
+          或使用变量聚合器统一输出。
         variables: []
+    - id: '1000000000100'
+      type: custom
+      position:
+        x: 80
+        y: 600
+      positionAbsolute:
+        x: 80
+        y: 600
+      selected: false
+      sourcePosition: right
+      targetPosition: left
+      height: 150
+      width: 241
+      data:
+        type: code
+        title: 提取leave_success
+        selected: false
+        code_language: python3
+        code: |-
+          def main(body: dict) -> dict:
+              return {"is_http_ok": 1 if body.get("success") else 0}
+        variables:
+        - variable: body
+          value_selector:
+          - '1000000000005'
+          - body
+        outputs:
+        - name: is_http_ok
+          type: number
+    - id: '1000000000101'
+      type: custom
+      position:
+        x: 80
+        y: 770
+      positionAbsolute:
+        x: 80
+        y: 770
+      selected: false
+      sourcePosition: right
+      targetPosition: left
+      height: 168
+      width: 241
+      data:
+        type: if-else
+        title: 判断leave成功
+        selected: false
+        cases:
+        - case_id: 'true'
+          logical_operator: and
+          conditions:
+          - variable_selector:
+            - '1000000000100'
+            - is_http_ok
+            comparison_operator: '='
+            value: '1'
+        - case_id: 'false'
+          logical_operator: and
+          conditions: []
+    - id: '1000000000102'
+      type: custom
+      position:
+        x: 280
+        y: 950
+      positionAbsolute:
+        x: 280
+        y: 950
+      selected: false
+      sourcePosition: right
+      targetPosition: left
+      height: 110
+      width: 241
+      data:
+        type: llm
+        title: leave失败回复
+        selected: false
+        model:
+          provider: langgenius/tongyi/tongyi
+          name: qwen3.7-max
+          mode: chat
+          completion_params:
+            temperature: 0.7
+        prompt_template:
+        - id: fail-leave-001
+          role: system
+          text: API调用失败，body内容：{{#1000000000005.body#}}。请向学生致歉，告知暂时无法完成操作，建议稍后重试。
+        context:
+          enabled: true
+          variable_selector:
+          - '1000000000005'
+          - body
+        memory:
+          query_prompt_template: '{{#sys.query#}}'
+          role_prefix:
+            user: 学生
+            assistant: 助手
+          window:
+            enabled: false
+            size: 50
+        vision:
+          enabled: false
+    - id: '1000000000110'
+      type: custom
+      position:
+        x: 280
+        y: 600
+      positionAbsolute:
+        x: 280
+        y: 600
+      selected: false
+      sourcePosition: right
+      targetPosition: left
+      height: 150
+      width: 241
+      data:
+        type: code
+        title: 提取emotion_success
+        selected: false
+        code_language: python3
+        code: |-
+          def main(body: dict) -> dict:
+              return {"is_http_ok": 1 if body.get("success") else 0}
+        variables:
+        - variable: body
+          value_selector:
+          - '1000000000007'
+          - body
+        outputs:
+        - name: is_http_ok
+          type: number
+    - id: '1000000000111'
+      type: custom
+      position:
+        x: 280
+        y: 770
+      positionAbsolute:
+        x: 280
+        y: 770
+      selected: false
+      sourcePosition: right
+      targetPosition: left
+      height: 168
+      width: 241
+      data:
+        type: if-else
+        title: 判断emotion成功
+        selected: false
+        cases:
+        - case_id: 'true'
+          logical_operator: and
+          conditions:
+          - variable_selector:
+            - '1000000000110'
+            - is_http_ok
+            comparison_operator: '='
+            value: '1'
+        - case_id: 'false'
+          logical_operator: and
+          conditions: []
+    - id: '1000000000112'
+      type: custom
+      position:
+        x: 480
+        y: 950
+      positionAbsolute:
+        x: 480
+        y: 950
+      selected: false
+      sourcePosition: right
+      targetPosition: left
+      height: 110
+      width: 241
+      data:
+        type: llm
+        title: emotion失败回复
+        selected: false
+        model:
+          provider: langgenius/tongyi/tongyi
+          name: qwen3.7-max
+          mode: chat
+          completion_params:
+            temperature: 0.7
+        prompt_template:
+        - id: fail-emotion-001
+          role: system
+          text: API调用失败，body内容：{{#1000000000007.body#}}。请向学生致歉，告知暂时无法完成操作，建议稍后重试。
+        context:
+          enabled: true
+          variable_selector:
+          - '1000000000007'
+          - body
+        memory:
+          query_prompt_template: '{{#sys.query#}}'
+          role_prefix:
+            user: 学生
+            assistant: 助手
+          window:
+            enabled: false
+            size: 50
+        vision:
+          enabled: false
+    - id: '1000000000120'
+      type: custom
+      position:
+        x: 480
+        y: 600
+      positionAbsolute:
+        x: 480
+        y: 600
+      selected: false
+      sourcePosition: right
+      targetPosition: left
+      height: 150
+      width: 241
+      data:
+        type: code
+        title: 提取feedback_success
+        selected: false
+        code_language: python3
+        code: |-
+          def main(body: dict) -> dict:
+              return {"is_http_ok": 1 if body.get("success") else 0}
+        variables:
+        - variable: body
+          value_selector:
+          - '1000000000009'
+          - body
+        outputs:
+        - name: is_http_ok
+          type: number
+    - id: '1000000000121'
+      type: custom
+      position:
+        x: 480
+        y: 770
+      positionAbsolute:
+        x: 480
+        y: 770
+      selected: false
+      sourcePosition: right
+      targetPosition: left
+      height: 168
+      width: 241
+      data:
+        type: if-else
+        title: 判断feedback成功
+        selected: false
+        cases:
+        - case_id: 'true'
+          logical_operator: and
+          conditions:
+          - variable_selector:
+            - '1000000000120'
+            - is_http_ok
+            comparison_operator: '='
+            value: '1'
+        - case_id: 'false'
+          logical_operator: and
+          conditions: []
+    - id: '1000000000122'
+      type: custom
+      position:
+        x: 680
+        y: 950
+      positionAbsolute:
+        x: 680
+        y: 950
+      selected: false
+      sourcePosition: right
+      targetPosition: left
+      height: 110
+      width: 241
+      data:
+        type: llm
+        title: feedback失败回复
+        selected: false
+        model:
+          provider: langgenius/tongyi/tongyi
+          name: qwen3.7-max
+          mode: chat
+          completion_params:
+            temperature: 0.7
+        prompt_template:
+        - id: fail-feedback-001
+          role: system
+          text: API调用失败，body内容：{{#1000000000009.body#}}。请向学生致歉，告知暂时无法完成操作，建议稍后重试。
+        context:
+          enabled: true
+          variable_selector:
+          - '1000000000009'
+          - body
+        memory:
+          query_prompt_template: '{{#sys.query#}}'
+          role_prefix:
+            user: 学生
+            assistant: 助手
+          window:
+            enabled: false
+            size: 50
+        vision:
+          enabled: false
+    - id: '1000000000130'
+      type: custom
+      position:
+        x: 680
+        y: 600
+      positionAbsolute:
+        x: 680
+        y: 600
+      selected: false
+      sourcePosition: right
+      targetPosition: left
+      height: 150
+      width: 241
+      data:
+        type: code
+        title: 提取ddl_success
+        selected: false
+        code_language: python3
+        code: |-
+          def main(body: dict) -> dict:
+              return {"is_http_ok": 1 if body.get("success") else 0}
+        variables:
+        - variable: body
+          value_selector:
+          - '1000000000011'
+          - body
+        outputs:
+        - name: is_http_ok
+          type: number
+    - id: '1000000000131'
+      type: custom
+      position:
+        x: 680
+        y: 770
+      positionAbsolute:
+        x: 680
+        y: 770
+      selected: false
+      sourcePosition: right
+      targetPosition: left
+      height: 168
+      width: 241
+      data:
+        type: if-else
+        title: 判断ddl成功
+        selected: false
+        cases:
+        - case_id: 'true'
+          logical_operator: and
+          conditions:
+          - variable_selector:
+            - '1000000000130'
+            - is_http_ok
+            comparison_operator: '='
+            value: '1'
+        - case_id: 'false'
+          logical_operator: and
+          conditions: []
+    - id: '1000000000132'
+      type: custom
+      position:
+        x: 880
+        y: 950
+      positionAbsolute:
+        x: 880
+        y: 950
+      selected: false
+      sourcePosition: right
+      targetPosition: left
+      height: 110
+      width: 241
+      data:
+        type: llm
+        title: ddl失败回复
+        selected: false
+        model:
+          provider: langgenius/tongyi/tongyi
+          name: qwen3.7-max
+          mode: chat
+          completion_params:
+            temperature: 0.7
+        prompt_template:
+        - id: fail-ddl-001
+          role: system
+          text: API调用失败，body内容：{{#1000000000011.body#}}。请向学生致歉，告知暂时无法完成操作，建议稍后重试。
+        context:
+          enabled: true
+          variable_selector:
+          - '1000000000011'
+          - body
+        memory:
+          query_prompt_template: '{{#sys.query#}}'
+          role_prefix:
+            user: 学生
+            assistant: 助手
+          window:
+            enabled: false
+            size: 50
+        vision:
+          enabled: false
+    - id: '1000000000140'
+      type: custom
+      position:
+        x: 1280
+        y: 600
+      positionAbsolute:
+        x: 1280
+        y: 600
+      selected: false
+      sourcePosition: right
+      targetPosition: left
+      height: 150
+      width: 241
+      data:
+        type: code
+        title: 提取marketing_success
+        selected: false
+        code_language: python3
+        code: |-
+          def main(body: dict) -> dict:
+              return {"is_http_ok": 1 if body.get("success") else 0}
+        variables:
+        - variable: body
+          value_selector:
+          - '1000000000014'
+          - body
+        outputs:
+        - name: is_http_ok
+          type: number
+    - id: '1000000000141'
+      type: custom
+      position:
+        x: 1280
+        y: 770
+      positionAbsolute:
+        x: 1280
+        y: 770
+      selected: false
+      sourcePosition: right
+      targetPosition: left
+      height: 168
+      width: 241
+      data:
+        type: if-else
+        title: 判断marketing成功
+        selected: false
+        cases:
+        - case_id: 'true'
+          logical_operator: and
+          conditions:
+          - variable_selector:
+            - '1000000000140'
+            - is_http_ok
+            comparison_operator: '='
+            value: '1'
+        - case_id: 'false'
+          logical_operator: and
+          conditions: []
+    - id: '1000000000142'
+      type: custom
+      position:
+        x: 1480
+        y: 950
+      positionAbsolute:
+        x: 1480
+        y: 950
+      selected: false
+      sourcePosition: right
+      targetPosition: left
+      height: 110
+      width: 241
+      data:
+        type: llm
+        title: marketing失败回复
+        selected: false
+        model:
+          provider: langgenius/tongyi/tongyi
+          name: qwen3.7-max
+          mode: chat
+          completion_params:
+            temperature: 0.7
+        prompt_template:
+        - id: fail-marketing-001
+          role: system
+          text: API调用失败，body内容：{{#1000000000014.body#}}。请向学生致歉，告知暂时无法完成操作，建议稍后重试。
+        context:
+          enabled: true
+          variable_selector:
+          - '1000000000014'
+          - body
+        memory:
+          query_prompt_template: '{{#sys.query#}}'
+          role_prefix:
+            user: 学生
+            assistant: 助手
+          window:
+            enabled: false
+            size: 50
+        vision:
+          enabled: false
     edges:
     - id: 1000000000001-source-1000000000002-target
       source: '1000000000001'
@@ -725,18 +1213,6 @@ workflow:
         isInLoop: false
         sourceType: llm
         targetType: http-request
-    - id: 1000000000005-source-1000000000006-target
-      source: '1000000000005'
-      target: '1000000000006'
-      sourceHandle: source
-      targetHandle: target
-      type: custom
-      selected: false
-      zIndex: 0
-      data:
-        isInLoop: false
-        sourceType: http-request
-        targetType: llm
     - id: 1000000000006-source-1000000000015-target
       source: '1000000000006'
       target: '1000000000015'
@@ -773,18 +1249,6 @@ workflow:
         isInLoop: false
         sourceType: llm
         targetType: http-request
-    - id: 1000000000007-source-1000000000008-target
-      source: '1000000000007'
-      target: '1000000000008'
-      sourceHandle: source
-      targetHandle: target
-      type: custom
-      selected: false
-      zIndex: 0
-      data:
-        isInLoop: false
-        sourceType: http-request
-        targetType: llm
     - id: 1000000000008-source-1000000000015-target
       source: '1000000000008'
       target: '1000000000015'
@@ -809,18 +1273,6 @@ workflow:
         isInLoop: false
         sourceType: llm
         targetType: http-request
-    - id: 1000000000009-source-1000000000010-target
-      source: '1000000000009'
-      target: '1000000000010'
-      sourceHandle: source
-      targetHandle: target
-      type: custom
-      selected: false
-      zIndex: 0
-      data:
-        isInLoop: false
-        sourceType: http-request
-        targetType: llm
     - id: 1000000000010-source-1000000000015-target
       source: '1000000000010'
       target: '1000000000015'
@@ -844,18 +1296,6 @@ workflow:
       data:
         isInLoop: false
         sourceType: llm
-        targetType: http-request
-    - id: 1000000000011-source-1000000000015-target
-      source: '1000000000011'
-      target: '1000000000015'
-      sourceHandle: source
-      targetHandle: target
-      type: custom
-      selected: false
-      zIndex: 0
-      data:
-        isInLoop: false
-        sourceType: http-request
         targetType: http-request
     - id: 1000000000004-source-1000000000012-target
       source: '1000000000004'
@@ -917,9 +1357,9 @@ workflow:
         isInLoop: false
         sourceType: llm
         targetType: http-request
-    - id: 1000000000014-source-1000000000015-target
-      source: '1000000000014'
-      target: '1000000000015'
+    - id: 1000000000005-source-1000000000100-target
+      source: '1000000000005'
+      target: '1000000000100'
       sourceHandle: source
       targetHandle: target
       type: custom
@@ -928,6 +1368,294 @@ workflow:
       data:
         isInLoop: false
         sourceType: http-request
+        targetType: code
+    - id: 1000000000100-source-1000000000101-target
+      source: '1000000000100'
+      target: '1000000000101'
+      sourceHandle: source
+      targetHandle: target
+      type: custom
+      selected: false
+      zIndex: 0
+      data:
+        isInLoop: false
+        sourceType: code
+        targetType: if-else
+    - id: 1000000000101-true-source-1000000000006-target
+      source: '1000000000101'
+      target: '1000000000006'
+      sourceHandle: 'true'
+      targetHandle: target
+      type: custom
+      selected: false
+      zIndex: 0
+      data:
+        isInLoop: false
+        sourceType: if-else
+        targetType: llm
+    - id: 1000000000101-false-source-1000000000102-target
+      source: '1000000000101'
+      target: '1000000000102'
+      sourceHandle: 'false'
+      targetHandle: target
+      type: custom
+      selected: false
+      zIndex: 0
+      data:
+        isInLoop: false
+        sourceType: if-else
+        targetType: llm
+    - id: 1000000000007-source-1000000000110-target
+      source: '1000000000007'
+      target: '1000000000110'
+      sourceHandle: source
+      targetHandle: target
+      type: custom
+      selected: false
+      zIndex: 0
+      data:
+        isInLoop: false
+        sourceType: http-request
+        targetType: code
+    - id: 1000000000110-source-1000000000111-target
+      source: '1000000000110'
+      target: '1000000000111'
+      sourceHandle: source
+      targetHandle: target
+      type: custom
+      selected: false
+      zIndex: 0
+      data:
+        isInLoop: false
+        sourceType: code
+        targetType: if-else
+    - id: 1000000000111-true-source-1000000000008-target
+      source: '1000000000111'
+      target: '1000000000008'
+      sourceHandle: 'true'
+      targetHandle: target
+      type: custom
+      selected: false
+      zIndex: 0
+      data:
+        isInLoop: false
+        sourceType: if-else
+        targetType: llm
+    - id: 1000000000111-false-source-1000000000112-target
+      source: '1000000000111'
+      target: '1000000000112'
+      sourceHandle: 'false'
+      targetHandle: target
+      type: custom
+      selected: false
+      zIndex: 0
+      data:
+        isInLoop: false
+        sourceType: if-else
+        targetType: llm
+    - id: 1000000000009-source-1000000000120-target
+      source: '1000000000009'
+      target: '1000000000120'
+      sourceHandle: source
+      targetHandle: target
+      type: custom
+      selected: false
+      zIndex: 0
+      data:
+        isInLoop: false
+        sourceType: http-request
+        targetType: code
+    - id: 1000000000120-source-1000000000121-target
+      source: '1000000000120'
+      target: '1000000000121'
+      sourceHandle: source
+      targetHandle: target
+      type: custom
+      selected: false
+      zIndex: 0
+      data:
+        isInLoop: false
+        sourceType: code
+        targetType: if-else
+    - id: 1000000000121-true-source-1000000000010-target
+      source: '1000000000121'
+      target: '1000000000010'
+      sourceHandle: 'true'
+      targetHandle: target
+      type: custom
+      selected: false
+      zIndex: 0
+      data:
+        isInLoop: false
+        sourceType: if-else
+        targetType: llm
+    - id: 1000000000121-false-source-1000000000122-target
+      source: '1000000000121'
+      target: '1000000000122'
+      sourceHandle: 'false'
+      targetHandle: target
+      type: custom
+      selected: false
+      zIndex: 0
+      data:
+        isInLoop: false
+        sourceType: if-else
+        targetType: llm
+    - id: 1000000000011-source-1000000000130-target
+      source: '1000000000011'
+      target: '1000000000130'
+      sourceHandle: source
+      targetHandle: target
+      type: custom
+      selected: false
+      zIndex: 0
+      data:
+        isInLoop: false
+        sourceType: http-request
+        targetType: code
+    - id: 1000000000130-source-1000000000131-target
+      source: '1000000000130'
+      target: '1000000000131'
+      sourceHandle: source
+      targetHandle: target
+      type: custom
+      selected: false
+      zIndex: 0
+      data:
+        isInLoop: false
+        sourceType: code
+        targetType: if-else
+    - id: 1000000000131-true-source-1000000000015-target
+      source: '1000000000131'
+      target: '1000000000015'
+      sourceHandle: 'true'
+      targetHandle: target
+      type: custom
+      selected: false
+      zIndex: 0
+      data:
+        isInLoop: false
+        sourceType: if-else
+        targetType: http-request
+    - id: 1000000000131-false-source-1000000000132-target
+      source: '1000000000131'
+      target: '1000000000132'
+      sourceHandle: 'false'
+      targetHandle: target
+      type: custom
+      selected: false
+      zIndex: 0
+      data:
+        isInLoop: false
+        sourceType: if-else
+        targetType: llm
+    - id: 1000000000014-source-1000000000140-target
+      source: '1000000000014'
+      target: '1000000000140'
+      sourceHandle: source
+      targetHandle: target
+      type: custom
+      selected: false
+      zIndex: 0
+      data:
+        isInLoop: false
+        sourceType: http-request
+        targetType: code
+    - id: 1000000000140-source-1000000000141-target
+      source: '1000000000140'
+      target: '1000000000141'
+      sourceHandle: source
+      targetHandle: target
+      type: custom
+      selected: false
+      zIndex: 0
+      data:
+        isInLoop: false
+        sourceType: code
+        targetType: if-else
+    - id: 1000000000141-true-source-1000000000015-target
+      source: '1000000000141'
+      target: '1000000000015'
+      sourceHandle: 'true'
+      targetHandle: target
+      type: custom
+      selected: false
+      zIndex: 0
+      data:
+        isInLoop: false
+        sourceType: if-else
+        targetType: http-request
+    - id: 1000000000141-false-source-1000000000142-target
+      source: '1000000000141'
+      target: '1000000000142'
+      sourceHandle: 'false'
+      targetHandle: target
+      type: custom
+      selected: false
+      zIndex: 0
+      data:
+        isInLoop: false
+        sourceType: if-else
+        targetType: llm
+    - id: 1000000000102-source-1000000000015-target
+      source: '1000000000102'
+      target: '1000000000015'
+      sourceHandle: source
+      targetHandle: target
+      type: custom
+      selected: false
+      zIndex: 0
+      data:
+        isInLoop: false
+        sourceType: llm
+        targetType: http-request
+    - id: 1000000000112-source-1000000000015-target
+      source: '1000000000112'
+      target: '1000000000015'
+      sourceHandle: source
+      targetHandle: target
+      type: custom
+      selected: false
+      zIndex: 0
+      data:
+        isInLoop: false
+        sourceType: llm
+        targetType: http-request
+    - id: 1000000000122-source-1000000000015-target
+      source: '1000000000122'
+      target: '1000000000015'
+      sourceHandle: source
+      targetHandle: target
+      type: custom
+      selected: false
+      zIndex: 0
+      data:
+        isInLoop: false
+        sourceType: llm
+        targetType: http-request
+    - id: 1000000000132-source-1000000000015-target
+      source: '1000000000132'
+      target: '1000000000015'
+      sourceHandle: source
+      targetHandle: target
+      type: custom
+      selected: false
+      zIndex: 0
+      data:
+        isInLoop: false
+        sourceType: llm
+        targetType: http-request
+    - id: 1000000000142-source-1000000000015-target
+      source: '1000000000142'
+      target: '1000000000015'
+      sourceHandle: source
+      targetHandle: target
+      type: custom
+      selected: false
+      zIndex: 0
+      data:
+        isInLoop: false
+        sourceType: llm
         targetType: http-request
     viewport:
       x: 0
