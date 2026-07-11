@@ -87,8 +87,9 @@ def process_message(student_id: int, message: str, session_id: str = None) -> di
     else:
         reply = llm.agent_chat(message, context)
 
-    # 如果有情绪预警，追加关怀
-    if emotion_alert:
+    # 只在心理意图时追加关怀话术，避免非心理场景出现不匹配的关怀
+    has_mental = any(i["intent"] == "mental" for i in sorted_intents)
+    if emotion_alert and has_mental:
         reply += emotion_alert
 
     # ── Step 7: 记录对话日志 ──
@@ -614,6 +615,26 @@ def _handle_life_guide(student_id: int, message: str, params: dict, context: lis
 
 def _handle_upgrade(student_id: int, message: str, params: dict, context: list) -> str:
     """处理升学意向"""
+    # 检查是继续聊还是新意向
+    follow_keywords = ["预约", "联系", "报名", "怎么申请", "怎么报", "多少钱", "费用", "多久", "什么时候"]
+    is_followup = any(kw in message for kw in follow_keywords)
+
+    if is_followup:
+        return (
+            "好的！关于升学深造的具体事宜，我可以帮你：\n\n"
+            "📞 预约留学顾问一对一免费咨询\n"
+            "📋 获取详细的项目手册和申请条件\n"
+            "📅 了解最新的申请截止日期\n\n"
+            "你可以直接告诉我你想了解的方向，我会尽快安排顾问联系你～\n"
+            "或者你也可以在快捷入口点「🎓 升学深造」重新发起咨询。"
+        )
+
+    # 检查是否已有意向 → 不重复插入
+    existing = _db.query_one(
+        "SELECT id FROM upgrade_interest WHERE student_id = %s AND DATE(created_at) = CURDATE()",
+        (student_id,)
+    )
+
     student = _db.query_one(
         """SELECT name, education, major, gpa, language_score,
                   target_country, target_degree, target_major
@@ -621,17 +642,18 @@ def _handle_upgrade(student_id: int, message: str, params: dict, context: list) 
         (student_id,)
     )
 
-    # 记录意向
-    _db.insert("upgrade_interest", {
-        "student_id": student_id,
-        "interest_degree": params.get("degree", "硕士咨询"),
-        "interest_country": params.get("country", ""),
-        "interest_major": params.get("major", ""),
-        "detected_source": "对话识别",
-        "detected_at": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
-        "conversation_snippet": message[:300],
-        "conversion_status": "identified",
-    })
+    # 记录意向（当天不重复）
+    if not existing:
+        _db.insert("upgrade_interest", {
+            "student_id": student_id,
+            "interest_degree": params.get("degree", "硕士咨询"),
+            "interest_country": params.get("country", ""),
+            "interest_major": params.get("major", ""),
+            "detected_source": "对话识别",
+            "detected_at": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+            "conversation_snippet": message[:300],
+            "conversion_status": "identified",
+        })
 
     # 生成推荐
     profile = {
