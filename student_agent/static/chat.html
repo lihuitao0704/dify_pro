@@ -345,7 +345,6 @@ async function loadMyDetail(){
 
 // ====== 快捷入口 ======
 document.getElementById("btnDDL").addEventListener("click",function(){quickSend("我最近有什么考试和论文DDL");});
-document.getElementById("btnFeedback").addEventListener("click",function(){quickSend("我要反馈一个问题");});
 document.getElementById("btnProgress").addEventListener("click",function(){quickSend("查一下我的留学申请进度");});
 document.getElementById("btnUpgrade").addEventListener("click",function(){quickSend("我想了解升学深造的项目");});
 function quickSend(msg){document.getElementById("userInput").value=msg;sendMsg();}
