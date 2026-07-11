@@ -199,6 +199,7 @@ body{font-family:"PingFang SC","Microsoft YaHei","Helvetica Neue",sans-serif;bac
       <button class="quick-btn" type="button" id="btnFeedback">💬 我要反馈/投诉</button>
       <button class="quick-btn" type="button" id="btnProgress">📊 申请进度</button>
       <button class="quick-btn" type="button" id="btnUpgrade">🎓 升学深造</button>
+      <button class="quick-btn" type="button" id="btnLife">🌍 海外生活指南</button>
     </div>
   </aside>
   <div class="main">
@@ -347,6 +348,7 @@ async function loadMyDetail(){
 document.getElementById("btnDDL").addEventListener("click",function(){quickSend("我最近有什么考试和论文DDL");});
 document.getElementById("btnProgress").addEventListener("click",function(){quickSend("查一下我的留学申请进度");});
 document.getElementById("btnUpgrade").addEventListener("click",function(){quickSend("我想了解升学深造的项目");});
+document.getElementById("btnLife").addEventListener("click",function(){quickSend("海外生活指南");});
 function quickSend(msg){document.getElementById("userInput").value=msg;sendMsg();}
 
 document.getElementById("sendBtn").addEventListener("click",sendMsg);
