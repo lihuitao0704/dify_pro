@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>学生工作台 · 粤教留学</title>
+  <link rel="stylesheet" href="/portal/css/base.css" />
+  <link rel="stylesheet" href="/portal/css/dashboard.css" />
+</head>
+<body>
+
+<div class="app-layout">
+  <!-- ============ Sidebar ============ -->
+  <aside class="sidebar">
+    <div class="sidebar-brand">
+      <span class="logo">🎓</span>
+      <div><h2>粤教留学</h2><small>学生智能助手</small></div>
+    </div>
+    <nav class="sidebar-nav">
+      <div class="nav-section">功能菜单</div>
+      <a href="#" class="active" data-panel="chat"><span class="icon">💬</span>AI 助手</a>
+      <a href="#" data-panel="profile"><span class="icon">😊</span>我的状态</a>
+      <a href="#" data-panel="schedule"><span class="icon">📅</span>学业日程<span class="badge" id="scheduleBadge" style="display:none">0</span></a>
+      <a href="#" data-panel="tickets"><span class="icon">📋</span>反馈工单</a>
+      <a href="#" data-panel="progress"><span class="icon">📊</span>申请进度</a>
+      <div class="nav-section" style="margin-top:16px">快捷操作</div>
+      <a href="#" data-action="leave"><span class="icon">📝</span>请假申请</a>
+      <a href="#" data-action="feedback"><span class="icon">📮</span>提交反馈</a>
+    </nav>
+    <div class="sidebar-user">
+      <div class="avatar" id="sidebarAvatar">👤</div>
+      <div class="user-info">
+        <div class="user-name" id="sidebarName">--</div>
+        <div class="user-role" id="sidebarRole">学生</div>
+      </div>
+    </div>
+  </aside>
+
+  <!-- ============ Main ============ -->
+  <div class="main-area">
+    <div class="top-bar">
+      <h3 id="topTitle">💬 AI 助手</h3>
+      <div class="top-actions">
+        <button class="quick-action" onclick="Auth.logout()">退出登录</button>
+      </div>
+    </div>
+
+    <div class="content-area">
+      <!-- Chat Panel -->
+      <div class="chat-panel" id="chatPanel">
+        <div class="chat-header">
+          <div class="ai-avatar">🤖</div>
+          <span class="ai-name">小留同学</span>
+          <span class="ai-status">在线</span>
+        </div>
+        <div class="chat-messages" id="chatMessages">
+          <div class="welcome-msg">
+            <h2>👋 你好！我是小留同学</h2>
+            <p>你的留学全程AI助手，有什么需要随时找我～</p>
+            <div class="suggestions">
+              <span class="suggestion" onclick="quickSend('帮我查一下最近的学业日程')">📅 学业日程</span>
+              <span class="suggestion" onclick="quickSend('我要请假')">📝 请假申请</span>
+              <span class="suggestion" onclick="quickSend('查询申请进度')">📊 申请进度</span>
+              <span class="suggestion" onclick="quickSend('新加坡生活指南')">🏠 生活指南</span>
+              <span class="suggestion" onclick="quickSend('最近压力好大')">💙 心理关怀</span>
+              <span class="suggestion" onclick="quickSend('我想了解升学项目')">🎯 升学咨询</span>
+            </div>
+          </div>
+        </div>
+        <div class="chat-input-area">
+          <input id="chatInput" placeholder="输入消息，Enter 发送..." />
+          <button id="sendBtn">发送</button>
+        </div>
+      </div>
+
+      <!-- Info Panel (Right) -->
+      <div class="info-panel" id="infoPanel">
+        <!-- 我的状态 -->
+        <div class="panel-section" id="profileSection">
+          <div class="panel-title">😊 我的状态</div>
+          <div class="card">
+            <div class="card-title">情绪状态</div>
+            <div class="card-value" id="emotionStatus">加载中...</div>
+            <div class="card-desc" id="emotionRisk">--</div>
+          </div>
+          <div class="card">
+            <div class="card-title">升学意向</div>
+            <div class="card-value" style="font-size:16px" id="upgradeStatus">暂无</div>
+          </div>
+        </div>
+
+        <!-- 最近日程 -->
+        <div class="panel-section" id="scheduleSection" style="display:none">
+          <div class="panel-title">📅 近期日程</div>
+          <div id="scheduleList"></div>
+        </div>
+
+        <!-- 工单列表 -->
+        <div class="panel-section" id="ticketSection" style="display:none">
+          <div class="panel-title">📋 最新工单</div>
+          <div id="ticketList"></div>
+        </div>
+
+        <!-- 申请进度 -->
+        <div class="panel-section" id="progressSection" style="display:none">
+          <div class="panel-title">📊 申请进度</div>
+          <div id="progressList"></div>
+        </div>
+
+        <!-- 未读提醒 -->
+        <div class="panel-section" id="reminderSection">
+          <div class="panel-title">🔔 未读提醒 <span class="badge" id="reminderCount" style="display:none;background:var(--danger);color:#fff;font-size:11px;padding:1px 7px;border-radius:10px">0</span></div>
+          <div id="reminderList"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ============ Leave Modal ============ -->
+<div class="modal-overlay" id="leaveModal">
+  <div class="modal">
+    <h3>📝 请假申请</h3>
+    <div class="form-group"><label>请假类型</label><select id="leaveType"><option>事假</option><option>病假</option><option>其他</option></select></div>
+    <div class="form-group"><label>开始时间</label><input type="datetime-local" id="leaveStart" /></div>
+    <div class="form-group"><label>结束时间</label><input type="datetime-local" id="leaveEnd" /></div>
+    <div class="form-group"><label>请假原因</label><textarea id="leaveReason" placeholder="请简要说明请假原因..."></textarea></div>
+    <div class="btn-row">
+      <button class="btn btn-secondary" onclick="closeModal('leaveModal')">取消</button>
+      <button class="btn btn-primary" id="leaveSubmitBtn" onclick="submitLeave()">提交申请</button>
+    </div>
+  </div>
+</div>
+
+<!-- ============ Feedback Modal ============ -->
+<div class="modal-overlay" id="feedbackModal">
+  <div class="modal">
+    <h3>📮 提交反馈</h3>
+    <div class="form-group"><label>分类</label><select id="feedbackCategory"><option>生活服务</option><option>教学质量</option><option>签证办理</option><option>院校申请</option><option>其他</option></select></div>
+    <div class="form-group"><label>标题</label><input type="text" id="feedbackTitle" placeholder="简要描述问题" /></div>
+    <div class="form-group"><label>详细内容</label><textarea id="feedbackContent" placeholder="请详细描述您遇到的问题或建议..."></textarea></div>
+    <div class="form-group"><label>紧急程度</label><select id="feedbackUrgency"><option>normal 普通</option><option>urgent 紧急</option></select></div>
+    <div class="btn-row">
+      <button class="btn btn-secondary" onclick="closeModal('feedbackModal')">取消</button>
+      <button class="btn btn-primary" id="feedbackSubmitBtn" onclick="submitFeedback()">提交</button>
+    </div>
+  </div>
+</div>
+
+<div id="toastContainer"></div>
+
+<script src="/portal/js/utils.js"></script>
+<script src="/portal/js/auth.js"></script>
+<script src="/portal/js/chat.js"></script>
+<script src="/portal/js/student-dashboard.js"></script>
+</body>
+</html>

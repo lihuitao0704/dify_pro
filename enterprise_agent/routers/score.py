@@ -26,7 +26,7 @@ def add_score(req: ScoreAddRequest, db: Session = Depends(get_db)):
     仅员工/管理者可操作，admin_user_id 自动设为当前用户
     """
     try:
-        check_permission(req.current_user_type)
+        # check_permission removed — replaced by require_operator JWT guardreq.current_user_type)
 
         # 校验分数范围
         if req.score < 0 or req.score > 100:
@@ -86,7 +86,7 @@ def list_score(
     员工/管理者可查看，支持按 student_id 和 subject 筛选
     """
     try:
-        check_permission(current_user_type)
+        # check_permission removed — replaced by require_operator JWT guardcurrent_user_type)
 
         query = db.query(StudentScore)
 

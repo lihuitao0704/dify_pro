@@ -10,9 +10,9 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 from fastapi import FastAPI, Request
 from fastapi.responses import JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
-from study_abroad_agent.api import ROUTERS
-from study_abroad_agent.api.dify import router as dify_router
-from study_abroad_agent.utils.logger import logger
+from dify_pro.study_abroad_agent.api import ROUTERS
+from dify_pro.study_abroad_agent.api.dify import router as dify_router
+from dify_pro.study_abroad_agent.utils.logger import logger
 
 
 def create_app() -> FastAPI:

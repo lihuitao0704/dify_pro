@@ -728,17 +728,18 @@ def _handle_upgrade(student_id: int, message: str, params: dict, context: list) 
 # ============================================================
 
 def _handle_nl2sql(student_id: int, message: str, params: dict, context: list) -> str:
-    """NL2SQL：自然语言 → SQL → 执行 → 润色"""
+    """NL2SQL：自然语言 → SQL 安全校验 → 执行 → 润色"""
     from .db import get_schema_description
 
-    # 把 student_id 注入问题
     enriched = message.replace("我", f"学生ID={student_id}")
-
     schema = get_schema_description()
     sql = llm.generate_sql(enriched, schema)
 
     if sql.startswith("--"):
         return "抱歉，这个查询我暂时无法执行～"
+
+    # 安全校验（与 student_sgent 一致的注入防护）
+    _validate_safe_sql(sql)
 
     try:
         data = _db.query(sql)
@@ -746,6 +747,22 @@ def _handle_nl2sql(student_id: int, message: str, params: dict, context: list) -
         return f"查询时遇到了一点问题，请换个方式问问看～"
 
     return llm.polish_answer(message, sql, data)
+
+
+_WRITE_KEYWORDS = ("drop ", "truncate ", "delete ", "update ", "insert ",
+                  "alter ", "create ", "replace ", "grant ", "revoke ")
+
+def _validate_safe_sql(sql: str) -> None:
+    """只允许 SELECT/WITH 查询；否则抛出 ValueError"""
+    cleaned = sql.strip().rstrip(";").strip().lower()
+    if not cleaned.startswith(("select", "with")):
+        for kw in _WRITE_KEYWORDS:
+            if kw in cleaned:
+                raise ValueError(f"禁止执行非只读语句：{kw.strip()}")
+        raise ValueError("仅允许 SELECT / WITH 查询")
+    # 额外：禁止多条语句
+    if ";" in cleaned:
+        raise ValueError("禁止一次执行多条语句")
 
 
 # ============================================================

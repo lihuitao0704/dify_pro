@@ -1,0 +1,240 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>客服工作台 — 粤教留学</title>
+  <link rel="stylesheet" href="css/dashboard.css" />
+</head>
+<body>
+
+<!-- 检查登录 -->
+<script>
+  if (!localStorage.getItem('customer_token')) {
+    location.replace('login.html');
+  }
+</script>
+
+<div id="toastContainer"></div>
+
+<div class="app">
+  <!-- ===================== 左侧导航 ===================== -->
+  <aside class="sidebar">
+    <div class="sidebar-brand">
+      <div class="logo">🎓</div>
+      <div class="brand-text">
+        <strong>粤教留学</strong>
+        <small>客服Agent工作台</small>
+      </div>
+    </div>
+
+    <nav class="sidebar-nav">
+      <div class="nav-section">
+        <div class="nav-section-title">工作台</div>
+        <a class="nav-item active" data-tab="overview">
+          <span class="icon">📊</span> 概览
+        </a>
+        <a class="nav-item" data-tab="chat">
+          <span class="icon">💬</span> AI对话
+          <span class="badge" id="liveStatus" style="display:none">●</span>
+        </a>
+      </div>
+      <div class="nav-section">
+        <div class="nav-section-title">管理</div>
+        <a class="nav-item" data-tab="knowledge">
+          <span class="icon">📚</span> 知识库
+        </a>
+        <a class="nav-item" data-tab="sessions">
+          <span class="icon">🗂</span> 会话管理
+        </a>
+      </div>
+      <div class="nav-section">
+        <div class="nav-section-title">系统</div>
+        <a class="nav-item" id="reloadBtn">
+          <span class="icon">🔄</span> 热身知识库
+        </a>
+        <a class="nav-item" id="logoutBtn">
+          <span class="icon">⏻</span> 退出登录
+        </a>
+      </div>
+    </nav>
+
+    <div class="sidebar-footer">
+      <div class="avatar" id="sidebarAvatar">A</div>
+      <div class="user-info">
+        <strong id="sidebarName">加载中...</strong>
+        <small id="sidebarRole">管理员</small>
+      </div>
+    </div>
+  </aside>
+
+  <!-- ===================== 主内容区 ===================== -->
+  <div class="main">
+    <!-- 顶栏 -->
+    <header class="topbar">
+      <span class="topbar-title" id="topbarTitle">概览</span>
+      <div class="topbar-right">
+        <span class="pill pill-info" id="apiStatus">API: 检测中</span>
+      </div>
+    </header>
+
+    <!-- 内容区 -->
+    <div class="content">
+
+      <!-- ── Tab: 概览 ── -->
+      <div class="tab-panel active" id="tab-overview">
+        <div class="stat-grid">
+          <div class="stat-card">
+            <span class="stat-label">今日对话数</span>
+            <span class="stat-value accent" id="statChats">--</span>
+            <span class="stat-delta">Agent 自动接待</span>
+          </div>
+          <div class="stat-card">
+            <span class="stat-label">知识库文档</span>
+            <span class="stat-value" id="statDocs">--</span>
+            <span class="stat-delta">结构性切片</span>
+          </div>
+          <div class="stat-card">
+            <span class="stat-label">FAQ问答对</span>
+            <span class="stat-value success" id="statFaq">--</span>
+            <span class="stat-delta">秒级响应</span>
+          </div>
+          <div class="stat-card">
+            <span class="stat-label">Chunks 切片</span>
+            <span class="stat-value warning" id="statChunks">--</span>
+            <span class="stat-delta">RAG 检索</span>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-header">
+            <h3 class="card-title">系统状态</h3>
+            <button class="btn btn-secondary btn-sm" onclick="healthCheck()">刷新检测</button>
+          </div>
+          <div class="card-body">
+            <table class="data-table">
+              <thead><tr><th>服务</th><th>地址</th><th>状态</th></tr></thead>
+              <tbody>
+                <tr><td>客服Agent</td><td>:9000</td><td><span class="pill pill-success">运行中</span></td></tr>
+                <tr><td>study_abroad</td><td>:5000</td><td><span class="pill" id="saStatus">检测中</span></td></tr>
+                <tr><td>Event&Lecture</td><td>:8011</td><td><span class="pill" id="evStatus">检测中</span></td></tr>
+                <tr><td>LLM (LongCat)</td><td>—</td><td><span class="pill" id="llmStatus">检测中</span></td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-header"><h3 class="card-title">测试对话</h3></div>
+          <div class="card-body">
+            <p style="margin-top:0;color:var(--text-secondary);font-size:13px;">
+              点击下方按钮快速体验7大场景：
+            </p>
+            <div style="display:flex;gap:8px;flex-wrap:wrap;">
+              <button class="btn btn-secondary btn-sm" onclick="quickSend('你们机构怎么样？')">公司信息</button>
+              <button class="btn btn-secondary btn-sm" onclick="quickSend('有什么德国留学项目？')">业务查询</button>
+              <button class="btn btn-secondary btn-sm" onclick="quickSend('德国APS要求？')">政策</button>
+              <button class="btn btn-secondary btn-sm" onclick="quickSend('本科车辆工程 推荐德国项目')">推荐</button>
+              <button class="btn btn-secondary btn-sm" onclick="quickSend('最近有什么讲座？')">活动</button>
+              <button class="btn btn-secondary btn-sm" onclick="quickSend('申请流程是怎样的？')">FAQ</button>
+              <button class="btn btn-secondary btn-sm" onclick="quickSend('你好呀～')">闲聊</button>
+            </div>
+          </div>
+        </div>
+      </div><!-- /overview -->
+
+      <!-- ── Tab: AI对话 ── -->
+      <div class="tab-panel" id="tab-chat">
+        <div class="chat-layout">
+          <!-- 会话列表 (历史/新建) -->
+          <div class="chat-sessions">
+            <div class="chat-sessions-header">
+              <span>会话</span>
+              <button class="btn btn-secondary btn-sm" id="newConv">+ 新对话</button>
+            </div>
+            <div class="session-list" id="sessionList">
+              <div class="session-item active" data-conv="default">
+                <div class="session-title">默认对话</div>
+                <div class="session-meta">测试会话</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- 消息区 -->
+          <div class="chat-pane">
+            <div class="chat-pane-header" id="chatTitle">默认对话</div>
+            <div class="msg-list" id="msgList">
+              <div class="msg bot">嗨同学你好呀😊 我是粤教留学小助手，有什么想了解的尽管问我！</div>
+            </div>
+            <div class="chat-input">
+              <input id="chatInput" placeholder="输入消息..." onkeydown="if(event.key==='Enter')sendMsg()"/>
+              <button class="btn btn-primary" id="sendBtn" onclick="sendMsg()">发送</button>
+            </div>
+          </div>
+        </div>
+      </div><!-- /chat -->
+
+      <!-- ── Tab: 知识库 ── -->
+      <div class="tab-panel" id="tab-knowledge">
+        <div class="card">
+          <div class="card-header">
+            <h3 class="card-title">知识库概览</h3>
+            <button class="btn btn-primary btn-sm" onclick="reloadKB()">🔄 热身知识库</button>
+          </div>
+          <div class="card-body">
+            <div class="stat-grid" style="margin-bottom:16px">
+              <div class="stat-card">
+                <span class="stat-label">文档数</span>
+                <span class="stat-value" id="kbDocs">--</span>
+              </div>
+              <div class="stat-card">
+                <span class="stat-label">Chunks</span>
+                <span class="stat-value accent" id="kbChunks">--</span>
+              </div>
+              <div class="stat-card">
+                <span class="stat-label">FAQ数</span>
+                <span class="stat-value success" id="kbFaq">--</span>
+              </div>
+              <div class="stat-card">
+                <span class="stat-label">路径</span>
+                <span class="stat-value" style="font-size:13px;word-break:break-all;" id="kbPath">--</span>
+              </div>
+            </div>
+            <div class="card-header" style="padding:0 0 12px;border:none">
+              <h4 class="card-title" style="font-size:14px">检索预览</h4>
+            </div>
+            <div style="display:flex;gap:8px;margin-bottom:12px">
+              <input id="kbSearchInput" placeholder="输入问题测试RAG检索..."
+                     style="flex:1;padding:9px 12px;background:var(--input-bg);border:1px solid var(--border);border-radius:8px;outline:none;font-family:var(--font)"/>
+              <button class="btn btn-primary" onclick="testKBSearch()">检索</button>
+            </div>
+            <div id="kbSearchResults" style="font-size:13px;color:var(--text-secondary);"></div>
+          </div>
+        </div>
+      </div><!-- /knowledge -->
+
+      <!-- ── Tab: 会话管理 ── -->
+      <div class="tab-panel" id="tab-sessions">
+        <div class="card">
+          <div class="card-header">
+            <h3 class="card-title">活跃会话</h3>
+          </div>
+          <div class="card-body">
+            <p style="color:var(--text-secondary);font-size:13px;">
+              客服Agent 当前使用内存级会话管理（重启后清空）。
+              如需持久化请后续对接 Redis 或 MySQL。当前活跃会话数：
+              <strong id="activeSessCount">1</strong>
+            </p>
+            <div id="sessionsTable"></div>
+          </div>
+        </div>
+      </div><!-- /sessions -->
+
+    </div><!-- /content -->
+  </div><!-- /main -->
+</div><!-- /app -->
+
+<script src="js/utils.js"></script>
+<script src="js/dashboard.js"></script>
+</body>
+</html>

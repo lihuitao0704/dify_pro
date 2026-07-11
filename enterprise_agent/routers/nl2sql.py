@@ -155,8 +155,56 @@ def nl2sql_generate(natural_query: str) -> str:
     if any(kw in query for kw in ["账户", "账号", "登录用户"]):
         return "SELECT user_id, username, real_name, user_type, dept_id, phone, email, status FROM account ORDER BY user_id"
 
-    # 无法识别，返回默认查询
+    # 无法识别 → 尝试 LLM 生成
     return None
+
+
+def nl2sql_llm(natural_query: str) -> str:
+    """LLM驱动的NL2SQL（规则引擎无法匹配时的降级方案）"""
+    import os, json
+    try:
+        import requests
+        api_key = os.getenv("LLM_API_KEY", os.getenv("DASHSCOPE_API_KEY", ""))
+        base_url = os.getenv("LLM_BASE_URL", "https://dashscope.aliyuncs.com/compatible-mode/v1")
+        model = os.getenv("LLM_MODEL", "qwen-plus")
+        if not api_key:
+            return None
+
+        schema_lines = []
+        for tname, meta in TABLE_META.items():
+            fields_str = ", ".join(meta["fields"])
+            schema_lines.append(f"  {tname} ({meta['comment']}): {fields_str}")
+        schema_text = "\n".join(schema_lines)
+
+        prompt = f"""你是MySQL专家。根据自然语言生成一条安全的SELECT语句。
+数据库表：
+{schema_text}
+
+规则：
+1. 只生成SELECT语句
+2. 不加分号
+3. 只输出SQL本身
+
+用户查询：{natural_query}"""
+
+        resp = requests.post(
+            f"{base_url}/chat/completions",
+            headers={"Authorization": f"Bearer {api_key}"},
+            json={"model": model, "messages": [{"role":"user","content":prompt}], "temperature":0.1, "max_tokens":500},
+            timeout=15,
+        )
+        data = resp.json()
+        sql = data["choices"][0]["message"]["content"].strip()
+        sql = sql.strip().rstrip(";").strip()
+        # 清理markdown代码块
+        import re
+        sql = re.sub(r'^```(?:sql)?\s*', '', sql, flags=re.IGNORECASE)
+        sql = re.sub(r'\s*```$', '', sql)
+        if sql.upper().startswith("SELECT"):
+            return sql
+        return None
+    except Exception:
+        return None
 
 
 # ==================== POST /api/agent/query/nl2sql ====================
@@ -177,8 +225,10 @@ def query_nl2sql(req: NL2SQLRequest, db: Session = Depends(get_db)):
 
         logger.info(f"NL2SQL: query='{query_text}', user_id={req.current_user_id}")
 
-        # 生成 SQL
+        # 生成 SQL（规则引擎优先，LLM降级）
         sql = nl2sql_generate(query_text)
+        if not sql:
+            sql = nl2sql_llm(query_text)
 
         if not sql:
             return ApiResponse(code=400, msg=f"无法理解您的查询：'{query_text}'。请尝试更清晰的描述，例如「查看所有客户」、「查看待审批的请假」、「查询学生成绩」等。")

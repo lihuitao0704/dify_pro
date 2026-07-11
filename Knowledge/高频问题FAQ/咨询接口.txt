@@ -1,0 +1,16 @@
+自然语言	解析结果	对应操作
+"帮我查一下有哪些课程"	action=query, entity=course	查询所有课程
+"查看课程ID为3的详情"	action=query, entity=course, course_id=3	查课程详情
+"新增一门课程，名称叫德语高级班，类别是语言课程，价格8800"	action=create, entity=course, course_name=德语高级班, ...	新增课程
+"把课程5的价格改成9800"	action=update, entity=course, course_id=5, price=9800	更新课程
+"删除课程8"	action=delete, entity=course, course_id=8	删除课程
+"查看用户列表"	action=query, entity=user	查询待跟进用户
+"查看用户ID为2的信息"	action=query, entity=user, user_id=2	查用户详情
+"新增用户张三，本科，计算机，意向德国"	action=create, entity=user, name=张三, ...	新增用户
+"把用户3的手机号改成13900001111"	action=update, entity=user, user_id=3, phone=...	更新用户
+"删除用户5"	action=delete, entity=user, user_id=5	删除用户
+"查看所有咨询记录"	action=query, entity=consultation	查询咨询记录
+"创建一个咨询记录，用户ID是1，摘要：咨询德国留学"	action=create, entity=consultation, ...	新增咨询
+"把咨询记录3的状态改为已跟进"	action=update, entity=consultation, id=3, status=followed	更新咨询
+"删除咨询记录6"	action=delete, entity=consultation, id=6	删除咨询
+

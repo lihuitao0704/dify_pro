@@ -1,0 +1,30 @@
+/**
+ * portal.css — 首页特有样式 (背景光晕等)
+ */
+.portal-home { overflow-x: hidden; }
+
+/* 背景光晕 */
+.bg-glow {
+  position: fixed; inset: 0; z-index: 0; pointer-events: none;
+}
+.glow-orb {
+  position: absolute; border-radius: 50%;
+  filter: blur(120px); opacity: 0.5;
+}
+.orb-1 {
+  width: 480px; height: 480px;
+  background: radial-gradient(circle, rgba(0,122,255,0.25), transparent 70%);
+  top: -10%; left: -8%;
+}
+.orb-2 {
+  width: 360px; height: 360px;
+  background: radial-gradient(circle, rgba(88,86,214,0.2), transparent 70%);
+  top: 50%; right: -8%;
+}
+.orb-3 {
+  width: 420px; height: 420px;
+  background: radial-gradient(circle, rgba(52,199,89,0.15), transparent 70%);
+  bottom: -10%; left: 30%;
+}
+
+section, .portal-footer { position: relative; z-index: 1; }

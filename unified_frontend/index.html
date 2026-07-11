@@ -1,0 +1,222 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>粤教留学 · 智能助手平台</title>
+  <link rel="stylesheet" href="/portal/css/base.css" />
+  <link rel="stylesheet" href="/portal/css/portal.css" />
+</head>
+<body class="portal-home">
+
+  <!-- 背景光晕 -->
+  <div class="bg-glow">
+    <div class="glow-orb orb-1"></div>
+    <div class="glow-orb orb-2"></div>
+    <div class="glow-orb orb-3"></div>
+  </div>
+
+  <!-- 顶部导航 -->
+  <header class="portal-header" id="siteHeader">
+    <div class="container header-inner">
+      <a href="#home" class="brand">
+        <div class="brand-logo">🎓</div>
+        <span class="brand-name">粤教留学 <small>智能助手</small></span>
+      </a>
+      <nav class="main-nav" id="mainNav">
+        <a href="#chat">AI咨询</a>
+        <a href="#features">功能</a>
+        <a href="#agents">智能体</a>
+      </nav>
+      <div class="header-actions">
+        <button class="btn btn-secondary btn-sm" id="loginBtn">登录</button>
+      </div>
+    </div>
+  </header>
+
+  <main>
+
+    <!-- ============ HERO ============ -->
+    <section class="hero" id="home">
+      <div class="container hero-grid">
+        <div class="hero-content">
+          <p class="eyebrow">海外留学 · 全程领航</p>
+          <h1>让留学规划<br/><span class="accent-text">像航海图一样清晰</span></h1>
+          <p class="hero-lead">
+            粤教留学 AI 智能助手，用数据与经验为你绘制专属航线。选校、文书、申请、签证 — 每一步都有灯塔指引。
+          </p>
+
+          <!-- 嵌入式客服聊天框 -->
+          <div class="hero-chat-card">
+            <div class="chat-mockup">
+              <div class="msg-item bot">
+                <span class="avatar">AI</span>
+                <div class="bubble">嗨同学你好呀 👋 我是粤教留学小助手，有什么想了解的尽管问我！</div>
+              </div>
+              <div class="msg-item user">
+                <div class="bubble">德国留学有什么要求？</div>
+                <span class="avatar">你</span>
+              </div>
+              <div class="msg-item bot">
+                <span class="avatar">AI</span>
+                <div class="bubble">德国留学主要看三个方面 👇<br/>1. APS 学历审核<br/>2. 语言成绩 (德语/英语)<br/>3. 学术背景匹配度<br/><br/>想详细了解哪个方面呢？</div>
+              </div>
+            </div>
+
+            <div class="hero-chat-input" id="publicChatBox">
+              <input id="publicInput" placeholder="输入你的留学问题..." onkeydown="if(event.key==='Enter')publicSend()"/>
+              <button class="btn btn-primary" id="publicSendBtn" onclick="publicSend()">提问</button>
+            </div>
+          </div>
+
+          <div class="hero-stats">
+            <div class="stat"><strong>2000+</strong><span>录取Offer</span></div>
+            <div class="stat"><strong>50+</strong><span>国家/地区</span></div>
+            <div class="stat"><strong>24h</strong><span>AI 随时在线</span></div>
+          </div>
+        </div>
+
+        <div class="hero-visual">
+          <div class="floating-card card-1">
+            <div class="fc-icon">📚</div>
+            <div>
+              <strong>课程推荐</strong>
+              <small>基于你的背景智能匹配</small>
+            </div>
+          </div>
+          <div class="floating-card card-2">
+            <div class="fc-icon">🛂</div>
+            <div>
+              <strong>政策解读</strong>
+              <small>德/新最新签证要求</small>
+            </div>
+          </div>
+          <div class="floating-card card-3">
+            <div class="fc-icon">📝</div>
+            <div>
+              <strong>活动预约</strong>
+              <small>留学讲座一键报名</small>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============ Features ============ -->
+    <section class="section section-alt" id="features">
+      <div class="container">
+        <div class="section-head">
+          <span class="section-tag">核心功能</span>
+          <h2>不只是申请，更是成长合伙人</h2>
+        </div>
+        <div class="feature-grid">
+          <div class="feature-card">
+            <div class="feature-icon">🧭</div>
+            <h3>智能咨询</h3>
+            <p>7×24 小时 AI 客服随时解答公司背景、留学政策、课程推荐等高频问题。</p>
+          </div>
+          <div class="feature-card">
+            <div class="feature-icon">🎯</div>
+            <h3>个性推荐</h3>
+            <p>基于学历、GPA、意向国家智能推荐最匹配的留学方案与背景提升项目。</p>
+          </div>
+          <div class="feature-card">
+            <div class="feature-icon">📊</div>
+            <h3>全程可视</h3>
+            <p>申请进度、材料清单、截止日期实时同步，每一步都心中有数。</p>
+          </div>
+          <div class="feature-card">
+            <div class="feature-icon">💬</div>
+            <h3>全程护航</h3>
+            <p>学生端专属助手覆盖学业、心理、请假、生活指南，留学路上不孤单。</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============ Agents ============ -->
+    <section class="section" id="agents">
+      <div class="container">
+        <div class="section-head">
+          <span class="section-tag">智能体</span>
+          <h2>三大 AI 助手</h2>
+        </div>
+        <div class="agent-cards">
+          <div class="agent-card agent-public">
+            <div class="agent-badge">游客可访问</div>
+            <div class="agent-icon">🗣️</div>
+            <h3>客服Agent</h3>
+            <p>公司咨询 · 业务查询 · 政策解读 · 课程推荐 · 活动报名 · FAQ · 闲聊</p>
+            <div class="agent-port">:9000</div>
+          </div>
+          <div class="agent-card agent-student">
+            <div class="agent-badge">学生登录</div>
+            <div class="agent-icon">🎓</div>
+            <h3>学生Agent</h3>
+            <p>请假 · 心理关怀 · 学业考务 · 进度追踪 · 生活支持 · 售后反馈 · 增值转化</p>
+            <div class="agent-port">:8000</div>
+          </div>
+          <div class="agent-card agent-enterprise">
+            <div class="agent-badge">员工登录</div>
+            <div class="agent-icon">💼</div>
+            <h3>企业Agent</h3>
+            <p>意向客户 · 请假审批 · 日报 · 组织架构 · 学生管理 · 投诉处理 · 成绩单</p>
+            <div class="agent-port">:8001</div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- ============ Login Modal ============ -->
+  <div class="modal-overlay" id="loginModal">
+    <div class="modal">
+      <button class="modal-close" onclick="closeLogin()">×</button>
+      <div class="login-tabs">
+        <button class="login-tab active" data-role="student">学生登录</button>
+        <button class="login-tab" data-role="employee">员工登录</button>
+      </div>
+
+      <!-- Student -->
+      <form class="login-form active" id="studentLoginForm">
+        <div class="form-group">
+          <label>学号</label>
+          <input type="text" id="studentId" placeholder="1001-1005" required />
+        </div>
+        <div class="form-group">
+          <label>姓名</label>
+          <input type="text" id="studentName" placeholder="张三" required />
+        </div>
+        <button type="submit" class="btn btn-primary" style="width:100%">进入学生助手</button>
+        <p class="login-hint">测试账号：1001 / 张三</p>
+      </form>
+
+      <!-- Employee -->
+      <form class="login-form" id="employeeLoginForm" style="display:none">
+        <div class="form-group">
+          <label>用户名</label>
+          <input type="text" id="employeeUser" placeholder="admin" required />
+        </div>
+        <div class="form-group">
+          <label>密码</label>
+          <input type="password" id="employeePass" placeholder="密码" required />
+        </div>
+        <button type="submit" class="btn btn-primary" style="width:100%">进入企业工作台</button>
+        <p class="login-hint">测试账号：admin / admin123</p>
+      </form>
+    </div>
+  </div>
+
+  <footer class="portal-footer">
+    <div class="container">
+      <p>© 2026 粤教留学 · AI 智能助手平台 · v2.0</p>
+    </div>
+  </footer>
+
+  <div id="toastContainer"></div>
+
+  <script src="/portal/js/utils.js"></script>
+  <script src="/portal/js/portal.js"></script>
+</body>
+</html>

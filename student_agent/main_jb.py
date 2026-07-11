@@ -6,18 +6,45 @@
 import sys
 import os
 
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
-from fastapi.responses import FileResponse
+from fastapi.responses import FileResponse, JSONResponse
 from pydantic import BaseModel
 from contextlib import asynccontextmanager
+from starlette.middleware.base import BaseHTTPMiddleware
 
-from .config import AGENT_HOST, AGENT_PORT
+from .config import AGENT_HOST, AGENT_PORT, API_TOKEN, API_AUTH_ENABLED
 from .db import init_database, query_one
 from .agent import process_message
 from .reminder import start_scheduler, stop_scheduler, scan_and_remind, get_pending_reminders, mark_read
 from .knowledge import get_kb
+
+
+# ============================================================
+#  Bearer <REDACTED> 中间件（复用 student_sgent 的鉴权方案）
+# ============================================================
+class AuthMiddleware(BaseHTTPMiddleware):
+    """验证 Bearer <REDACTED>（可通过 .env 的 API_AUTH_ENABLED=false 关闭）"""
+
+    SKIP_PATHS = {"/", "/health", "/docs", "/openapi.json", "/favicon.ico",
+                  "/static", "/login", "/auth/login"}
+
+    async def dispatch(self, request: Request, call_next):
+        if not API_AUTH_ENABLED:
+            return await call_next(request)
+        path = request.path
+        if any(path.startswith(p) for p in self.SKIP_PATHS):
+            return await call_next(request)
+        auth = request.headers.get("authorization", "")
+        if not auth.lower().startswith("bearer "):
+            return JSONResponse(status_code=401,
+                                content={"detail": "Missing Bearer <REDACTED>"})
+        token = auth.split(" ", 1)[-1].strip()
+        if token != API_TOKEN:
+            return JSONResponse(status_code=403,
+                                content={"detail": "Invalid token"})
+        return await call_next(request)
 
 
 # ============================================================
@@ -69,6 +96,7 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+app.add_middleware(AuthMiddleware)
 
 # 静态文件（聊天页面）
 static_dir = os.path.join(os.path.dirname(__file__), "static")

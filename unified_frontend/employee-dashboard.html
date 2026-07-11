@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>企业工作台 · 粤教留学</title>
+  <link rel="stylesheet" href="/portal/css/base.css" />
+  <link rel="stylesheet" href="/portal/css/dashboard.css" />
+</head>
+<body>
+
+<div class="app-layout">
+  <!-- ============ Sidebar ============ -->
+  <aside class="sidebar">
+    <div class="sidebar-brand">
+      <span class="logo">💼</span>
+      <div><h2>粤教留学</h2><small>企业智能助手</small></div>
+    </div>
+    <nav class="sidebar-nav">
+      <div class="nav-section">工作台</div>
+      <a href="#" class="active" data-panel="chat"><span class="icon">💬</span>AI 助手</a>
+      <a href="#" data-panel="todo"><span class="icon">📋</span>待办事项<span class="badge" id="todoBadge" style="display:none">0</span></a>
+      <a href="#" data-panel="customers"><span class="icon">👥</span>客户管理</a>
+      <a href="#" data-panel="leaves"><span class="icon">📝</span>请假审批</a>
+      <a href="#" data-panel="scores"><span class="icon">📊</span>成绩管理</a>
+      <div class="nav-section" style="margin-top:16px">快捷操作</div>
+      <a href="#" data-action="report"><span class="icon">📄</span>提交日报</a>
+      <a href="#" data-action="addCustomer"><span class="icon">➕</span>录入客户</a>
+    </nav>
+    <div class="sidebar-user">
+      <div class="avatar" id="sidebarAvatar">👤</div>
+      <div class="user-info">
+        <div class="user-name" id="sidebarName">--</div>
+        <div class="user-role" id="sidebarRole">员工</div>
+      </div>
+    </div>
+  </aside>
+
+  <!-- ============ Main ============ -->
+  <div class="main-area">
+    <div class="top-bar">
+      <h3 id="topTitle">💬 企业 AI 助手</h3>
+      <div class="top-actions">
+        <span style="font-size:12px;color:#64748b" id="userTypeTag"></span>
+        <button class="quick-action" onclick="Auth.logout()">退出登录</button>
+      </div>
+    </div>
+
+    <div class="content-area">
+      <!-- Chat Panel -->
+      <div class="chat-panel" id="chatPanel">
+        <div class="chat-header">
+          <div class="ai-avatar">🤖</div>
+          <span class="ai-name">企业智能助手</span>
+          <span class="ai-status">在线</span>
+        </div>
+        <div class="chat-messages" id="chatMessages">
+          <div class="welcome-msg">
+            <h2>👋 你好！我是企业智能助手</h2>
+            <p>我可以帮你查询数据、处理审批、提交日报，直接用自然语言告诉我就行～</p>
+            <div class="suggestions">
+              <span class="suggestion" onclick="quickSend('查一下待办事项')">📋 待办汇总</span>
+              <span class="suggestion" onclick="quickSend('查询意向客户列表')">👥 客户列表</span>
+              <span class="suggestion" onclick="quickSend('查询请假审批')">📝 请假审批</span>
+              <span class="suggestion" onclick="quickSend('查看组织架构')">🏢 组织架构</span>
+              <span class="suggestion" onclick="quickSend('查询投诉处理')">📮 投诉处理</span>
+              <span class="suggestion" onclick="quickSend('新增客户: 张三, 25岁, 本科, 德国留学')">➕ 录入客户</span>
+            </div>
+          </div>
+        </div>
+        <div class="chat-input-area">
+          <input id="chatInput" placeholder="输入消息，Enter 发送..." />
+          <button id="sendBtn">发送</button>
+        </div>
+      </div>
+
+      <!-- Info Panel (Right) -->
+      <div class="info-panel" id="infoPanel">
+        <!-- 待办 -->
+        <div class="panel-section" id="todoSection">
+          <div class="panel-title">📋 待办事项</div>
+          <div id="todoList"><div class="list-item"><span class="label">加载中...</span></div></div>
+        </div>
+
+        <!-- 快捷统计 -->
+        <div class="panel-section">
+          <div class="panel-title">📊 今日概览</div>
+          <div class="card"><div class="card-title">待审批请假</div><div class="card-value" id="pendingLeaves">--</div></div>
+          <div class="card"><div class="card-title">待处理投诉</div><div class="card-value" id="pendingComplaints">--</div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ============ Report Modal ============ -->
+<div class="modal-overlay" id="reportModal">
+  <div class="modal"><h3>📄 提交日报</h3>
+    <div class="form-group"><label>日期</label><input type="date" id="reportDate" /></div>
+    <div class="form-group"><label>工作内容</label><textarea id="reportContent" placeholder="今天完成了哪些工作？遇到了什么问题？明天的计划？"></textarea></div>
+    <div class="btn-row">
+      <button class="btn btn-secondary" onclick="closeModal('reportModal')">取消</button>
+      <button class="btn btn-primary" id="reportSubmitBtn" onclick="submitReport()">提交</button>
+    </div>
+  </div>
+</div>
+
+<!-- ============ Add Customer Modal ============ -->
+<div class="modal-overlay" id="customerModal">
+  <div class="modal"><h3>➕ 录入意向客户</h3>
+    <div class="form-group"><label>客户姓名</label><input type="text" id="customerName" placeholder="必填" /></div>
+    <div class="form-group"><label>年龄</label><input type="number" id="customerAge" /></div>
+    <div class="form-group"><label>性别</label><select id="customerGender"><option>男</option><option>女</option></select></div>
+    <div class="form-group"><label>手机号</label><input type="text" id="customerPhone" /></div>
+    <div class="form-group"><label>客户来源</label><select id="customerSource"><option>官网</option><option>微信</option><option>转介绍</option><option>线下活动</option><option>其他</option></select></div>
+    <div class="form-group"><label>客户需求</label><textarea id="customerDemand" placeholder="简要描述客户的留学需求..."></textarea></div>
+    <div class="btn-row">
+      <button class="btn btn-secondary" onclick="closeModal('customerModal')">取消</button>
+      <button class="btn btn-primary" id="customerSubmitBtn" onclick="submitCustomer()">录入</button>
+    </div>
+  </div>
+</div>
+
+<div id="toastContainer"></div>
+
+<script src="/portal/js/utils.js"></script>
+<script src="/portal/js/auth.js"></script>
+<script src="/portal/js/chat.js"></script>
+<script src="/portal/js/employee-dashboard.js"></script>
+</body>
+</html>

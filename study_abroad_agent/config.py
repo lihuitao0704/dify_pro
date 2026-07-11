@@ -13,9 +13,9 @@ class Config:
     # ============================================
     # MySQL 数据库配置
     # ============================================
-    MYSQL_HOST = os.getenv("DB_HOST", "localhost")
+    MYSQL_HOST = os.getenv("DB_HOST", "192.168.0.103")
     MYSQL_PORT = int(os.getenv("MYSQL_PORT", 3306))
-    MYSQL_USER = os.getenv("MYSQL_USER", "root")
+    MYSQL_USER = os.getenv("MYSQL_USER", "offer")
     MYSQL_PASSWORD = os.getenv("MYSQL_PASSWORD", "123456")
     MYSQL_DATABASE = os.getenv("MYSQL_DATABASE", "dify_pro")
     DEBUG = True

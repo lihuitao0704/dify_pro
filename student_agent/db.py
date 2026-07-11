@@ -1,20 +1,48 @@
 """
 数据库层：11张表建表 + CRUD 工具 + NL2SQL 执行
-启动时自动建库建表，填充种子数据（幂等：已存在则跳过）
+连接池 + 启动时自动建库建表，填充种子数据（幂等：已存在则跳过）
+v2: 使用连接池（Pooling），替代每次新建连接
 """
 
 import pymysql
 from datetime import datetime
+from queue import Queue, Empty
 from .config import DB_CONFIG
 
 
 # ============================================================
-#  连接工具
+#  连接池
 # ============================================================
+_pool = None
+_POOL_SIZE = 5
+
+def _get_pool():
+    global _pool
+    if _pool is None:
+        _pool = Queue(maxsize=_POOL_SIZE)
+        for _ in range(_POOL_SIZE):
+            _pool.put(_create_conn())
+    return _pool
+
+def _create_conn():
+    return pymysql.connect(**DB_CONFIG)
 
 def get_conn():
-    """获取数据库连接"""
-    return pymysql.connect(**DB_CONFIG)
+    """获取数据库连接（来自连接池）"""
+    try:
+        return _get_pool().get_nowait()
+    except Empty:
+        return _create_conn()
+
+def _release_conn(conn):
+    """归还连接到连接池"""
+    try:
+        _get_pool().put_nowait(conn)
+    except Exception:
+        try:
+            conn.close()
+        except Exception:
+            pass
 
 
 def get_conn_no_db():
@@ -28,7 +56,7 @@ def get_conn_no_db():
 # ============================================================
 
 def query(sql: str, params: tuple = None) -> list[dict]:
-    """执行 SELECT，返回 list[dict]"""
+    """执行 SELECT，返回 list[dict]（连接池版）"""
     conn = get_conn()
     try:
         with conn.cursor() as cur:
@@ -39,11 +67,11 @@ def query(sql: str, params: tuple = None) -> list[dict]:
             cols = [d[0] for d in cur.description]
             return [dict(zip(cols, r)) for r in rows]
     finally:
-        conn.close()
+        _release_conn(conn)
 
 
 def query_one(sql: str, params: tuple = None) -> dict | None:
-    """执行 SELECT，返回单条 dict 或 None"""
+    """执行 SELECT，返回单条 dict 或 None（连接池版）"""
     conn = get_conn()
     try:
         with conn.cursor() as cur:
@@ -54,7 +82,7 @@ def query_one(sql: str, params: tuple = None) -> dict | None:
             cols = [d[0] for d in cur.description]
             return dict(zip(cols, row))
     finally:
-        conn.close()
+        _release_conn(conn)
 
 
 def execute(sql: str, params: tuple = None) -> int:
@@ -69,7 +97,7 @@ def execute(sql: str, params: tuple = None) -> int:
         conn.rollback()
         raise
     finally:
-        conn.close()
+        _release_conn(conn)
 
 
 def execute_many(sql: str, params_list: list[tuple]):
@@ -83,7 +111,7 @@ def execute_many(sql: str, params_list: list[tuple]):
         conn.rollback()
         raise
     finally:
-        conn.close()
+        _release_conn(conn)
 
 
 # ============================================================
@@ -100,19 +128,39 @@ def insert(table: str, data: dict) -> int:
 
 
 def update(table: str, where: dict, data: dict) -> int:
-    """更新记录，返回 lastrowid"""
+    """更新记录，返回 affected_rows（不再错误地返回 lastrowid）"""
     set_clause = ", ".join([f"`{k}` = %s" for k in data])
     where_clause = " AND ".join([f"`{k}` = %s" for k in where])
     values = tuple(data.values()) + tuple(where.values())
     sql = f"UPDATE `{table}` SET {set_clause} WHERE {where_clause}"
-    return execute(sql, values)
+    conn = get_conn()
+    try:
+        with conn.cursor() as cur:
+            cur.execute(sql, values)
+            conn.commit()
+            return cur.rowcount
+    except Exception:
+        conn.rollback()
+        raise
+    finally:
+        _release_conn(conn)
 
 
 def delete(table: str, where: dict) -> int:
-    """删除记录，返回 lastrowid"""
+    """删除记录，返回 affected_rows"""
     where_clause = " AND ".join([f"`{k}` = %s" for k in where])
     sql = f"DELETE FROM `{table}` WHERE {where_clause}"
-    return execute(sql, tuple(where.values()))
+    conn = get_conn()
+    try:
+        with conn.cursor() as cur:
+            cur.execute(sql, tuple(where.values()))
+            conn.commit()
+            return cur.rowcount
+    except Exception:
+        conn.rollback()
+        raise
+    finally:
+        _release_conn(conn)
 
 
 # ============================================================

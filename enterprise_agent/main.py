@@ -48,11 +48,57 @@ async def startup():
     logger.info("DB status: %s", "connected" if ok else "FAILED")
     if not ok:
         logger.warning("Check DB_HOST/DB_PORT/DB_USER/DB_PASSWORD in .env")
+    # 启动主动待办推送调度器
+    try:
+        from enterprise_agent.todo_scheduler import start_scheduler as start_todo_scheduler
+        start_todo_scheduler(interval=300)
+        logger.info("待办推送调度器已启动")
+    except Exception as e:
+        logger.warning("待办推送调度器启动失败: %s", e)
 
 # ==================== 健康检查 ====================
 @app.get("/health", tags=["System"])
 async def health():
     return {"status": "ok", "service": "enterprise_agent", "version": APP_CONFIG["version"]}
+
+# ==================== 登录接口 ====================
+from pydantic import BaseModel as PydanticBaseModel
+
+class LoginRequest(PydanticBaseModel):
+    username: str
+    password: str
+
+@app.post("/auth/login", tags=["System"])
+def auth_login(req: LoginRequest):
+    """员工登录：查 account 表验证用户名密码"""
+    from enterprise_agent.database import SessionLocal
+    from enterprise_agent.models import Account
+    import hashlib
+    db = SessionLocal()
+    try:
+        user = db.query(Account).filter(
+            Account.username == req.username,
+            Account.status == 1,
+        ).first()
+        if not user:
+            return {"success": False, "code": 401, "message": "用户名或密码错误"}
+        # 密码验证（支持明文和哈希两种）
+        hashed = hashlib.md5(req.password.encode()).hexdigest()
+        if user.password == req.password or user.password == hashed:
+            return {
+                "success": True, "code": 0,
+                "user_id": user.user_id,
+                "username": user.username,
+                "user_type": user.user_type,
+                "real_name": user.real_name,
+                "dept_id": user.dept_id,
+            }
+        return {"success": False, "code": 401, "message": "用户名或密码错误"}
+    except Exception as e:
+        logger.error(f"Login error: {e}")
+        return {"success": False, "code": 500, "message": str(e)}
+    finally:
+        db.close()
 
 # ==================== 前端页面（备用） ====================
 _frontend_dir = os.path.dirname(os.path.abspath(__file__))

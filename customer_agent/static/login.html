@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>登录 — 粤教留学客服Agent</title>
+  <link rel="stylesheet" href="css/login.css" />
+</head>
+<body>
+  <div class="login-bg"></div>
+
+  <div class="login-card">
+    <div class="login-brand">
+      <div class="logo">🎓</div>
+      <strong>粤教留学</strong>
+      <small>客服Agent工作台</small>
+    </div>
+
+    <form id="loginForm" class="login-form">
+      <div class="form-group">
+        <label for="username">用户名</label>
+        <input type="text" id="username" placeholder="请输入用户名"
+               required autocomplete="username" />
+      </div>
+      <div class="form-group">
+        <label for="password">密码</label>
+        <input type="password" id="password" placeholder="请输入密码"
+               required autocomplete="current-password" />
+      </div>
+      <button type="submit" class="btn btn-primary" id="loginBtn">
+        登录
+      </button>
+    </form>
+
+    <p class="login-hint">
+      粤教留学客服系统 · v1.0<br/>
+      账号由管理员分配
+    </p>
+  </div>
+
+  <div id="toastContainer"></div>
+
+  <script src="js/utils.js"></script>
+  <script>
+    // 已登录 → 直接跳转
+    if (localStorage.getItem('customer_token')) {
+      location.replace('dashboard.html');
+    }
+
+    document.getElementById('loginForm').addEventListener('submit', async e => {
+      e.preventDefault();
+      const btn = document.getElementById('loginBtn');
+      const u = document.getElementById('username').value.trim();
+      const p = document.getElementById('password').value;
+      btn.disabled = true;
+      btn.textContent = '登录中...';
+
+      try {
+        // TODO: 替换为你的真实登录接口 r = await api('/auth/login', ...)
+        // 演示用 硬编码 admin / admin123
+        await new Promise(r => setTimeout(r, 400));
+        if (u === 'admin' && p === 'admin123') {
+          localStorage.setItem('customer_token', 'demo-token-' + Date.now());
+          localStorage.setItem('customer_user', JSON.stringify({
+            name: u, id: 1, role: '管理员'
+          }));
+          toast('登录成功！即将进入工作台...', 'success');
+          setTimeout(() => location.replace('dashboard.html'), 600);
+        } else {
+          toast('用户名或密码错误', 'error');
+        }
+      } catch (err) {
+        toast('登录失败：' + err.message, 'error');
+      } finally {
+        btn.disabled = false;
+        btn.textContent = '登录';
+      }
+    });
+  </script>
+</body>
+</html>

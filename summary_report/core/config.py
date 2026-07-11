@@ -31,7 +31,7 @@ LLM_MODEL: str = os.getenv("LLM_MODEL", "qwen-plus")
 
 # ── 应用配置 ────────────────────────────────────────────────
 APP_HOST: str = os.getenv("APP_HOST", "0.0.0.0")
-APP_PORT: int = int(os.getenv("APP_PORT", "8000"))
+APP_PORT: int = int(os.getenv("APP_PORT", "8003"))
 
 # ── NL2SQL 行为配置 ─────────────────────────────────────────
 # 每条报告最多返回多少行给 LLM 润色，避免 token 超限

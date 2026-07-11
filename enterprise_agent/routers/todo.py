@@ -87,3 +87,29 @@ def todo_all(
     except Exception as e:
         logger.error(f"查询待办汇总失败: {e}", exc_info=True)
         return {"code": 500, "msg": f"查询失败: {str(e)}", "data": None}
+
+
+# ==================== GET /api/agent/todo/pending_summary ====================
+@router.get("/todo/pending_summary", response_model=dict, summary="主动待办推送摘要")
+def todo_pending_summary():
+    """
+    获取待办推送摘要（供前端轮询或主动推送使用）
+    返回各类待办的数量统计和提示文案
+    """
+    try:
+        from enterprise_agent.todo_scheduler import get_pending_summary
+        todos = get_pending_summary()
+        total = sum(t.get("count", 0) for t in todos)
+        return {
+            "code": 0,
+            "msg": "success",
+            "data": {
+                "total": total,
+                "has_pending": total > 0,
+                "items": todos,
+                "tip": f"您有 {total} 条待办事项需要处理" if total > 0 else "暂无待办事项",
+            }
+        }
+    except Exception as e:
+        logger.error(f"查询待办推送摘要失败: {e}", exc_info=True)
+        return {"code": 500, "msg": f"查询失败: {str(e)}", "data": None}

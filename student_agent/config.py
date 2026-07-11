@@ -41,3 +41,7 @@ ENTERPRISE_AGENT_URL = os.getenv("ENTERPRISE_AGENT_URL", TEACHER_AGENT_URL)
 MAX_HISTORY_TURNS = 10          # 多轮对话保留最近 N 轮
 INTENT_CONFIDENCE_THRESHOLD = 0.7  # 意图置信度阈值，低于此值降级为追问
 EMOTION_ALERT_THRESHOLD = 70    # 情绪风险分 >= 70 触发预警
+
+# ========== 鉴权配置 ==========
+API_TOKEN = os.getenv("STUDENT_API_TOKEN", "student-secret-2026")
+API_AUTH_ENABLED = os.getenv("STUDENT_API_AUTH", "false").lower() in ("1", "true", "yes")
