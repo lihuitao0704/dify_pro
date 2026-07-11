@@ -8,7 +8,7 @@ FastAPI 应用入口。
     ``uvicorn summary_report.main:app`` 启动
 
 运行方式（项目根目录）：
-    uvicorn summary_report.main:app --host 0.0.0.0 --port 8001
+    uvicorn summary_report.main:app --host 0.0.0.0 --port 8000
 """
 
 from fastapi import FastAPI
@@ -23,7 +23,7 @@ logger = get_logger(__name__)
 
 # ── FastAPI 实例 ────────────────────────────────────────────
 app = FastAPI(
-    title="全域经营分析汇总报告 API",
+    title="智能报告API",
     description="基于 NL2SQL 的五份核心汇总报告接口（客户经营/员工日报/心理健康/投诉周报）+ 通用查询",
     version="2.0.0",
 )
@@ -76,7 +76,8 @@ def health() -> dict:
             "POST /report/employee_daily      - 员工日报智能汇总报告",
             "POST /report/student_mental      - 学生心理健康周报",
             "POST /report/complaint_weekly    - 投诉处理周报",
-            "POST /report/nl2sql              - 通用自然语言查询",
+            "POST /report/nl2sql              - 通用自然语言查询（支持 query_type 表单筛选："
+            "general / student / enterprise）",
         ],
     }
 

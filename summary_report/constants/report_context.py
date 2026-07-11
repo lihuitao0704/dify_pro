@@ -55,3 +55,25 @@ GENERAL_REPORT_CONTEXT: str = (
     "通用数据库查询 dify_pro，覆盖客户经营、员工管理、留学申请、"
     "投诉工单、心理健康、课程六大模块。"
 )
+
+STUDENT_REPORT_CONTEXT: str = """
+【学生数据分析报告】
+核心目标：面向校内学生群体的全景数据洞察。
+- 留学申请进度：按 stage 分布统计各阶段学生数量、关注 deadline 临近的待办事项
+- 学业成绩：按 subject/exam_type 分析成绩分布与趋势
+- 行政审批：请假(leave)审批效率与类型分布
+- 心理健康：基于 student_psych_record 的情绪态势、按 risk_level 识别风险学生分布
+- 投诉反馈：投诉(ticket_type='complaint')总量、处理时效与满意度
+数据源：application_progress / academic_deadline / student_admin_service / student_score / student_complaint / student_feedback_ticket / student_psych_record / student_psych_profile / student_mental_alert / student_psych_alert / student_mental_profile
+注意：本类查询不涉及客户经营、员工日报等企业模块数据
+"""
+
+ENTERPRISE_REPORT_CONTEXT: str = """
+【企业经营分析报告】
+核心目标：面向企业经营与内部管理的数据洞察。
+- 客户经营：按 customer_source 分析渠道效果、按 current_status 分布（已签约/跟进中/已流失）、按 sales_user_id 解析顾问业绩
+- 员工日报：按 user_id/dept_id 统计日报提交情况、从 report_content 提取关键成果
+- 课程管理：课程按 category/country 分布与定价分析
+数据源：intention_customer / consultations / user_profiles / account / organization / employee_daily_report / courses
+注意：本类查询不涉及学生成绩、心理健康、留学申请等学生模块数据
+"""
