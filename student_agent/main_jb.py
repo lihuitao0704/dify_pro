@@ -172,6 +172,66 @@ def chat_endpoint(req: ChatRequest):
 
 
 # ============================================================
+#  "我的"面板接口
+# ============================================================
+
+@app.get("/my/profile/{student_id}")
+def my_profile(student_id: int):
+    """我的：心理状态 + 升学意向"""
+    from .db import query_one, query
+    mental = query_one(
+        "SELECT current_emotion, risk_score, risk_level FROM mental_health_profile WHERE student_id = %s",
+        (student_id,)
+    )
+    upgrades = query(
+        "SELECT interest_degree, interest_country, conversion_status, created_at FROM upgrade_interest WHERE student_id = %s ORDER BY created_at DESC LIMIT 5",
+        (student_id,)
+    )
+    return {
+        "mental": {
+            "emotion": mental["current_emotion"] if mental else "未知",
+            "risk_score": mental["risk_score"] if mental else 0,
+            "risk_level": mental["risk_level"] if mental else "low",
+        },
+        "upgrades": upgrades if upgrades else [],
+    }
+
+
+@app.get("/my/tickets/{student_id}")
+def my_tickets(student_id: int):
+    """我的：反馈工单"""
+    from .db import query
+    tickets = query(
+        "SELECT id, title, category, urgency, status, created_at FROM feedback_ticket WHERE student_id = %s ORDER BY created_at DESC LIMIT 10",
+        (student_id,)
+    )
+    return {"tickets": tickets if tickets else []}
+
+
+@app.get("/my/schedule/{student_id}")
+def my_schedule(student_id: int):
+    """我的：日程 + 申请进度 + 未读提醒"""
+    from .db import query
+    deadlines = query(
+        "SELECT event_type, title, course_name, deadline, DATEDIFF(deadline, NOW()) AS days_left FROM academic_schedule WHERE student_id = %s AND status = 'upcoming' ORDER BY deadline ASC",
+        (student_id,)
+    )
+    apps = query(
+        "SELECT program_name, university, current_step, application_status FROM application_progress WHERE student_id = %s ORDER BY updated_at DESC",
+        (student_id,)
+    )
+    reminders = query(
+        "SELECT id, remind_type, message, sent_at, is_read FROM reminder_log WHERE student_id = %s AND is_read = 0 ORDER BY sent_at DESC LIMIT 10",
+        (student_id,)
+    )
+    return {
+        "deadlines": deadlines if deadlines else [],
+        "applications": apps if apps else [],
+        "reminders": reminders if reminders else [],
+    }
+
+
+# ============================================================
 #  请假表单提交
 # ============================================================
 

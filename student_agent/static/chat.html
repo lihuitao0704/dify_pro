@@ -162,13 +162,17 @@ body{font-family:"PingFang SC","Microsoft YaHei","Helvetica Neue",sans-serif;bac
       <h4>待处理提醒</h4>
       <div id="remList"></div>
     </div>
+    <div class="info-panel" id="myPanel" style="display:none">
+      <h4>我的</h4>
+      <div id="myList" style="font-size:12px;line-height:1.8"></div>
+    </div>
     <div class="quick-actions">
       <h4>快捷入口</h4>
-      <button class="quick-btn" type="button" id="btnLeave"><span class="icon"></span>在线请假</button>
-      <button class="quick-btn" type="button" id="btnProgress"><span class="icon"></span>留学申请进度</button>
-      <button class="quick-btn" type="button" id="btnDDL"><span class="icon"></span>学业日程查询</button>
-      <button class="quick-btn" type="button" id="btnLife"><span class="icon"></span>海外生活指南</button>
-      <button class="quick-btn" type="button" id="btnRecord"><span class="icon"></span>请假记录查询</button>
+      <button class="quick-btn" type="button" id="btnLeave">📝 在线请假</button>
+      <button class="quick-btn" type="button" id="btnDDL">📅 我的考试DDL</button>
+      <button class="quick-btn" type="button" id="btnFeedback">💬 我要反馈</button>
+      <button class="quick-btn" type="button" id="btnProgress">📊 申请进度</button>
+      <button class="quick-btn" type="button" id="btnUpgrade">🎓 升学深造</button>
     </div>
   </aside>
   <div class="main">
@@ -202,13 +206,14 @@ document.getElementById("loginBtn").addEventListener("click", async function(){
   try{
     var r=await fetch("/auth/login",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({student_id:parseInt(sid),name:nm})});
     var d=await r.json();
-    if(d.success){student=d.student;document.getElementById("loginOverlay").style.display="none";document.getElementById("mainApp").classList.remove("hidden");document.getElementById("stuName").textContent=d.student.name;document.getElementById("stuId").textContent=d.student.id;loadReminders();}
+    if(d.success){student=d.student;document.getElementById("loginOverlay").style.display="none";document.getElementById("mainApp").classList.remove("hidden");document.getElementById("stuName").textContent=d.student.name;document.getElementById("stuId").textContent=d.student.id;loadReminders();loadMyPanel();}
     else{document.getElementById("loginError").textContent=d.message||"学号或姓名不正确";}
   }catch(e){document.getElementById("loginError").textContent="服务暂不可用，请稍后重试";}
 });
 document.getElementById("loginName").addEventListener("keydown",function(e){if(e.key==="Enter")document.getElementById("loginBtn").click();});
 document.getElementById("logoutBtn").addEventListener("click",function(){student=null;sessId="";document.getElementById("loginOverlay").style.display="flex";document.getElementById("mainApp").classList.add("hidden");});
 
+// ====== 请假弹窗 ======
 document.getElementById("btnLeave").addEventListener("click",function(){
   if(!student){alert("请先登录");return;}
   var d=new Date(), tz=d.getTime()-d.getTimezoneOffset()*60000;
@@ -235,6 +240,7 @@ document.getElementById("lvSubmit").addEventListener("click",async function(){
   }catch(e){btn.disabled=false;btn.textContent="提交申请";alert("网络异常，请重试");}
 });
 
+// ====== 提醒 ======
 async function loadReminders(){
   if(!student)return;
   try{
@@ -246,10 +252,52 @@ async function loadReminders(){
 }
 async function readReminder(rid){await fetch("/reminders/"+rid+"/read",{method:"POST"});loadReminders();}
 
-document.getElementById("btnProgress").addEventListener("click",function(){quickSend("查一下我的留学申请进度");});
+// ====== 我的面板 ======
+async function loadMyPanel(){
+  if(!student)return;
+  try{
+    var r1=await fetch("/my/profile/"+student.id);var p=await r1.json();
+    var r2=await fetch("/my/schedule/"+student.id);var s=await r2.json();
+    var m=p.mental;var h="";
+    h+="<b>心理状态</b>: "+m.emotion+" (风险"+m.risk_score+")<br>";
+    h+="<b>日程</b>: "+s.deadlines.length+"项待完成";
+    if(s.deadlines.length>0){var d=s.deadlines[0];h+=" | 最近: "+d.title+" "+d.days_left+"天";}
+    h+="<br><b>申请</b>: "+(s.applications.length>0?s.applications[0].current_step:"无");
+    h+="<br><b>提醒</b>: "+s.reminders.length+"条未读";
+    h+="<br><b>升学意向</b>: "+(p.upgrades.length>0?p.upgrades[0].interest_degree:"无");
+    h+="<br><span style=\"color:#4f6ef7;cursor:pointer;font-size:11px\" onclick=\"loadMyDetail()\">展开详情</span>";
+    document.getElementById("myList").innerHTML=h;
+    document.getElementById("myPanel").style.display="block";
+  }catch(e){}
+}
+async function loadMyDetail(){
+  if(!student)return;
+  var r1=await fetch("/my/profile/"+student.id);var p=await r1.json();
+  var r2=await fetch("/my/tickets/"+student.id);var t=await r2.json();
+  var r3=await fetch("/my/schedule/"+student.id);var s=await r3.json();
+  var h="";
+  h+="<b>心理状态</b><br>情绪: "+p.mental.emotion+" | 风险: "+p.mental.risk_score+"<br>";
+  h+="<hr><b>日程DDL</b><br>";
+  if(s.deadlines.length>0){s.deadlines.forEach(function(d){h+=d.event_type+": "+d.title+" | "+d.days_left+"天<br>";});}
+  else{h+="暂无<br>";}
+  h+="<hr><b>申请进度</b><br>";
+  if(s.applications.length>0){s.applications.forEach(function(a){h+=a.program_name+" | "+a.current_step+"<br>";});}
+  else{h+="暂无<br>";}
+  h+="<hr><b>反馈工单</b><br>";
+  if(t.tickets.length>0){t.tickets.forEach(function(x){h+=x.title+" ["+x.status+"]<br>";});}
+  else{h+="暂无<br>";}
+  h+="<hr><b>升学意向</b><br>";
+  if(p.upgrades.length>0){p.upgrades.forEach(function(u){h+=u.interest_degree+" | "+u.conversion_status+"<br>";});}
+  else{h+="暂无<br>";}
+  h+="<span style=\"color:#4f6ef7;cursor:pointer;font-size:11px\" onclick=\"loadMyPanel()\">收起</span>";
+  document.getElementById("myList").innerHTML=h;
+}
+
+// ====== 快捷入口 ======
 document.getElementById("btnDDL").addEventListener("click",function(){quickSend("我最近有什么考试和论文DDL");});
-document.getElementById("btnLife").addEventListener("click",function(){quickSend("新加坡看病怎么用医保");});
-document.getElementById("btnRecord").addEventListener("click",function(){quickSend("帮我查一下请假记录");});
+document.getElementById("btnFeedback").addEventListener("click",function(){quickSend("我要反馈一个问题");});
+document.getElementById("btnProgress").addEventListener("click",function(){quickSend("查一下我的留学申请进度");});
+document.getElementById("btnUpgrade").addEventListener("click",function(){quickSend("我想了解升学深造的项目");});
 function quickSend(msg){document.getElementById("userInput").value=msg;sendMsg();}
 
 document.getElementById("sendBtn").addEventListener("click",sendMsg);
