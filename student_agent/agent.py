@@ -138,7 +138,7 @@ def _handle_emotion_update(student_id: int, emotion: dict, user_msg: str) -> str
             new_cons = profile["consecutive_negative_days"] + 1
         else:
             new_cons = 0
-        new_total = profile.get("total_chat_count", 0) or 0 + 1
+        new_total = (profile.get("total_chat_count") or 0) + 1
 
         emotion_history = json.loads(profile.get("emotion_history", "[]") or "[]")
     else:

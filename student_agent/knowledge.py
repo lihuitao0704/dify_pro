@@ -9,7 +9,9 @@ from .loader import load_file, load_folder, split_chunks, extract_keywords
 
 # 数据目录
 DATA_DIR = os.path.join(os.path.dirname(__file__), "data")
-DESKTOP_DIR = r"C:\Users\Windows\Desktop\教育服务\教育服务"
+# 外部知识库路径，可通过 .env 的 KNOWLEDGE_PATH 配置
+DEFAULT_KNOWLEDGE_PATH = os.path.join(os.path.dirname(__file__), "data")
+KNOWLEDGE_PATH = os.getenv("KNOWLEDGE_PATH", DEFAULT_KNOWLEDGE_PATH)
 
 
 class KnowledgeBase:
@@ -70,16 +72,11 @@ MRT地铁：覆盖全岛，运营约5:30-24:00，票价SGD 1.00-2.50。主要线
     # ================================================================
 
     def _load_faq_from_file(self):
-        """从问答对文本版.txt导入FAQ，只取学生相关的"""
-        faq_paths = [
-            os.path.join(DESKTOP_DIR, "公司信息", "问答对文本版.txt"),
-            os.path.join(DATA_DIR, "问答对文本版.txt"),
-        ]
+        """从问答对文本版.txt导入FAQ"""
+        faq_path = os.path.join(KNOWLEDGE_PATH, "公司信息", "问答对文本版.txt")
         content = None
-        for p in faq_paths:
-            if os.path.exists(p):
-                content = load_file(p)
-                break
+        if os.path.exists(faq_path):
+            content = load_file(faq_path)
 
         if not content:
             self._load_builtin_faq()
@@ -125,55 +122,27 @@ MRT地铁：覆盖全岛，运营约5:30-24:00，票价SGD 1.00-2.50。主要线
     # ================================================================
 
     def _load_study_policies(self):
-        policy_paths = [
-            os.path.join(DESKTOP_DIR, "留学政策", "新加坡留学政策指南.docx"),
-            os.path.join(DESKTOP_DIR, "留学政策", "德国留学政策指南.docx"),
-        ]
-        loaded = 0
-        for p in policy_paths:
+        for fname in ["新加坡留学政策指南.docx", "德国留学政策指南.docx"]:
+            p = os.path.join(KNOWLEDGE_PATH, "留学政策", fname)
             if os.path.exists(p):
                 content = load_file(p)
                 if content:
-                    fname = os.path.basename(p)
                     self._add_document(fname, content)
-                    loaded += 1
-        if loaded > 0:
-            print(f"[KB] 留学政策: {loaded}篇")
-
-    # ================================================================
-    #  升学项目
-    # ================================================================
 
     def _load_programs(self):
-        program_paths = [
-            os.path.join(DESKTOP_DIR, "公司业务", "新加坡国际本硕升学计划.docx"),
-            os.path.join(DESKTOP_DIR, "公司业务", "中德精英人才共建计划.docx"),
-        ]
-        loaded = 0
-        for p in program_paths:
+        for fname in ["新加坡国际本硕升学计划.docx", "中德精英人才共建计划.docx"]:
+            p = os.path.join(KNOWLEDGE_PATH, "公司业务", fname)
             if os.path.exists(p):
                 content = load_file(p)
                 if content:
-                    fname = os.path.basename(p)
                     self._add_document(fname, content)
-                    loaded += 1
-        if loaded > 0:
-            print(f"[KB] 升学项目: {loaded}篇")
-
-    # ================================================================
-    #  专业方向名录
-    # ================================================================
 
     def _load_major_catalog(self):
-        catalog_paths = [
-            os.path.join(DESKTOP_DIR, "用户研判规则", "中德精英人才共建计划 —— 全专业方向名录.txt"),
-        ]
-        for p in catalog_paths:
-            if os.path.exists(p):
-                content = load_file(p)
-                if content:
-                    self._add_document("德国专业方向名录", content)
-                    print(f"[KB] 专业名录: 1篇")
+        p = os.path.join(KNOWLEDGE_PATH, "用户研判规则", "中德精英人才共建计划 —— 全专业方向名录.txt")
+        if os.path.exists(p):
+            content = load_file(p)
+            if content:
+                self._add_document("德国专业方向名录", content)
 
     # ================================================================
     #  自定义文档（data/目录）
