@@ -199,7 +199,7 @@ def _handle_emotion_update(student_id: int, emotion: dict, user_msg: str) -> str
 
     # 返回关怀文本
     if risk_level == "high" or risk_level == "critical":
-        return "\n\n💙 我有些担心你。如果你愿意，可以和老师聊聊，或者我帮你预约心理辅导？"
+        return "\n\n💙 我有些担心你。如果你愿意，可以和信任的老师或朋友聊聊，你不是一个人在面对这些。"
     elif risk_level == "medium":
         return "\n\n💪 听起来你最近压力不小，照顾好自己，需要的话我随时在～"
     return ""
@@ -328,7 +328,7 @@ def _handle_leave(student_id: int, message: str, params: dict, context: list) ->
                 f"请假申请已提交 ✅\n"
                 f"📝 {collected['leave_type']} | {collected['start_time'][:16]} ~ {collected['end_time'][:16]}\n"
                 f"📌 状态：等待审批中{teacher_info}\n"
-                f"审批完成后我会第一时间通知你～"
+                f"审批完成后，下次登录时可以查看审批结果～"
             )
         else:
             return "请假提交失败，请稍后重试或联系班主任～"
@@ -413,7 +413,7 @@ def _handle_mental(student_id: int, message: str, params: dict, context: list) -
     responses = {
         "压力大": "听你说压力很大……留学确实不容易，课程、论文、生活都压在肩上。你已经很努力了 💪 要不要聊聊具体是什么让你压力最大？",
         "焦虑": "焦虑的时候，试着深呼吸几次 🫁 你愿意和我说说是哪方面让你焦虑吗？学业？申请？还是生活上的事？",
-        "孤独": "一个人在国外确实容易感到孤独……很多留学生都经历过这个阶段。你有没有想过参加一些社团活动，或者和班上的同学约个饭？我也可以帮你看看有什么学生活动～",
+        "孤独": "一个人在国外确实容易感到孤独……很多留学生都经历过这个阶段。你有没有想过参加一些社团活动，或者和班上的同学约个饭？哪怕只是走出门散散步，心情也会不一样～",
         "难过": "💙 我在听。有些时候不需要解决方案，只需要有个人愿意听。你想说什么都可以～",
         "想家": "想家是最正常不过的事了。有没有试过和家人视频？哪怕只是看看家里的猫🐱。",
     }
@@ -491,7 +491,7 @@ def _handle_feedback(student_id: int, message: str, params: dict, context: list)
         f"已收到你的反馈，工单已创建 ✅\n"
         f"{urgency_text} | 分类：{category}\n"
         f"📋 摘要：{summary}\n"
-        f"我们会在24小时内跟进处理，处理完成后会通知你～"
+        f"我们会在24小时内跟进处理，你下次登录时可以在'我的'面板查看工单进度～"
     )
 
 
@@ -601,6 +601,11 @@ def _handle_progress(student_id: int, message: str, params: dict, context: list)
 
 def _handle_life_guide(student_id: int, message: str, params: dict, context: list) -> str:
     """海外生活指南：FAQ优先 → RAG检索 → 智能降级"""
+    # 活动查询 → 功能未上线，诚实回复
+    activity_words = ["活动", "社团", "讲座", "分享会", "见面会", "迎新"]
+    if any(kw in message for kw in activity_words):
+        return "活动查询功能正在对接中，上线后可以直接帮你查最新的讲座、分享会、社团招新等活动信息～\n\n现在你可以问我海外生活、升学项目、学业日程等其他问题。"
+
     # 泛问 → 展示菜单
     generic_words = ["海外生活", "生活指南", "海外指南", "生活支持"]
     if any(kw in message for kw in generic_words) and len(message) <= 15:
@@ -666,7 +671,7 @@ def _handle_upgrade(student_id: int, message: str, params: dict, context: list) 
             latest = _db.query_one("SELECT id FROM upgrade_interest WHERE student_id = %s AND conversion_status = 'identified' ORDER BY id DESC LIMIT 1", (student_id,))
             if latest:
                 _db.update("upgrade_interest", {"id": latest["id"]}, {"conversion_status": "interested", "contacted_at": datetime.now().strftime("%Y-%m-%d %H:%M:%S")})
-            return "好的！已经为你登记了顾问预约需求 📋\n\n顾问会在1-2个工作日内联系你，届时可以详细沟通你的升学方向、申请条件和时间规划。\n\n如果还有其他问题随时找我～"
+            return "好的！已经为你登记了升学意向 📋\n\n升学咨询功能正在对接中，上线后会有顾问为你提供一对一规划。当前你可以先了解升学项目和专业方向，问我 新加坡有哪些硕士项目 试试~"
         return (
             "好的！关于升学深造的具体事宜，我可以帮你：\n\n"
             "📞 预约留学顾问一对一免费咨询\n"
