@@ -52,6 +52,24 @@ def process_message(student_id: int, message: str, session_id: str = None) -> di
     emotion_history = _conv.get_emotion_history(student_id, days=14)
     emotion_result = llm.analyze_emotion(message, emotion_history)
 
+    # ── 上下文意图纠正：短追问继承上一轮主意图 ──
+    follow_words = ["帮我", "预约", "联系", "怎么", "多少钱", "多久", "什么时候", "能不能", "还要", "有没有", "处理"]
+    if len(message) <= 20 and any(kw in message for kw in follow_words) and sorted_intents:
+        current_intent = sorted_intents[0]["intent"]
+        if current_intent in ("life_guide", "chat"):
+            # LLM把追问判错了，从context推断真实意图
+            # 简单策略：查conversation_session的main_intents
+            # 直接从对话日志推断
+            if session_id:
+                sess = _db.query_one(
+                    "SELECT main_intents FROM conversation_session WHERE session_id = %s",
+                    (session_id,)
+                )
+                if sess and sess.get("main_intents"):
+                    prev = sess["main_intents"].split(",")[0].strip()
+                    if prev and prev not in ("chat", "life_guide"):
+                        sorted_intents[0]["intent"] = prev
+
     # ── Step 4: 多意图编排 ──
     actions = []
     partial_replies = []
@@ -87,8 +105,9 @@ def process_message(student_id: int, message: str, session_id: str = None) -> di
     else:
         reply = llm.agent_chat(message, context)
 
-    # 如果有情绪预警，追加关怀
-    if emotion_alert:
+    # 只在心理意图时追加关怀话术，避免非心理场景出现不匹配的关怀
+    has_mental = any(i["intent"] == "mental" for i in sorted_intents)
+    if emotion_alert and has_mental:
         reply += emotion_alert
 
     # ── Step 7: 记录对话日志 ──
@@ -435,6 +454,20 @@ def _handle_feedback(student_id: int, message: str, params: dict, context: list)
                 lines.append(f"  处理：{t['resolution'][:80]}")
         return "\n".join(lines)
 
+    # 检查是否信息不足 → 追问
+    vague_keywords = ["我要反馈", "我想反馈", "我要投诉", "我想投诉", "我有问题", "有问题反馈"]
+    is_vague = any(kw in message for kw in vague_keywords) and len(message) <= 15
+    if is_vague:
+        return (
+            "好的，我来帮你提交反馈 📝\n\n"
+            "请告诉我具体遇到了什么问题？\n"
+            "比如：\n"
+            "• \"宿舍空调坏了一周报修没人来\"\n"
+            "• \"签证材料提交两周了没反馈\"\n"
+            "• \"对课程安排有建议想说\"\n\n"
+            "越详细越好，我会帮你整理成工单提交～"
+        )
+
     # 新建工单
     title = params.get("title", message[:50])
     summary = llm.summarize(message)
@@ -600,6 +633,25 @@ def _handle_life_guide(student_id: int, message: str, params: dict, context: lis
 
 def _handle_upgrade(student_id: int, message: str, params: dict, context: list) -> str:
     """处理升学意向"""
+    # 检查是继续聊还是新意向
+    follow_keywords = ["预约", "联系", "报名", "怎么申请", "怎么报", "多少钱", "费用", "多久", "什么时候", "顾问", "一对一"]
+    is_followup = any(kw in message for kw in follow_keywords) or len(message) <= 5
+
+    if is_followup:
+        return (
+            "好的！关于升学深造的具体事宜，我可以帮你：\n\n"
+            "📞 预约留学顾问一对一免费咨询\n"
+            "📋 获取详细的项目手册和申请条件\n"
+            "📅 了解最新的申请截止日期\n\n"
+            "告诉我你想了解的方向，我马上安排顾问联系你～"
+        )
+
+    # 检查是否已有意向 → 不重复插入
+    existing = _db.query_one(
+        "SELECT id FROM upgrade_interest WHERE student_id = %s AND DATE(created_at) = CURDATE()",
+        (student_id,)
+    )
+
     student = _db.query_one(
         """SELECT name, education, major, gpa, language_score,
                   target_country, target_degree, target_major
@@ -607,17 +659,18 @@ def _handle_upgrade(student_id: int, message: str, params: dict, context: list) 
         (student_id,)
     )
 
-    # 记录意向
-    _db.insert("upgrade_interest", {
-        "student_id": student_id,
-        "interest_degree": params.get("degree", "硕士咨询"),
-        "interest_country": params.get("country", ""),
-        "interest_major": params.get("major", ""),
-        "detected_source": "对话识别",
-        "detected_at": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
-        "conversation_snippet": message[:300],
-        "conversion_status": "identified",
-    })
+    # 记录意向（当天不重复）
+    if not existing:
+        _db.insert("upgrade_interest", {
+            "student_id": student_id,
+            "interest_degree": params.get("degree", "硕士咨询"),
+            "interest_country": params.get("country", ""),
+            "interest_major": params.get("major", ""),
+            "detected_source": "对话识别",
+            "detected_at": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+            "conversation_snippet": message[:300],
+            "conversion_status": "identified",
+        })
 
     # 生成推荐
     profile = {

@@ -232,6 +232,33 @@ def my_schedule(student_id: int):
 
 
 # ============================================================
+#  投诉反馈表单提交
+# ============================================================
+
+class FeedbackSubmitRequest(BaseModel):
+    student_id: int
+    category: str = "生活服务"
+    title: str = ""
+    content: str = ""
+    urgency: str = "normal"
+
+@app.post("/feedback/submit")
+def feedback_submit(req: FeedbackSubmitRequest):
+    """表单提交投诉建议，写入 feedback_ticket"""
+    from .db import insert
+    tid = insert("feedback_ticket", {
+        "student_id": req.student_id,
+        "title": req.title,
+        "content": req.content,
+        "category": req.category,
+        "urgency": req.urgency,
+        "priority": 10 if req.urgency == "urgent" else 5,
+        "status": "open",
+    })
+    return {"success": True, "ticket_id": tid, "message": "工单已创建"}
+
+
+# ============================================================
 #  请假表单提交
 # ============================================================
 
