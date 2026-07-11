@@ -6,6 +6,5 @@
     </content>
     <orderEntry type="jdk" jdkName="Python 3.11 (dify_pro)" jdkType="Python SDK" />
     <orderEntry type="sourceFolder" forTests="false" />
-    <orderEntry type="module" module-name="agent_pro" />
   </component>
 </module>
