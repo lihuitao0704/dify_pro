@@ -32,10 +32,10 @@ def save_profile(req: ProfileCreate):
 
 @router.get("/profile/{conversation_id}", summary="获取用户画像 (兼容)")
 def get_profile(conversation_id: str):
-    profile = ProfileService.get_by_conversation_id(conversation_id)
-    if not profile:
+    profiles = ProfileService.get_by_conversation_id(conversation_id)
+    if not profiles:
         raise HTTPException(status_code=404, detail="用户不存在")
-    return {"code": 0, "data": profile, "message": "success"}
+    return {"code": 0, "data": profiles, "message": "success", "total": len(profiles)}
 
 
 @router.delete("/profile/{conversation_id}", summary="删除用户画像 (兼容)")

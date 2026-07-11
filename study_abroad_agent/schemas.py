@@ -19,7 +19,7 @@ class StandardResponse(BaseModel):
 # 用户画像
 # ============================================
 class ProfileCreate(BaseModel):
-    conversation_id: str = Field(..., min_length=1, description="Dify 会话唯一 ID")
+    conversation_id: str = Field(default="0", description="Dify 会话 ID")
     name: Optional[str] = None
     age: Optional[int] = Field(None, ge=0, le=150)
     major: Optional[str] = None
@@ -32,6 +32,13 @@ class ProfileCreate(BaseModel):
     phone: Optional[str] = None
     wechat: Optional[str] = None
     email: Optional[str] = None
+    consultation_status: Optional[str] = Field(
+        None, pattern="^(collecting|recommended|finished)$"
+    )
+    assess: Optional[str] = Field(None, description="是否研判")
+    development: Optional[str] = Field(None, description="发展需求")
+    abilities: Optional[str] = Field(None, description="综合能力")
+    is_closed_loop: Optional[str] = Field(None, alias="is_Closed-loop", description="是否接受封闭式实训")
 
 
 class ProfileUpdate(BaseModel):
@@ -50,6 +57,10 @@ class ProfileUpdate(BaseModel):
     consultation_status: Optional[str] = Field(
         None, pattern="^(collecting|recommended|finished)$"
     )
+    assess: Optional[str] = Field(None, description="是否研判")
+    development: Optional[str] = Field(None, description="发展需求")
+    abilities: Optional[str] = Field(None, description="综合能力")
+    is_closed_loop: Optional[str] = Field(None, alias="is_Closed-loop", description="是否接受封闭式实训")
 
 
 class ProfileCheck(BaseModel):
@@ -132,7 +143,7 @@ class NL2SQLRequest(BaseModel):
     question: str = Field(
         ...,
         min_length=1,
-        description="自然语言问题，例如：德国留学方案有哪些？GPA 3.0 以下能申请什么课程？",
+        description="自然语言问题，例如：德国留学方案有哪些？GPA 3.0 以下能申请什么课程？新增用户：姓名=张三，学历=本科",
     )
     include_sql: bool = Field(
         default=False, description="响应中是否包含模型生成的 SQL 语句"
@@ -141,7 +152,12 @@ class NL2SQLRequest(BaseModel):
 
 class NL2SQLResponse(BaseModel):
     question: str
+    action: str = Field("query", description="实际执行的意图：query 或 insert")
     sql: Optional[str] = None
-    rows: List[Dict[str, Any]]
-    row_count: int
     elapsed_ms: float
+    # ── query 响应字段 ──
+    rows: Optional[List[Dict[str, Any]]] = None
+    row_count: Optional[int] = None
+    # ── insert 响应字段 ──
+    inserted_id: Optional[int] = None
+    affected_rows: Optional[int] = None

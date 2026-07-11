@@ -62,7 +62,7 @@ TABLE_SCHEMAS = {
     "user_profiles": """
 CREATE TABLE user_profiles (
     id BIGINT PRIMARY KEY AUTO_INCREMENT,
-    conversation_id VARCHAR(100) NOT NULL UNIQUE COMMENT 'Dify会话ID',
+    conversation_id VARCHAR(100) NOT NULL DEFAULT '0' COMMENT 'Dify会话ID',
     name VARCHAR(50) DEFAULT NULL COMMENT '姓名',
     age INT DEFAULT NULL COMMENT '年龄',
     major VARCHAR(100) DEFAULT NULL COMMENT '专业',
@@ -76,6 +76,10 @@ CREATE TABLE user_profiles (
     wechat VARCHAR(50) DEFAULT NULL COMMENT '微信',
     email VARCHAR(100) DEFAULT NULL COMMENT '邮箱',
     consultation_status ENUM('collecting','recommended','finished') DEFAULT 'collecting',
+    assess VARCHAR(100) DEFAULT NULL COMMENT '是否研判',
+    development VARCHAR(100) DEFAULT NULL COMMENT '发展需求',
+    abilities VARCHAR(100) DEFAULT NULL COMMENT '综合能力',
+    `is_Closed-loop` VARCHAR(100) DEFAULT NULL COMMENT '是否接受封闭式实训',
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
 ) COMMENT='用户信息表';""",

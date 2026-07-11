@@ -2,6 +2,7 @@
 <project version="4">
   <component name="ProjectModuleManager">
     <modules>
+      <module fileurl="file://$PROJECT_DIR$/../agent_pro/.idea/agent_pro.iml" filepath="$PROJECT_DIR$/../agent_pro/.idea/agent_pro.iml" />
       <module fileurl="file://$PROJECT_DIR$/.idea/dify_pro.iml" filepath="$PROJECT_DIR$/.idea/dify_pro.iml" />
     </modules>
   </component>

@@ -1,5 +1,6 @@
 """
 用户画像服务 —— 完整 CRUD
+conversation_id 默认值为 '0'，非唯一，查询返回多条记录。
 """
 from typing import Optional, List
 from study_abroad_agent.database import get_db
@@ -7,7 +8,8 @@ from study_abroad_agent.database import get_db
 EDITABLE_FIELDS = [
     "name", "age", "major", "education", "target_major", "language_score",
     "target_country", "gpa", "budget", "phone", "wechat", "email",
-    "consultation_status",
+    "consultation_status", "assess", "development", "abilities",
+    "is_Closed-loop",
 ]
 
 REQUIRED_FIELDS = ["education", "target_major", "language_score"]
@@ -19,8 +21,9 @@ class ProfileService:
 
     # ---------- 查询 ----------
     @staticmethod
-    def get_by_conversation_id(conversation_id: str) -> Optional[dict]:
-        return get_db().query_one(
+    def get_by_conversation_id(conversation_id: str) -> List[dict]:
+        """按 conversation_id 查询，返回多条记录列表。"""
+        return get_db().query(
             "SELECT * FROM user_profiles WHERE conversation_id = %s", (conversation_id,)
         )
 
@@ -36,9 +39,17 @@ class ProfileService:
         education: Optional[str] = None,
         status: Optional[str] = None,
         keyword: Optional[str] = None,
+        name: Optional[str] = None,
+        phone: Optional[str] = None,
+        email: Optional[str] = None,
+        wechat: Optional[str] = None,
+        target_country: Optional[str] = None,
+        target_major: Optional[str] = None,
+        major: Optional[str] = None,
         limit: int = 50,
         offset: int = 0,
     ) -> List[dict]:
+        """多字段组合查询，任意字段均可作为筛选条件。"""
         sql = "SELECT * FROM user_profiles WHERE 1=1"
         params: list = []
         if country:
@@ -51,9 +62,30 @@ class ProfileService:
             sql += " AND consultation_status = %s"
             params.append(status)
         if keyword:
-            sql += " AND (name LIKE %s OR conversation_id LIKE %s)"
-            params.append(f"%{keyword}%")
-            params.append(f"%{keyword}%")
+            sql += " AND (name LIKE %s OR conversation_id LIKE %s OR phone LIKE %s)"
+            kw = f"%{keyword}%"
+            params.extend([kw, kw, kw])
+        if name:
+            sql += " AND name LIKE %s"
+            params.append(f"%{name}%")
+        if phone:
+            sql += " AND phone LIKE %s"
+            params.append(f"%{phone}%")
+        if email:
+            sql += " AND email LIKE %s"
+            params.append(f"%{email}%")
+        if wechat:
+            sql += " AND wechat LIKE %s"
+            params.append(f"%{wechat}%")
+        if target_country:
+            sql += " AND target_country LIKE %s"
+            params.append(f"%{target_country}%")
+        if target_major:
+            sql += " AND target_major LIKE %s"
+            params.append(f"%{target_major}%")
+        if major:
+            sql += " AND major LIKE %s"
+            params.append(f"%{major}%")
         sql += " ORDER BY id DESC LIMIT %s OFFSET %s"
         params.extend([limit, offset])
         return get_db().query(sql, tuple(params))
@@ -62,11 +94,15 @@ class ProfileService:
     @staticmethod
     def create(data: dict) -> dict:
         """根据传入字段创建一条画像，返回最新对象。"""
-        cols = ["conversation_id"]
-        vals = [data["conversation_id"]]
+        data = ProfileService._normalize_data(data)
+        cols = []
+        vals = []
+        # conversation_id 始终写入（默认为 '0'）
+        cols.append("conversation_id")
+        vals.append(data.get("conversation_id", "0"))
         for f in EDITABLE_FIELDS:
             if data.get(f) is not None:
-                cols.append(f)
+                cols.append(f"`{f}`")
                 vals.append(data[f])
         placeholders = ", ".join(["%s"] * len(cols))
         col_names = ", ".join(cols)
@@ -76,30 +112,42 @@ class ProfileService:
 
     # ---------- 保存/增量更新 ----------
     @staticmethod
+    def _normalize_data(data: dict) -> dict:
+        """将 schema 别名映射为数据库字段名。"""
+        normalized = dict(data)
+        if "is_closed_loop" in normalized:
+            normalized["is_Closed-loop"] = normalized.pop("is_closed_loop")
+        return normalized
+
+    @staticmethod
     def save_profile(conversation_id: str, data: dict) -> dict:
-        profile = ProfileService.get_by_conversation_id(conversation_id)
-        if not profile:
+        data = ProfileService._normalize_data(data)
+        profiles = ProfileService.get_by_conversation_id(conversation_id)
+        if not profiles:
             data = dict(data)
             data["conversation_id"] = conversation_id
             return ProfileService.create(data)
 
+        # 取第一条记录更新
+        profile = profiles[0]
         update_fields, values = [], []
         for field in EDITABLE_FIELDS:
             if field in data and data[field] is not None:
-                update_fields.append(f"{field}=%s")
+                update_fields.append(f"`{field}`=%s")
                 values.append(data[field])
         if update_fields:
-            sql = f"UPDATE user_profiles SET {','.join(update_fields)} WHERE conversation_id=%s"
-            values.append(conversation_id)
+            sql = f"UPDATE user_profiles SET {','.join(update_fields)} WHERE id=%s"
+            values.append(profile["id"])
             get_db().execute(sql, tuple(values))
-        return ProfileService.get_by_conversation_id(conversation_id)
+        return ProfileService.get_by_id(profile["id"])
 
     @staticmethod
     def update_by_id(profile_id: int, data: dict) -> Optional[dict]:
+        data = ProfileService._normalize_data(data)
         update_fields, values = [], []
         for k, v in data.items():
             if k in EDITABLE_FIELDS and v is not None:
-                update_fields.append(f"{k}=%s")
+                update_fields.append(f"`{k}`=%s")
                 values.append(v)
         if not update_fields:
             return ProfileService.get_by_id(profile_id)
@@ -122,9 +170,11 @@ class ProfileService:
     # ---------- 画像完整性 ----------
     @staticmethod
     def check_profile(conversation_id: str) -> dict:
-        profile = ProfileService.get_by_conversation_id(conversation_id)
-        if not profile:
+        profiles = ProfileService.get_by_conversation_id(conversation_id)
+        if not profiles:
             return {"complete": False, "missing": list(REQUIRED_FIELDS)}
+        # 取第一条检查
+        profile = profiles[0]
         missing = []
         for field in REQUIRED_FIELDS:
             value = profile.get(field)

@@ -75,10 +75,10 @@ code, data = req("GET", "/api/v1/profiles", params={"limit": "2"})
 ok(code == 200 and data.get("code") == 0 and len(data.get("data", [])) == 2,
    f"GET /api/v1/profiles?limit=2 -> 200, rows={len(data.get('data', []))}")
 
-# 获取单条 (conversation_id=1)
-code, data = req("GET", "/api/v1/profiles/1")
-ok(code == 200 and data.get("data", {}).get("conversation_id") == "1",
-   "GET /api/v1/profiles/1 存在")
+# 获取单条 (by-id)
+code, data = req("GET", "/api/v1/profiles/by-id/1")
+ok(code == 200 and data.get("data", {}).get("id") == 1,
+   "GET /api/v1/profiles/by-id/1 存在")
 
 # 创建
 new_cid = "test-py-001"
@@ -94,12 +94,9 @@ create_body = {
 }
 code, data = req("POST", "/api/v1/profiles", body=create_body)
 
+new_profile_id = data.get("data", {}).get("id") if code == 200 else None
 ok(code == 200 and data.get("code") == 0 and data.get("data", {}).get("conversation_id") == new_cid,
    f"POST /api/v1/profiles -> 创建 {new_cid}")
-
-# 创建重复 -> 409
-code, data = req("POST", "/api/v1/profiles", body=create_body)
-ok(code == 409, f"POST /api/v1/profiles 重复 -> 409")
 
 # Upsert 更新
 upsert_body = {"conversation_id": new_cid, "gpa": 3.9}
@@ -107,27 +104,27 @@ code, data = req("POST", "/api/v1/profiles/upsert", body=upsert_body)
 ok(code == 200 and data.get("data", {}).get("profile", {}).get("gpa") == 3.9,
    "POST /api/v1/profiles/upsert 更新 gpa=3.9")
 
-# PUT 更新
+# PUT 更新 (by-id)
 put_body = {"budget": 400000}
-code, data = req("PUT", f"/api/v1/profiles/{new_cid}", body=put_body)
+code, data = req("PUT", f"/api/v1/profiles/by-id/{new_profile_id}", body=put_body)
 ok(code == 200 and data.get("data", {}).get("budget") == 400000,
-   f"PUT /api/v1/profiles/{new_cid} budget=400000")
+   f"PUT /api/v1/profiles/by-id/{new_profile_id} budget=400000")
 
 # 完整性校验
-code, data = req("GET", f"/api/v1/profiles/{new_cid}/check")
+code, data = req("GET", f"/api/v1/profiles/by-conversation/{new_cid}/check")
 ok(code == 200 and data.get("data", {}).get("complete") is True,
-   f"GET /api/v1/profiles/{new_cid}/check -> complete=True")
+   f"GET /api/v1/profiles/by-conversation/{new_cid}/check -> complete=True")
 
-# 获取 404
-code, data = req("GET", "/api/v1/profiles/not-exist-xyz")
-ok(code == 404, "GET /api/v1/profiles/not-exist-xyz -> 404")
+# 获取 404 (by-conversation)
+code, data = req("GET", "/api/v1/profiles/by-conversation/not-exist-xyz")
+ok(code == 404, "GET /api/v1/profiles/by-conversation/not-exist-xyz -> 404")
 
-# 删除
-code, data = req("DELETE", f"/api/v1/profiles/{new_cid}")
-ok(code == 200, f"DELETE /api/v1/profiles/{new_cid}")
+# 删除 (by-conversation)
+code, data = req("DELETE", f"/api/v1/profiles/by-conversation/{new_cid}")
+ok(code == 200, f"DELETE /api/v1/profiles/by-conversation/{new_cid}")
 
 # 再查 -> 404
-code, data = req("GET", f"/api/v1/profiles/{new_cid}")
+code, data = req("GET", f"/api/v1/profiles/by-conversation/{new_cid}")
 ok(code == 404, "DELETE 后再查 -> 404")
 
 # -------- 2. Courses --------
@@ -265,6 +262,7 @@ if code == 200:
     d = data.get("data", {})
     print(f"      SQL    : {d.get('sql')}")
     print(f"      行数   : {d.get('row_count')}  耗时: {d.get('elapsed_ms')}ms")
+    ok(d.get("action") == "query", "action=query")
     ok(d.get("row_count", 0) >= 1, "返回行数 >= 1")
 else:
     print(f"      ERROR: {data}")
@@ -285,12 +283,54 @@ else:
     ok(False, "复杂查询失败")
 
 # 写操作防护
-print("\n  测试 NL2SQL 只读防护...")
+print("\n  测试 NL2SQL 只读防护（DELETE 语句应被拒绝）...")
 code2, data2 = req("POST", "/api/v1/nl2sql/query", body={
     "question": "请帮我执行 DELETE FROM courses WHERE id = 1",
     "include_sql": True,
 })
 ok(code2 == 400, f"DELETE 语句被拒绝 -> HTTP {code2}")
+
+# 新增（自动判断为 insert）—— 注意：这会真实写一条数据
+print("\n  测试 NL2SQL 自动判断为 insert 新增课程...")
+INSERT_QUESTION = "新增一门课程：名称=NL2SQL测试用课程，category=语言课程，sub_category=测试，country=新加坡，target_education=本科，min_gpa=2.5，duration=1个月，price=1234，description=nl2sql接口测试新增，is_active=1"
+code3, data3 = req("POST", "/api/v1/nl2sql/query", body={
+    "question": INSERT_QUESTION,
+    "include_sql": True,
+})
+ok(code3 == 200 and data3.get("code") == 0, f"NL2SQL 自动 insert 状态码 200 (code={code3})")
+inserted_id = None
+if code3 == 200:
+    d = data3.get("data", {})
+    print(f"      SQL        : {d.get('sql')}")
+    print(f"      action     : {d.get('action')}")
+    print(f"      inserted_id: {d.get('inserted_id')}")
+    inserted_id = d.get("inserted_id")
+    ok(d.get("action") == "insert", "action=insert")
+    ok(isinstance(inserted_id, int) and inserted_id > 0, f"inserted_id > 0 ({inserted_id})")
+else:
+    print(f"      ERROR code={code3}: {data3}")
+    ok(False, "NL2SQL 新增失败")
+
+# 用 query 验证刚插入的数据确实存在（按名称匹配，避免 LLM 未 SELECT id 列导致断言误判）
+if inserted_id:
+    print(f"\n  用 intent=query 验证 inserted_id={inserted_id} 已入库...")
+    code4, data4 = req("POST", "/api/v1/nl2sql/query", body={
+        "question": f"查询 courses 表中课程名称为 NL2SQL测试用课程 的课程名称",
+        "include_sql": True,
+    })
+    if code4 == 200:
+        rows = data4.get("data", {}).get("rows", [])
+        found = any("NL2SQL测试用课程" in (r.get("course_name") or "") for r in rows)
+        ok(found, f"新插入行 (id={inserted_id}) 可被查询到")
+        if rows:
+            print(f"      查到行: {rows[0]}")
+    else:
+        ok(False, f"验证查询失败 code={code4}")
+
+# 清理：删除测试写入的数据
+if inserted_id:
+    print(f"\n  清理：删除测试数据 id={inserted_id}...")
+    req("DELETE", f"/api/v1/courses/{inserted_id}")
 
 # -------- 6. 旧版兼容 --------
 section("6. 旧版 Dify 兼容接口")
