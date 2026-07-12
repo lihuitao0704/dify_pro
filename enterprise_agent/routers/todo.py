@@ -8,13 +8,15 @@ import logging
 
 from enterprise_agent.database import get_db
 from enterprise_agent.models import LeaveApplication, StudentComplaint
+from enterprise_agent.schemas import ApiResponse
+from enterprise_agent.utils import require_operator
 
 logger = logging.getLogger("enterprise_agent.todo")
 router = APIRouter()
 
 
 # ==================== GET /api/agent/todo/all ====================
-@router.get("/todo/all", response_model=dict, summary="查询全部待办")
+@router.get("/todo/all", response_model=ApiResponse, summary="查询全部待办")
 def todo_all(
     current_user_id: int = Query(..., description="当前用户ID"),
     current_user_type: str = Query(..., description="当前用户类型"),
@@ -26,6 +28,7 @@ def todo_all(
     - 员工：查看自己提交的待审批请假 + 待处理投诉
     - 返回合并列表 + 总数 total
     """
+    require_operator(current_user_type)
     try:
         is_mgr = current_user_type == "管理者"
         items = []
@@ -73,24 +76,20 @@ def todo_all(
         # 按创建时间排序（最新在前）
         items.sort(key=lambda x: x.get("create_time") or "", reverse=True)
 
-        return {
-            "code": 0,
-            "msg": "success",
-            "data": {
-                "total": len(items),
-                "leave_pending": len(pending_leaves),
-                "complaint_pending": len(pending_complaints),
-                "list": items,
-            }
-        }
+        return ApiResponse(data={
+            "total": len(items),
+            "leave_pending": len(pending_leaves),
+            "complaint_pending": len(pending_complaints),
+            "list": items,
+        })
 
     except Exception as e:
-        logger.error(f"查询待办汇总失败: {e}", exc_info=True)
-        return {"code": 500, "msg": f"查询失败: {str(e)}", "data": None}
+        logger.error("查询待办汇总失败: %s", e, exc_info=True)
+        return ApiResponse(code=500, msg=f"查询失败: {str(e)}")
 
 
 # ==================== GET /api/agent/todo/pending_summary ====================
-@router.get("/todo/pending_summary", response_model=dict, summary="主动待办推送摘要")
+@router.get("/todo/pending_summary", response_model=ApiResponse, summary="主动待办推送摘要")
 def todo_pending_summary():
     """
     获取待办推送摘要（供前端轮询或主动推送使用）
@@ -100,16 +99,12 @@ def todo_pending_summary():
         from enterprise_agent.todo_scheduler import get_pending_summary
         todos = get_pending_summary()
         total = sum(t.get("count", 0) for t in todos)
-        return {
-            "code": 0,
-            "msg": "success",
-            "data": {
-                "total": total,
-                "has_pending": total > 0,
-                "items": todos,
-                "tip": f"您有 {total} 条待办事项需要处理" if total > 0 else "暂无待办事项",
-            }
-        }
+        return ApiResponse(data={
+            "total": total,
+            "has_pending": total > 0,
+            "items": todos,
+            "tip": f"您有 {total} 条待办事项需要处理" if total > 0 else "暂无待办事项",
+        })
     except Exception as e:
-        logger.error(f"查询待办推送摘要失败: {e}", exc_info=True)
-        return {"code": 500, "msg": f"查询失败: {str(e)}", "data": None}
+        logger.error("查询待办推送摘要失败: %s", e, exc_info=True)
+        return ApiResponse(code=500, msg=f"查询失败: {str(e)}")

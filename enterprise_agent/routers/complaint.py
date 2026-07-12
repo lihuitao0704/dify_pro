@@ -118,6 +118,7 @@ def handle_complaint(req: ComplaintHandleRequest, db: Session = Depends(get_db))
             complaint.handler_user_id = req.current_user_id
 
         complaint.update_time = datetime.now()
+        db.commit()
 
         logger.info(f"投诉处理更新: ID={req.complaint_id}, 状态={req.new_status}, 处理人={complaint.handler_user_id}")
         return ApiResponse(data={

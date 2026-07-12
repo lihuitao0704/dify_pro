@@ -5,14 +5,14 @@ GET   /api/agent/report/list    - 查询日报列表
 """
 from fastapi import APIRouter, Depends, Query, HTTPException
 from sqlalchemy.orm import Session
-from datetime import datetime, date
+from datetime import datetime
 from typing import Optional
 import logging
 
 from enterprise_agent.database import get_db
 from enterprise_agent.models import EmployeeDailyReport, Account
 from enterprise_agent.schemas import ApiResponse, ReportSubmitRequest
-from enterprise_agent.utils import require_operator, is_manager
+from enterprise_agent.utils import require_operator, is_manager, parse_date
 
 logger = logging.getLogger("enterprise_agent.report")
 router = APIRouter()
@@ -43,9 +43,9 @@ def submit_report(req: ReportSubmitRequest, db: Session = Depends(get_db)):
 
         # 校验日期
         try:
-            report_date = datetime.strptime(req.report_date, "%Y-%m-%d").date()
-        except ValueError:
-            return ApiResponse(code=400, msg="日期格式错误，请使用 YYYY-MM-DD 格式")
+            report_date = parse_date(req.report_date, "汇报日期")
+        except HTTPException as e:
+            return ApiResponse(code=400, msg=e.detail)
 
         # 检查是否已提交过该日报
         existing = db.query(EmployeeDailyReport).filter(
@@ -66,6 +66,7 @@ def submit_report(req: ReportSubmitRequest, db: Session = Depends(get_db)):
         )
         db.add(report)
         db.flush()
+        db.commit()
 
         logger.info(f"日报提交成功: ID={report.id}, 用户ID={req.current_user_id}, 日期={req.report_date}")
         return ApiResponse(data={"report_id": report.id})
@@ -107,17 +108,17 @@ def list_report(
         # 日期筛选
         if start_date:
             try:
-                sd = datetime.strptime(start_date, "%Y-%m-%d").date()
+                sd = parse_date(start_date, "开始日期")
                 query = query.filter(EmployeeDailyReport.report_date >= sd)
-            except ValueError:
-                return ApiResponse(code=400, msg="开始日期格式错误")
+            except HTTPException as e:
+                return ApiResponse(code=400, msg=e.detail)
 
         if end_date:
             try:
-                ed = datetime.strptime(end_date, "%Y-%m-%d").date()
+                ed = parse_date(end_date, "结束日期")
                 query = query.filter(EmployeeDailyReport.report_date <= ed)
-            except ValueError:
-                return ApiResponse(code=400, msg="结束日期格式错误")
+            except HTTPException as e:
+                return ApiResponse(code=400, msg=e.detail)
 
         # 排序
         query = query.order_by(EmployeeDailyReport.report_date.desc(), EmployeeDailyReport.submit_time.desc())

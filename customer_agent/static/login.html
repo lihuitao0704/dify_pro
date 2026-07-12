@@ -27,6 +27,7 @@
         <input type="password" id="password" placeholder="请输入密码"
                required autocomplete="current-password" />
       </div>
+      <p class="login-error" id="loginError" style="display:none"></p>
       <button type="submit" class="btn btn-primary" id="loginBtn">
         登录
       </button>
@@ -42,34 +43,69 @@
 
   <script src="js/utils.js"></script>
   <script>
-    // 已登录 → 直接跳转
-    if (localStorage.getItem('customer_token')) {
-      location.replace('dashboard.html');
-    }
+    // 已登录 → 验证 token 有效性
+    (async () => {
+      const savedToken = localStorage.getItem('customer_token');
+      if (savedToken) {
+        try {
+          const r = await fetch('/chat', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': 'Bearer ' + savedToken
+            },
+            body: JSON.stringify({ message: '/ping', session_id: '_verify_' })
+          });
+          if (r.status !== 401) {
+            location.replace('dashboard.html');
+            return;
+          }
+        } catch (e) { /* token 无效，留在登录页 */ }
+        // token 无效，清除
+        localStorage.removeItem('customer_token');
+        localStorage.removeItem('customer_user');
+      }
+    })();
 
     document.getElementById('loginForm').addEventListener('submit', async e => {
       e.preventDefault();
       const btn = document.getElementById('loginBtn');
+      const errEl = document.getElementById('loginError');
       const u = document.getElementById('username').value.trim();
       const p = document.getElementById('password').value;
+      if (!u || !p) {
+        errEl.textContent = '请输入用户名和密码';
+        errEl.style.display = '';
+        return;
+      }
+      errEl.style.display = 'none';
       btn.disabled = true;
       btn.textContent = '登录中...';
 
       try {
-        // TODO: 替换为你的真实登录接口 r = await api('/auth/login', ...)
-        // 演示用 硬编码 admin / admin123
-        await new Promise(r => setTimeout(r, 400));
-        if (u === 'admin' && p === 'admin123') {
-          localStorage.setItem('customer_token', 'demo-token-' + Date.now());
+        const resp = await fetch('/auth/login', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ username: u, password: p })
+        });
+        const data = await resp.json();
+        if (data.success) {
+          var s = data.student;
+          // 存储服务端签发的 JWT token
+          localStorage.setItem('customer_token', data.token);
           localStorage.setItem('customer_user', JSON.stringify({
-            name: u, id: 1, role: '管理员'
+            name: s.name, id: s.user_id, role: s.user_type || '学员'
           }));
           toast('登录成功！即将进入工作台...', 'success');
           setTimeout(() => location.replace('dashboard.html'), 600);
         } else {
-          toast('用户名或密码错误', 'error');
+          errEl.textContent = data.message || '用户名或密码不正确';
+          errEl.style.display = '';
+          toast(data.message || '用户名或密码不正确', 'error');
         }
       } catch (err) {
+        errEl.textContent = '无法连接服务，请检查网络';
+        errEl.style.display = '';
         toast('登录失败：' + err.message, 'error');
       } finally {
         btn.disabled = false;

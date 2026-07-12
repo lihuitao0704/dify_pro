@@ -106,6 +106,25 @@
           </div>
         </div>
 
+        <!-- ── ACT2026 项目进度 ── -->
+        <div class="card">
+          <div class="card-header">
+            <h3 class="card-title">🎯 ACT2026 项目进度</h3>
+            <span class="pill pill-success" id="progressPhase">Phase 3</span>
+          </div>
+          <div class="card-body">
+            <div style="display:flex;align-items:baseline;gap:12px;margin-bottom:8px;">
+              <span class="stat-value accent" id="overallPct">--</span>
+              <span style="color:var(--text-secondary);font-size:13px;" id="phaseName">加载中…</span>
+            </div>
+            <div style="background:var(--bg-tertiary);border-radius:8px;height:10px;overflow:hidden;margin-bottom:14px;">
+              <div id="overallBar" style="height:100%;width:0;background:linear-gradient(90deg,#3b82f6,#22c55e);border-radius:8px;transition:width .6s;"></div>
+            </div>
+            <div id="milestonesList" style="display:flex;flex-direction:column;gap:8px;"></div>
+            <div id="healthChecks" style="margin-top:14px;display:flex;gap:8px;flex-wrap:wrap;"></div>
+          </div>
+        </div>
+
         <div class="card">
           <div class="card-header">
             <h3 class="card-title">系统状态</h3>

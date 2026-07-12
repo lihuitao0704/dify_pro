@@ -5,6 +5,11 @@
 
 import sys
 import os
+import io
+
+# 修复 Windows GBK 编码问题
+if sys.stdout.encoding != 'utf-8':
+    sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8')
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
 # 先初始化数据库（独立测试）

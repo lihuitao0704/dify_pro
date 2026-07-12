@@ -156,10 +156,10 @@ body{font-family:"PingFang SC","Microsoft YaHei","Helvetica Neue",sans-serif;bac
     <div class="logo"></div>
     <h2>小留同学</h2>
     <div class="sub">已签约学生专属智能助手</div>
-    <label>学号</label>
-    <input type="text" id="loginId" placeholder="请输入学号，如 1001">
-    <label>姓名</label>
-    <input type="text" id="loginName" placeholder="请输入姓名，如 张三">
+    <label>用户名</label>
+    <input type="text" id="loginUser" placeholder="请输入用户名">
+    <label>密码</label>
+    <input type="password" id="loginPass" placeholder="请输入密码">
     <button type="button" id="loginBtn">登 录</button>
     <div class="error" id="loginError"></div>
   </div>
@@ -227,17 +227,17 @@ body{font-family:"PingFang SC","Microsoft YaHei","Helvetica Neue",sans-serif;bac
 var sessId="", isBusy=false, student=null;
 
 document.getElementById("loginBtn").addEventListener("click", async function(){
-  var sid=document.getElementById("loginId").value.trim();
-  var nm=document.getElementById("loginName").value.trim();
-  if(!sid||!nm){document.getElementById("loginError").textContent="请输入学号和姓名";return;}
+  var u=document.getElementById("loginUser").value.trim();
+  var p=document.getElementById("loginPass").value;
+  if(!u||!p){document.getElementById("loginError").textContent="请输入用户名和密码";return;}
   try{
-    var r=await fetch("/auth/login",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({student_id:parseInt(sid),name:nm})});
+    var r=await fetch("/auth/login",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({username:u,password:p})});
     var d=await r.json();
     if(d.success){student=d.student;document.getElementById("loginOverlay").style.display="none";document.getElementById("mainApp").classList.remove("hidden");document.getElementById("stuName").textContent=d.student.name;document.getElementById("stuId").textContent=d.student.id;loadReminders();loadMyPanel();}
-    else{document.getElementById("loginError").textContent=d.message||"学号或姓名不正确";}
+    else{document.getElementById("loginError").textContent=d.message||"用户名或密码不正确";}
   }catch(e){document.getElementById("loginError").textContent="服务暂不可用，请稍后重试";}
 });
-document.getElementById("loginName").addEventListener("keydown",function(e){if(e.key==="Enter")document.getElementById("loginBtn").click();});
+document.getElementById("loginPass").addEventListener("keydown",function(e){if(e.key==="Enter")document.getElementById("loginBtn").click();});
 document.getElementById("logoutBtn").addEventListener("click",function(){student=null;sessId="";document.getElementById("loginOverlay").style.display="flex";document.getElementById("mainApp").classList.add("hidden");});
 
 // ====== 请假弹窗 ======

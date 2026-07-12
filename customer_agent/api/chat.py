@@ -5,6 +5,7 @@
 
 import json
 from fastapi import APIRouter, Request
+from fastapi.responses import JSONResponse
 from typing import Optional
 from customer_agent.agent import process_message
 from customer_agent.agent import get_context, new_session_id
@@ -40,7 +41,16 @@ async def chat_endpoint(request: Request):
     """
     主对话入口。每次返回助手回复+识别到的意图。
     会话由 session_id 维护，不传则自动创建新会话。
+    需要 Bearer Token 鉴权。
     """
+    # 鉴权：已登录 → 校验学员身份；未登录 → 公开体验模式
+    user_id = getattr(request.state, "auth_user_id", None)
+    if user_id:
+        user_type = getattr(request.state, "auth_user_type", "")
+        if user_type != "学员":
+            return JSONResponse({"error": "仅学生账号可使用客服聊天"}, status_code=403)
+    # 无 auth_user_id = 公开体验（首页未登录用户），不做角色限制
+
     data = await _parse_chat_body(request)
     message = data.get("message", "")
     session_id = data.get("session_id", None)

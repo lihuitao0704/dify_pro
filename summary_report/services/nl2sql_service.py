@@ -172,6 +172,9 @@ def generate_sql(
     prompt = f"""
 你是一个 MySQL 专家。根据用户的问题、数据库表结构，生成对应的 SQL 查询语句。
 
+重要：以用户的问题为核心，只生成回答该问题所需的 SQL。
+如果问题只涉及某个具体维度，只生成对应的 1-2 条 SQL，无需覆盖所有可用维度。
+
 数据库表结构：
 {schema_text}
 
@@ -187,6 +190,8 @@ def generate_sql(
 5. 如果有日期范围筛选，使用 BETWEEN 或 >= <=
 6. 如果有同环比计算，使用子查询或窗口函数
 7. 返回格式：["SELECT ... FROM ...", "SELECT ... FROM ..."]
+8. 如果用户的问题与数据库查询完全无关（如聊天、问候、天气、自我介绍、纯数字等），
+   请返回特殊标记：["__CHAT__"]
 
 JSON 格式示例：
 ["SELECT st.name, s.score FROM students st JOIN scores s ON st.id = s.student_id WHERE st.name = '张三'"]
@@ -205,7 +210,7 @@ JSON 格式示例：
 
     sql_list = clean_sql_list(sql_list)
     if not sql_list:
-        raise ValueError("LLM 未生成有效的 SQL 语句")
+        raise ValueError("无法理解该问题，请用自然语言描述你想查询的业务数据。例如：「最近一周各渠道的客户数量」")
     return sql_list
 
 
@@ -369,6 +374,21 @@ def run_nl2sql_pipeline(
 
     sql_list = generate_sql(question, schema, extra_instruction)
     logger.info("[NL2SQL] 生成 %d 条SQL", len(sql_list))
+
+    # ── 非业务问题拦截：LLM 返回 __CHAT__ 标记 ──────────────
+    if len(sql_list) == 1 and sql_list[0] == "__CHAT__":
+        logger.info("[NL2SQL] 非业务问题，返回友好提示")
+        return (
+            [],
+            [],
+            "您好！我是智能报告助手，专注于帮您分析业务数据，包括：\n\n"
+            "📊 客户经营分析 — 客户状态、渠道效果、顾问业绩、流失归因\n"
+            "👥 员工日报汇总 — 日报提交率、部门产出、风险项提取\n"
+            "🧠 心理关怀周报 — 情绪态势、风险学生、预警处理\n"
+            "📋 投诉处理周报 — 投诉总量、处理进度、满意度分析\n"
+            "🔍 通用数据查询 — 跨模块联合查询\n\n"
+            "请尝试输入与上述业务相关的问题，或点击推荐问题快速体验。😊",
+        )
 
     if not skip_security:
         # 默认做只读校验，防止幻觉输出写入语句

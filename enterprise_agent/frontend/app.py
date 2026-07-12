@@ -256,6 +256,10 @@ if "current_page" not in st.session_state:
     st.session_state.current_page = "chat"
 if "pending_input" not in st.session_state:
     st.session_state.pending_input = ""
+if "pending_action" not in st.session_state:
+    st.session_state.pending_action = None
+if "pending_context" not in st.session_state:
+    st.session_state.pending_context = {}
 
 # ============================================================
 # 处理用户消息
@@ -276,14 +280,54 @@ def process_message(user_text: str):
     if not user_text.strip():
         return
 
-    intent = recognize(user_text)
+    text = user_text.strip()
+
+    # === 待确认操作 ===
+    pending = st.session_state.get("pending_action")
+    if pending:
+        confirm_words = ["确认", "确定", "是", "嗯", "对", "好的", "可以", "yes", "y", "ok", "提交"]
+        cancel_words = ["取消", "不了", "不", "否", "不要", "算了", "no", "n"]
+        if any(kw in text.lower() for kw in confirm_words):
+            st.session_state.pending_action = None
+            ctx = st.session_state.pending_context
+            st.session_state.pending_context = {}
+            st.session_state.messages.append({"role": "user", "content": text})
+            result_text = execute_action(pending, ctx.get("intent", {}), ctx.get("raw_text", ""), _uid(), _utype())
+            st.session_state.messages.append({"role": "bot", "content": result_text, "label": ctx.get("label", "✅ 操作已执行")})
+            return
+        elif any(kw in text.lower() for kw in cancel_words):
+            st.session_state.pending_action = None
+            st.session_state.pending_context = {}
+            st.session_state.messages.append({"role": "user", "content": text})
+            st.session_state.messages.append({"role": "bot", "content": "❌ 操作已取消", "label": "⏸️ 已取消"})
+            return
+        else:
+            # 非确认/取消消息，视作新对话，清除待确认
+            st.session_state.pending_action = None
+            st.session_state.pending_context = {}
+
+    # === 正常意图识别 ===
+    intent = recognize(text)
     action = intent["action"]
     label = intent["label"]
 
-    st.session_state.messages.append({"role": "user", "content": user_text})
+    st.session_state.messages.append({"role": "user", "content": text})
 
-    result_text = execute_action(action, intent, user_text, _uid(), _utype())
+    # 需要确认的操作：请假提交、替学生请假
+    confirm_actions = {"parse_leave_employee", "parse_leave_student", "batch_approve_leave"}
+    if action in confirm_actions:
+        # 生成预览信息但不提交，等用户确认
+        preview = _preview_action(action, intent, text)
+        st.session_state.pending_action = action
+        st.session_state.pending_context = {"intent": intent, "raw_text": text, "label": label}
+        st.session_state.messages.append({
+            "role": "bot",
+            "content": preview + "\n\n🤔 **请确认以上操作，输入「确认」提交，或「取消」放弃**",
+            "label": label,
+        })
+        return
 
+    result_text = execute_action(action, intent, text, _uid(), _utype())
     st.session_state.messages.append({"role": "bot", "content": result_text, "label": label})
 
 
@@ -359,6 +403,30 @@ def _handle_leave_student(raw_text, user_id, user_type):
     return f"{format_result('submit_leave', data)}\n👤 学生：{student_name}\n📅 类型：{leave_type}\n📆 日期：{start}"
 
 
+def _handle_batch_approve(raw_text, user_id, user_type):
+    """批量审批：从待审批列表中批量通过/驳回"""
+    import re
+    # 解析指令：通过/驳回 + 请假ID列表
+    action = "approve"
+    if any(kw in raw_text for kw in ["驳回", "拒绝", "不批"]):
+        action = "reject"
+
+    # 提取请假ID（支持"#1,#2,#3"或"1,2,3"格式）
+    ids = re.findall(r'#?(\d+)', raw_text)
+    leave_ids = [int(i) for i in ids if int(i) > 0]
+
+    if not leave_ids:
+        # 如果没有指定ID，默认全部通过
+        return "📋 请指定要审批的请假ID，例如：\n- `通过 #1,#2,#3`\n- `驳回 #5`\n- `批准全部待审批`"
+
+    if len(leave_ids) > 50:
+        return "⚠️ 单次最多审批50条记录"
+
+    data = batch_approve_leave(leave_ids, action, user_id=user_id, user_type=user_type)
+    action_label = "通过" if action == "approve" else "驳回"
+    return f"{format_result('batch_approve_leave', data)}\n📋 操作：{action_label}\n🔢 数量：{len(leave_ids)} 条"
+
+
 def _handle_report_list(raw_text, user_id, user_type):
     data = get_report_list(user_id=user_id, user_type=user_type)
     return format_result("get_report_list", data)
@@ -420,6 +488,54 @@ def _handle_nl2sql(raw_text, user_id, user_type):
     return format_result("query_nl2sql", data)
 
 
+# ==================== 预审预览（提交前确认） ====================
+
+def _preview_action(action: str, intent: dict, raw_text: str) -> str:
+    """生成操作预览信息，供用户确认"""
+    from datetime import date
+    from intent import parse_leave_type, parse_date, parse_student_name
+
+    if action == "parse_leave_employee":
+        leave_type = parse_leave_type(raw_text)
+        start = parse_date(raw_text)
+        reason = ""
+        if "因为" in raw_text:
+            reason = raw_text.split("因为", 1)[1].strip()
+        if "原因" in raw_text:
+            reason = raw_text.split("原因", 1)[1].strip() or reason
+        return (
+            f"📋 **请假预览**\n\n"
+            f"👤 申请人：自己（员工）\n"
+            f"📌 类型：{leave_type}\n"
+            f"📅 日期：{start}\n"
+            f"📝 原因：{reason or '无'}"
+        )
+
+    elif action == "parse_leave_student":
+        student_name = parse_student_name(raw_text) or "学生"
+        leave_type = parse_leave_type(raw_text)
+        start = parse_date(raw_text)
+        return (
+            f"📋 **替学生请假预览**\n\n"
+            f"👤 学生：{student_name}\n"
+            f"📌 类型：{leave_type}\n"
+            f"📅 日期：{start}"
+        )
+
+    elif action == "batch_approve_leave":
+        import re
+        action_label = "通过" if "驳回" not in raw_text else "驳回"
+        ids = re.findall(r'#?(\d+)', raw_text)
+        leave_ids = [int(i) for i in ids if int(i) > 0]
+        return (
+            f"📋 **批量审批预览**\n\n"
+            f"🔧 操作：{action_label}\n"
+            f"🔢 请假ID：{leave_ids if leave_ids else '全部待审批'}"
+        )
+
+    return "⚠️ 即将执行操作，请确认"
+
+
 # Action → Handler 映射表。加新动作只需在这里加一行
 ACTION_HANDLERS = {
     "get_todo_all": _handle_todo_all,
@@ -429,6 +545,7 @@ ACTION_HANDLERS = {
     "get_leave_todo": _handle_leave_todo,
     "parse_leave_employee": _handle_leave_employee,
     "parse_leave_student": _handle_leave_student,
+    "batch_approve_leave": _handle_batch_approve,
     "get_report_list": _handle_report_list,
     "parse_report_submit": _handle_report_submit,
     "get_organization_tree": _handle_org_tree,
@@ -476,8 +593,10 @@ with st.sidebar:
         ("📋", "待办汇总", "查看我的待办"),
         ("👤", "意向客户", "查看所有客户"),
         ("👤", "新增客户", "新增客户 张三 25岁 男 13800138000"),
-        ("📅", "请假管理", "我要请病假"),
+        ("📅", "我要请假", "我要请病假"),
         ("📅", "请假审批", "查看待审批请假"),
+        ("✅", "批量通过", "通过 #1,#2,#3"),
+        ("❌", "批量驳回", "驳回 #4,#5"),
         ("📊", "日报管理", "查看我的日报"),
         ("🏢", "组织架构", "查看组织架构"),
         ("💬", "投诉列表", "查看投诉列表"),
@@ -522,14 +641,15 @@ if not st.session_state.messages:
 - 📋 **待办汇总** — 查看我的待办任务
 - 👤 **意向客户** — 查看客户、新增客户、跟进客户
 - 📅 **请假管理** — 请假、查看待审批
+- ✅ **请假审批** — 管理者可通过/驳回请假申请
 - 📊 **日报管理** — 提交日报、查看日报
 - 🏢 **组织架构** — 查看公司组织架构
 - 💬 **投诉反馈** — 查看投诉、处理投诉
 - 📝 **成绩管理** — 查看成绩、录入成绩
-- 📚 **知识库** — 查询公司规章制度
+- 📚 **知识库** — 查询规章制度和留学政策
 - 🤖 **NL2SQL** — 用自然语言查询数据
 
-💡 试试输入"查看我的待办"或点击左侧快捷按钮""")
+💡 试试"请假审批"查看待批申请，或"通过 #1,#2"批量审批""")
 
 # 显示聊天历史
 for msg in st.session_state.messages:

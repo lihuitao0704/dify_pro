@@ -24,7 +24,7 @@ from enterprise_agent.models import Account, Employee, Student, Department
 # 日志
 logging.basicConfig(
     level=logging.INFO,
-    format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
+    format="%(asctime)s | %(levelname)-5s | %(name)s | %(message)s",
     datefmt="%Y-%m-%d %H:%M:%S",
 )
 logger = logging.getLogger("sync_accounts")
@@ -83,10 +83,10 @@ def sync_accounts():
                 is_mgr = emp.emp_id in manager_ids
                 user_type = "管理者" if is_mgr else "员工"
 
-                import hashlib, secrets
-                raw_pwd = secrets.token_hex(6)
-                hashed_pwd = hashlib.md5(raw_pwd.encode()).hexdigest()
-                logger.info("  >>> 创建账号: %s | 用户名: %s | 密码: %s", user_type, username, raw_pwd)
+                import secrets
+                from enterprise_agent.security import hash_password
+                # 安全提示：密码仅在创建时可用，日志仅记录用户名不记录密码
+                logger.info("  >>> 创建账号: %s | 用户名: %s", user_type, username)
                 account = Account(
                     username=username,
                     password=hashed_pwd,
@@ -134,9 +134,10 @@ def sync_accounts():
                     logger.debug(f"  跳过已存在: {stu.name}")
                     continue
 
+                from enterprise_agent.security import hash_password
                 account = Account(
                     username=username,
-                    password="123456",  # 默认密码
+                    password=hash_password("123456"),  # 默认密码（bcrypt哈希后存储）
                     real_name=stu.name,
                     user_type="学员",
                     dept_id=None,
@@ -188,17 +189,17 @@ if __name__ == "__main__":
     """
     直接运行: python sync_accounts.py
     """
-    print("=" * 50)
-    print("企业智能助手 - 账户同步脚本")
-    print("=" * 50)
+    logger.info("=" * 50)
+    logger.info("企业智能助手 - 账户同步脚本")
+    logger.info("=" * 50)
 
     stats = sync_accounts()
 
     total_created = stats["created_employees"] + stats["created_managers"] + stats["created_students"]
     if total_created > 0:
-        print(f"\n✅ 同步完成！新增 {total_created} 个账号")
+        logger.info("同步完成！新增 %s 个账号", total_created)
     else:
-        print(f"\nℹ️  同步完成，没有新增账号（所有记录已存在）")
+        logger.info("同步完成，没有新增账号（所有记录已存在）")
 
     if stats["errors"] > 0:
-        print(f"⚠️  发生 {stats['errors']} 个错误，请查看日志")
+        logger.warning("发生 %s 个错误，请查看日志", stats["errors"])

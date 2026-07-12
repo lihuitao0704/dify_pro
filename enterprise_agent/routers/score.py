@@ -26,7 +26,7 @@ def add_score(req: ScoreAddRequest, db: Session = Depends(get_db)):
     仅员工/管理者可操作，admin_user_id 自动设为当前用户
     """
     try:
-        # check_permission removed — replaced by require_operator JWT guardreq.current_user_type)
+        require_operator(req.current_user_type)
 
         # 校验分数范围
         if req.score < 0 or req.score > 100:
@@ -56,6 +56,7 @@ def add_score(req: ScoreAddRequest, db: Session = Depends(get_db)):
         )
         db.add(score)
         db.flush()
+        db.commit()
 
         logger.info(f"成绩录入成功: ID={score.id}, 学生ID={req.student_id}, 科目={req.subject}")
         return ApiResponse(data={"score_id": score.id})
@@ -86,7 +87,7 @@ def list_score(
     员工/管理者可查看，支持按 student_id 和 subject 筛选
     """
     try:
-        # check_permission removed — replaced by require_operator JWT guardcurrent_user_type)
+        require_operator(current_user_type)
 
         query = db.query(StudentScore)
 

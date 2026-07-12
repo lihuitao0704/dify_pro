@@ -4,7 +4,13 @@
 """
 from datetime import date, datetime
 from typing import Optional, Any, List
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, validator
+
+from enterprise_agent.utils import (
+    ROLE_MANAGER, ROLE_EMPLOYEE, ROLE_STUDENT, ROLE_GUEST,
+)
+
+ALLOWED_USER_TYPES = (ROLE_MANAGER, ROLE_EMPLOYEE, ROLE_STUDENT, ROLE_GUEST)
 
 
 # ==================== 统一响应模型 ====================
@@ -22,16 +28,10 @@ class ApiResponse(BaseModel):
 
 
 # ==================== 通用权限模型 ====================
-ALLOWED_USER_TYPES = ("员工", "管理者", "学员", "游客")
-
-
 class CurrentUser(BaseModel):
     """当前用户信息（前端传递）"""
     current_user_id: int = Field(..., ge=1, description="当前用户ID")
     current_user_type: str = Field(..., description="当前用户类型")
-
-    # Pydantic v1 兼容校验
-    from pydantic import validator
 
     @validator("current_user_type")
     def validate_user_type(cls, v):
@@ -53,6 +53,15 @@ class CustomerAddRequest(BaseModel):
     customer_age: Optional[int] = Field(None, ge=0, le=150, description="年龄")
     customer_gender: Optional[str] = Field(None, max_length=8, description="性别")
     customer_phone: Optional[str] = Field(None, max_length=20, description="联系电话")
+
+    @validator("customer_phone")
+    def validate_phone(cls, v):
+        if v is not None:
+            import re
+            # 宽松校验：允许手机(11位)、固话(带区号)、国际号，仅拦截明显非法输入
+            if not re.match(r'^[\d\+\-\s\(\)]{7,20}$', v.strip()):
+                raise ValueError("联系电话格式错误，请输入有效的电话号码")
+        return v
     customer_source: Optional[str] = Field(None, max_length=32, description="客户来源")
     customer_demand: Optional[str] = Field(None, description="客户需求")
     # 权限参数

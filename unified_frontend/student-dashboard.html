@@ -6,6 +6,7 @@
   <title>学生工作台 · 粤教留学</title>
   <link rel="stylesheet" href="/portal/css/base.css" />
   <link rel="stylesheet" href="/portal/css/dashboard.css" />
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 </head>
 <body>
 
@@ -26,6 +27,13 @@
       <div class="nav-section" style="margin-top:16px">快捷操作</div>
       <a href="#" data-action="leave"><span class="icon">📝</span>请假申请</a>
       <a href="#" data-action="feedback"><span class="icon">📮</span>提交反馈</a>
+      <div class="nav-section" style="margin-top:16px">快速提问</div>
+      <a href="#" data-quick="查一下我的成绩"><span class="icon">📊</span>我的成绩</a>
+      <a href="#" data-quick="最近有什么活动和讲座"><span class="icon">🎉</span>活动讲座</a>
+      <a href="#" data-quick="帮我查一下课程信息"><span class="icon">📚</span>选课查询</a>
+      <a href="#" data-quick="我的签证办理到哪一步了"><span class="icon">🛂</span>签证进度</a>
+      <a href="#" data-quick="海外生活指南"><span class="icon">🌍</span>生活指南</a>
+      <a href="#" data-quick="最近压力好大"><span class="icon">💙</span>心理关怀</a>
     </nav>
     <div class="sidebar-user">
       <div class="avatar" id="sidebarAvatar">👤</div>
@@ -78,14 +86,55 @@
         <!-- 我的状态 -->
         <div class="panel-section" id="profileSection">
           <div class="panel-title">😊 我的状态</div>
-          <div class="card">
-            <div class="card-title">情绪状态</div>
-            <div class="card-value" id="emotionStatus">加载中...</div>
-            <div class="card-desc" id="emotionRisk">--</div>
+          <div class="card" id="emotionCard">
+            <div class="card-title">🧠 心理画像</div>
+            <!-- 待处理预警提醒 -->
+            <div class="alert-reminder" id="alertReminder" style="display:none">
+              ⚠️ 你有一条待处理的心理关怀提醒
+            </div>
+            <!-- 情绪概览 -->
+            <div class="emotion-hero">
+              <div class="emoji" id="emotionEmoji">😊</div>
+              <div class="emotion-name" id="emotionStatus">加载中...</div>
+              <div class="risk-meta" id="emotionRisk">--</div>
+              <div class="risk-bar"><div class="risk-bar-fill" id="riskFill" style="width:0%"></div></div>
+            </div>
+            <!-- 情绪趋势图 -->
+            <div class="emotion-section-title">📈 情绪趋势（近14天）</div>
+            <div class="emotion-chart-wrap">
+              <canvas id="emotionTrendChart"></canvas>
+            </div>
+            <div class="chart-empty" id="trendEmpty" style="display:none">暂无足够数据，多和小留聊天吧～</div>
+            <!-- 情绪分布 -->
+            <div class="emotion-section-title">🎨 情绪分布</div>
+            <div class="emotion-donut-wrap">
+              <canvas id="emotionDistChart"></canvas>
+            </div>
+            <div class="chart-empty" id="distEmpty" style="display:none">暂无情绪数据</div>
+            <!-- 关键指标 -->
+            <div class="emotion-section-title">📊 关键指标</div>
+            <div class="metrics-row">
+              <div class="metric-item">
+                <div class="metric-value" id="metricNegKeywords">0</div>
+                <div class="metric-label">负面关键词</div>
+              </div>
+              <div class="metric-item">
+                <div class="metric-value" id="metricConsDays">0</div>
+                <div class="metric-label">连续负面天数</div>
+              </div>
+              <div class="metric-item">
+                <div class="metric-value" id="metricLastAssess">--</div>
+                <div class="metric-label">最近评估</div>
+              </div>
+            </div>
+            <!-- 个性化建议 -->
+            <div class="suggestion-box suggestion-low" id="suggestionBox">
+              <div id="suggestionText">加载中...</div>
+            </div>
           </div>
           <div class="card">
-            <div class="card-title">升学意向</div>
-            <div class="card-value" style="font-size:16px" id="upgradeStatus">暂无</div>
+            <div class="card-title">🎯 升学意向</div>
+            <div id="upgradeStatus" style="font-size:13px;color:#64748b">暂无</div>
           </div>
         </div>
 

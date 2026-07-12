@@ -1,7 +1,13 @@
 /**
  * auth.js — 统一鉴权模块
  * 管理 JWT token、登录状态、角色判断
+ * 学生 → 学生端(8000)  |  员工 → 企业端(8001)
  */
+
+// 学生登录 → 走当前服务器自身（8000 或 9000 都有 /auth/login + 角色校验）
+// 员工登录 → 始终走企业端 8001（有 JWT + bcrypt + 角色校验）
+const STUDENT_AUTH_URL = '/auth/login';
+const EMPLOYEE_AUTH_URL = 'http://localhost:8001/auth/login';
 
 const Auth = {
   STORAGE_KEY: 'dify_auth',
@@ -68,93 +74,60 @@ const Auth = {
     return h;
   },
 
-  // ── 学生登录 ──
-  async studentLogin(studentId, name) {
-    // Try unified API first
-    const urls = [
-      `http://localhost:8000/auth/login`,
-    ];
-    for (const url of urls) {
-      try {
-        const r = await fetch(url, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ student_id: parseInt(studentId), name }),
+  // ── 学生登录（仅学生端 8000，仅允许 user_type=学员）──
+  async studentLogin(username, password) {
+    try {
+      const r = await fetch(STUDENT_AUTH_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ username, password }),
+      });
+      const data = await r.json();
+      if (data.success) {
+        const s = data.student;
+        this.set({
+          role: 'student',
+          user_id: s.id,
+          user_name: s.name,
+          token: data.token || '',
+          student: s,
+          user_type: s.user_type || '',
+          exp: data.exp || (Date.now()/1000 + 86400),
         });
-        const data = await r.json();
-        if (data.success) {
-          this.set({
-            role: 'student',
-            user_id: studentId,
-            user_name: name,
-            token: data.token || '',
-            student: data.student || {},
-            exp: data.exp || (Date.now()/1000 + 86400),
-          });
-          return { success: true };
-        }
-        return { success: false, message: data.message || '学号或姓名不正确' };
-      } catch (e) {
-        continue;
+        return { success: true };
       }
+      return { success: false, message: data.message || '用户名或密码不正确' };
+    } catch (e) {
+      return { success: false, message: '无法连接学生服务，请确认服务已启动' };
     }
-    return { success: false, message: '无法连接学生服务' };
   },
 
-  // ── 员工登录 ──
+  // ── 员工登录（仅企业端 8001，拒绝 user_type=学员）──
   async employeeLogin(username, password) {
-    const urls = [
-      `http://localhost:8001/auth/login`,
-    ];
-    for (const url of urls) {
-      try {
-        const r = await fetch(url, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ username, password }),
+    try {
+      const r = await fetch(EMPLOYEE_AUTH_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ username, password }),
+      });
+      const data = await r.json();
+      if (data.success) {
+        this.set({
+          role: 'employee',
+          user_id: data.user_id || 0,
+          user_name: data.real_name || username,
+          token: data.token || '',
+          user_type: data.user_type || '员工',
+          exp: data.expire_hours
+            ? (Date.now() / 1000 + data.expire_hours * 3600)
+            : (Date.now() / 1000 + 86400),
         });
-        const data = await r.json();
-        if (data.success || data.code === 0) {
-          this.set({
-            role: 'employee',
-            user_id: data.user_id || data.data?.user_id || 0,
-            user_name: username,
-            token: data.token || '',
-            user_type: data.user_type || data.data?.user_type || '员工',
-            exp: data.exp || (Date.now()/1000 + 86400),
-          });
-          return { success: true };
-        }
-        // Fallback: demo login
-        if (username === 'admin' && password === 'admin123') {
-          this.set({
-            role: 'employee',
-            user_id: 1,
-            user_name: 'admin',
-            token: 'demo-token',
-            user_type: '管理者',
-            exp: Date.now()/1000 + 86400,
-          });
-          return { success: true };
-        }
-        return { success: false, message: data.msg || data.message || '用户名或密码错误' };
-      } catch (e) {
-        // fallback
-        if (username === 'admin' && password === 'admin123') {
-          this.set({
-            role: 'employee',
-            user_id: 1,
-            user_name: 'admin',
-            token: 'demo-token',
-            user_type: '管理者',
-            exp: Date.now()/1000 + 86400,
-          });
-          return { success: true };
-        }
-        continue;
+        return { success: true };
       }
+      return { success: false, message: data.message || '用户名或密码错误' };
+    } catch (e) {
+      return { success: false, message: '无法连接企业服务，请确认服务已启动' };
     }
-    return { success: false, message: '无法连接企业服务' };
   },
 
   /** 退出登录 */
@@ -185,7 +158,11 @@ function toast(msg, type = 'info', duration = 3000) {
   el.className = `toast ${type}`;
   el.textContent = msg;
   container.appendChild(el);
-  setTimeout(() => { el.remove(); }, duration);
+  requestAnimationFrame(() => el.classList.add('show'));
+  setTimeout(() => {
+    el.classList.remove('show');
+    setTimeout(() => el.remove(), 250);
+  }, duration);
 }
 
 // ── 转义 HTML ──

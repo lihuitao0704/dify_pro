@@ -5,6 +5,7 @@
 
 import uuid
 from datetime import datetime
+import pymysql
 from . import db as _db
 from .config import MAX_HISTORY_TURNS
 
@@ -58,15 +59,23 @@ def save_turn(session_id: str, student_id: int,
             "main_intents": new_intents,
         })
     else:
-        # 新建会话
-        _db.insert("conversation_session", {
-            "session_id": session_id,
-            "student_id": student_id,
-            "total_turns": 1,
-            "main_intents": intent,
-            "emotion_start": emotion,
-            "emotion_end": emotion,
-        })
+        # 新建会话（处理连接池延迟导致的重复键）
+        try:
+            _db.insert("conversation_session", {
+                "session_id": session_id,
+                "student_id": student_id,
+                "total_turns": 1,
+                "main_intents": intent,
+                "emotion_start": emotion,
+                "emotion_end": emotion,
+            })
+        except pymysql.err.IntegrityError:
+            # 仅重复键走 update，其他异常向上抛出
+            _db.update("conversation_session", {"session_id": session_id}, {
+                "end_time": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+                "total_turns": 1,
+                "emotion_end": emotion,
+            })
 
     # 插两条消息明细
     _db.insert("conversation_message", {
@@ -86,14 +95,18 @@ def save_turn(session_id: str, student_id: int,
 
 
 def get_emotion_history(student_id: int, days: int = 14) -> list[dict]:
-    """获取学生近期情绪记录（从消息明细表查）"""
-    rows = _db.query(
-        """SELECT emotion_detected, intent, created_at
-           FROM conversation_message
-           WHERE student_id = %s AND role = 'user' AND emotion_detected != ''
-           ORDER BY created_at DESC LIMIT %s""",
-        (student_id, days * 5)
-    )
+    """获取学生近期情绪记录（从消息明细表查）。表不存在时降级返回空"""
+    try:
+        rows = _db.query(
+            """SELECT emotion_detected, intent, created_at
+               FROM conversation_message
+               WHERE student_id = %s AND role = 'user' AND emotion_detected != ''
+               AND created_at >= DATE_SUB(NOW(), INTERVAL %s DAY)
+               ORDER BY created_at DESC""",
+            (student_id, days)
+        )
+    except Exception:
+        return []
     return [
         {"emotion": r["emotion_detected"], "date": str(r["created_at"]),
          "intent": r.get("intent", "")}
@@ -107,8 +120,8 @@ def get_student_context(student_id: int) -> dict:
         "SELECT * FROM student WHERE id = %s", (student_id,)
     )
     mental = _db.query_one(
-        """SELECT current_emotion, risk_score, risk_level, total_chat_count,
-                  negative_count, teacher_notified
+        """SELECT current_emotion, risk_score, risk_level, negative_keywords_count,
+                  consecutive_negative_days, teacher_notified
            FROM mental_health_profile WHERE student_id = %s""",
         (student_id,)
     )

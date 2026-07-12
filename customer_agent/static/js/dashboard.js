@@ -23,6 +23,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   bindControls();
   await healthCheck();
   await loadKBInfo();
+  await loadProjectStatus();
 });
 
 // ============================================================
@@ -112,6 +113,51 @@ async function reloadKB() {
     toast('知识库热身成功！', 'success');
   } catch (e) {
     toast('热身失败：' + e.message, 'error');
+  }
+}
+
+// ============================================================
+// ACT2026 项目进度
+// ============================================================
+async function loadProjectStatus() {
+  try {
+    const d = await api('/admin/project-status');
+    document.getElementById('overallPct').textContent = (d.overall_pct || 0) + '%';
+    document.getElementById('phaseName').textContent = d.phase_name || d.phase || '';
+    document.getElementById('progressPhase').textContent = d.phase || '';
+    const bar = document.getElementById('overallBar');
+    bar.style.width = (d.overall_pct || 0) + '%';
+
+    // 里程碑列表
+    const box = document.getElementById('milestonesList');
+    box.innerHTML = '';
+    (d.milestones || []).forEach(m => {
+      const cls = m.status === 'done' ? 'done' : (m.status === 'doing' ? 'doing' : 'todo');
+      const wrap = document.createElement('div');
+      wrap.className = 'milestone';
+      wrap.innerHTML = `
+        <div class="milestone-head">
+          <span class="milestone-name">${escapeHTML(m.name)}</span>
+          <span class="milestone-pct">${m.pct}%</span>
+        </div>
+        <div class="milestone-bar"><div class="${cls}" style="width:${m.pct}%"></div></div>`;
+      box.appendChild(wrap);
+    });
+
+    // 健康检查小药丸
+    const hc = document.getElementById('healthChecks');
+    hc.innerHTML = '';
+    const h = d.health_checks || {};
+    const mk = (label, ok) => {
+      const s = document.createElement('span');
+      s.className = 'pill ' + (ok ? 'pill-success' : ok === false ? 'pill-danger' : 'pill-info');
+      s.textContent = label + ': ' + (ok ? '✓ 在线' : ok === false ? '✗ 离线' : '…');
+      hc.appendChild(s);
+    };
+    mk('MySQL', h.mysql);
+    mk('LLM', h.llm);
+  } catch (e) {
+    document.getElementById('phaseName').textContent = '加载失败: ' + e.message;
   }
 }
 

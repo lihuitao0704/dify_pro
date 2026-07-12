@@ -175,7 +175,7 @@ def update_interest_status(
         是否更新成功
     """
     update_data = {"conversion_status": status}
-    if status == STATUS_INTERESTED:
+    if status == STATUS_CONTACTED:
         update_data["contacted_at"] = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
     affected = db.update("upgrade_interest", {"id": interest_id}, update_data)
