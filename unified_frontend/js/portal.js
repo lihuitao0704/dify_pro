@@ -63,7 +63,7 @@ function initLoginForms() {
           exp: Date.now()/1000 + 86400,
         });
         toast('登录成功！正在进入学生助手...', 'success');
-        setTimeout(() => window.open('/portal/student-dashboard', '_self'), 600);
+        setTimeout(() => location.replace('/portal/student-dashboard'), 600);
       } else {
         toast(r.message || '用户名或密码不正确', 'error');
       }
@@ -95,7 +95,7 @@ function initLoginForms() {
           exp: Date.now()/1000 + 86400,
         });
         toast('登录成功！正在进入企业工作台...', 'success');
-        setTimeout(() => window.open('/portal/employee-dashboard', '_self'), 600);
+        setTimeout(() => location.replace('/portal/employee-dashboard'), 600);
       } else {
         toast(r.message || '用户名或密码不正确', 'error');
       }
