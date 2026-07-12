@@ -145,13 +145,19 @@ def health():
 # ============================================================
 @app.post("/auth/login")
 async def auth_login(request: Request):
-    """统一登录：支持 account表(用户名+密码，bcrypt/明文兼容) 和 student表(学号+姓名)"""
-    import pymysql, json as _json
+    """统一登录：account表用户名+密码，bcrypt/明文兼容"""
+    import pymysql, json as _json, traceback as _tb
     from student_agent.config import DB_CONFIG
 
-    body = await request.json()
+    try:
+        body = await request.json()
+    except Exception:
+        return {"success": False, "message": "请求格式错误"}
+
     username = (body.get("username") or "").strip()
     password = (body.get("password") or "").strip()
+    if not username or not password:
+        return {"success": False, "message": "请提供用户名和密码"}
 
     def check_pw(plain, stored):
         try:
@@ -160,34 +166,39 @@ async def auth_login(request: Request):
         except Exception:
             return plain == stored
 
-    conn = pymysql.connect(**DB_CONFIG)
-    conn.autocommit(True)
+    try:
+        conn = pymysql.connect(**DB_CONFIG)
+        conn.autocommit(True)
+    except Exception as e:
+        return {"success": False, "message": f"数据库连接失败: {e}"}
+
     try:
         with conn.cursor() as cur:
-            if username and password:
-                cur.execute(
-                    """SELECT user_id, username, password, real_name, user_type, student_id, phone, email
-                       FROM account WHERE username = %s AND status = 1""", (username,))
-                row = cur.fetchone()
-                if not row:
-                    return {"success": False, "message": "用户名或密码不正确"}
-                cols = [c[0] for c in cur.description]
-                user = dict(zip(cols, row))
-                if not check_pw(password, user["password"]):
-                    return {"success": False, "message": "用户名或密码不正确"}
-                uid = user.get("student_id") or user["user_id"]
-                dname = user["real_name"] or user["username"]
-                if user.get("student_id"):
-                    cur.execute("SELECT name FROM student WHERE id = %s", (user["student_id"],))
-                    sr = cur.fetchone()
-                    if sr: dname = sr[0]
-                return {"success": True, "student": {
-                    "id": uid, "name": dname, "user_id": user["user_id"],
-                    "user_type": user["user_type"], "student_id": user.get("student_id"),
-                    "phone": user.get("phone",""), "email": user.get("email","")}}
-            return {"success": False, "message": "请提供用户名和密码"}
+            cur.execute(
+                """SELECT user_id, username, password, real_name, user_type, student_id, phone, email
+                   FROM account WHERE username = %s AND status = 1""", (username,))
+            row = cur.fetchone()
+            if not row:
+                return {"success": False, "message": "用户名或密码不正确"}
+            cols = [c[0] for c in cur.description]
+            user = dict(zip(cols, row))
+            if not check_pw(password, user["password"]):
+                return {"success": False, "message": "用户名或密码不正确"}
+            uid = user.get("student_id") or user["user_id"]
+            dname = user["real_name"] or user["username"]
+            if user.get("student_id"):
+                cur.execute("SELECT name FROM student WHERE id = %s", (user["student_id"],))
+                sr = cur.fetchone()
+                if sr: dname = sr[0]
+            return {"success": True, "student": {
+                "id": uid, "name": dname, "user_id": user["user_id"],
+                "user_type": user["user_type"], "student_id": user.get("student_id"),
+                "phone": user.get("phone",""), "email": user.get("email","")}}
+    except Exception as e:
+        return {"success": False, "message": f"查询失败: {e}"}
     finally:
-        conn.close()
+        try: conn.close()
+        except: pass
 
 
 # ============================================================
