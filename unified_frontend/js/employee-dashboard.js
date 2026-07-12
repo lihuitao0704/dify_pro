@@ -4,7 +4,13 @@
  */
 
 const ENTERPRISE_API = 'http://localhost:8001/api/agent';
+const FIT_API = 'http://localhost:8080/api/agent';  // 契合度评估服务入口
 let chat;
+
+// 图表实例池（每个结果容器一份）
+const FIT_CHARTS = new WeakMap();
+// 当前上传文件引用（工作台弹窗）
+let fitCurrentFile = null;
 
 document.addEventListener('DOMContentLoaded', () => {
   if (!Auth.requireRole('employee')) return;
@@ -54,6 +60,7 @@ document.addEventListener('DOMContentLoaded', () => {
       const action = a.dataset.action;
       if (action === 'report') openModal('reportModal');
       if (action === 'addCustomer') openModal('customerModal');
+      if (action === 'projectFit') openFit();
     });
   });
 
@@ -385,4 +392,417 @@ function escapeHtml(str) {
   const div = document.createElement('div');
   div.textContent = str;
   return div.innerHTML;
+}
+
+
+// ═══════════════════════════════════════════════════════════
+// 项目契合度分析 — 工作台弹窗 (formal 员工视角)
+// ═══════════════════════════════════════════════════════════
+
+function openFit() {
+  document.getElementById('projectFitModal').classList.add('active');
+  // 复位所有动态区
+  ['fitFormResult', 'fitUploadResult'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) { el.classList.remove('show'); el.innerHTML = ''; }
+  });
+  ['fitFormError', 'fitUploadError'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) { el.style.display = 'none'; el.textContent = ''; }
+  });
+  ['fitFormLoading', 'fitUploadLoading'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.style.display = 'none';
+  });
+  // 复位表单
+  const form = document.getElementById('fitForm');
+  if (form) form.reset();
+  // 复位提交按钮
+  const submitBtn = document.getElementById('fitForm').querySelector('.btn-submit');
+  if (submitBtn) submitBtn.disabled = false;
+  // 复位上传区
+  fitCurrentFile = null;
+  const upBtn = document.getElementById('fitUploadBtn');
+  if (upBtn) upBtn.disabled = true;
+  const info = document.getElementById('fitFileInfo');
+  if (info) { info.style.display = 'none'; info.innerHTML = ''; }
+  // 默认停留在「手动填写」
+  switchFitTab('form');
+}
+
+function closeFit() {
+  document.getElementById('projectFitModal').classList.remove('active');
+}
+
+function switchFitTab(tab) {
+  const formTab = document.getElementById('tabFitForm');
+  const upTab = document.getElementById('tabFitUpload');
+  const formPanel = document.getElementById('fitFormPanel');
+  const upPanel = document.getElementById('fitUploadPanel');
+  // 复位结果/错误
+  ['fitFormResult', 'fitUploadResult'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) { el.classList.remove('show'); el.innerHTML = ''; }
+  });
+  ['fitFormError', 'fitUploadError'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) { el.style.display = 'none'; el.textContent = ''; }
+  });
+
+  const isForm = (tab === 'form');
+  formTab.classList.toggle('active', isForm);
+  upTab.classList.toggle('active', !isForm);
+  formPanel.style.display = isForm ? '' : 'none';
+  upPanel.style.display = isForm ? 'none' : '';
+}
+
+// ── 初始化 ──
+document.addEventListener('DOMContentLoaded', () => {
+  // 表单 submit
+  const form = document.getElementById('fitForm');
+  if (form) form.addEventListener('submit', submitFitForm);
+  // 上传区
+  initFitUpload();
+});
+
+// ── 表单提交 ──
+async function submitFitForm(e) {
+  e.preventDefault();
+  const submitBtn = document.querySelector('#fitForm .btn-submit');
+  const loading = document.getElementById('fitFormLoading');
+  const errEl = document.getElementById('fitFormError');
+  const resultEl = document.getElementById('fitFormResult');
+
+  // 校验姓名
+  const name = document.getElementById('fit_name')?.value.trim();
+  if (!name) { showFitError('fitFormError', '请填写客户姓名'); return; }
+
+  submitBtn.disabled = true;
+  loading.style.display = 'flex';
+  errEl.style.display = 'none'; errEl.textContent = '';
+  resultEl.classList.remove('show'); resultEl.innerHTML = '';
+
+  const fields = {
+    name,
+    age: val('fit_age'),
+    phone: val('fit_phone'),
+    education: val('fit_education'),
+    major: val('fit_major'),
+    target_country: val('fit_target_country'),
+    target_major: val('fit_target_major'),
+    gpa: val('fit_gpa'),
+    language_score: val('fit_language_score'),
+    budget: val('fit_budget'),
+    is_Closed_loop: val('fit_is_Closed_loop'),
+    development: val('fit_development'),
+    abilities: val('fit_abilities'),
+    wechat: val('fit_wechat'),
+    email: val('fit_email'),
+    // 员工视角 → 正式语气
+    student_view: 'false',
+  };
+
+  try {
+    const res = await fetch(`${FIT_API}/evaluation/detail`, {
+      method: 'POST',
+      body: encodeMultipart(fields),
+    });
+    const data = await res.json();
+    if (data.code !== 0) {
+      showFitError('fitFormError', data.msg || '研判失败');
+      return;
+    }
+    renderFitResult(resultEl, data.data);
+  } catch (err) {
+    showFitError('fitFormError', '请求失败：' + err.message);
+  } finally {
+    submitBtn.disabled = false;
+    loading.style.display = 'none';
+  }
+}
+
+// ── 文件上传 ──
+function initFitUpload() {
+  const zone = document.getElementById('fitDropZone');
+  const fileInput = document.getElementById('fitFileInput');
+  if (!zone || !fileInput) return;
+
+  zone.addEventListener('click', () => fileInput.click());
+
+  ['dragenter', 'dragover'].forEach(ev =>
+    zone.addEventListener(ev, e => { e.preventDefault(); zone.classList.add('dragover'); })
+  );
+  ['dragleave', 'drop'].forEach(ev =>
+    zone.addEventListener(ev, e => { e.preventDefault(); zone.classList.remove('dragover'); })
+  );
+  zone.addEventListener('drop', e => {
+    const f = e.dataTransfer?.files?.[0];
+    if (f) handleFitFile(f);
+  });
+  fileInput.addEventListener('change', e => {
+    const f = e.target.files?.[0];
+    if (f) handleFitFile(f);
+  });
+
+  document.getElementById('fitUploadBtn').addEventListener('click', uploadFitFile);
+}
+
+function handleFitFile(file) {
+  const suffix = (file.name.split('.').pop() || '').toLowerCase();
+  if (!['txt', 'pdf', 'docx'].includes(suffix)) {
+    showFitError('fitUploadError', '不支持的文件类型，请上传 txt / pdf / docx');
+    return;
+  }
+  if (file.size > 10 * 1024 * 1024) {
+    showFitError('fitUploadError', '文件过大，请上传 10MB 以内的文件');
+    return;
+  }
+  fitCurrentFile = file;
+  const errEl = document.getElementById('fitUploadError');
+  errEl.style.display = 'none'; errEl.textContent = '';
+
+  const info = document.getElementById('fitFileInfo');
+  info.innerHTML =
+    `<span class="fit-upload-file-name">📄 ${escapeHtml(file.name)}（${(file.size/1024).toFixed(1)} KB）</span>` +
+    `<button class="fit-upload-remove" onclick="clearFitFile()" title="移除">×</button>`;
+  info.style.display = 'flex';
+  document.getElementById('fitUploadBtn').disabled = false;
+}
+
+function clearFitFile() {
+  fitCurrentFile = null;
+  const fileInput = document.getElementById('fitFileInput');
+  if (fileInput) fileInput.value = '';
+  const info = document.getElementById('fitFileInfo');
+  info.style.display = 'none'; info.innerHTML = '';
+  document.getElementById('fitUploadBtn').disabled = true;
+}
+
+async function uploadFitFile() {
+  if (!fitCurrentFile) return;
+  const loading = document.getElementById('fitUploadLoading');
+  const errEl = document.getElementById('fitUploadError');
+  const resultEl = document.getElementById('fitUploadResult');
+  const btn = document.getElementById('fitUploadBtn');
+
+  btn.disabled = true;
+  loading.style.display = 'flex';
+  errEl.style.display = 'none'; errEl.textContent = '';
+  resultEl.classList.remove('show'); resultEl.innerHTML = '';
+
+  const fd = new FormData();
+  fd.append('file', fitCurrentFile);
+  fd.append('student_view', 'false');
+
+  try {
+    const res = await fetch(`${FIT_API}/evaluation/detail`, {
+      method: 'POST',
+      body: fd,
+    });
+    const data = await res.json();
+    if (data.code !== 0) {
+      showFitError('fitUploadError', data.msg || '研判失败');
+      return;
+    }
+    renderFitResult(resultEl, data.data);
+  } catch (err) {
+    showFitError('fitUploadError', '请求失败：' + err.message);
+  } finally {
+    btn.disabled = false;
+    loading.style.display = 'none';
+  }
+}
+
+// ── 工具函数 ──
+function val(id) {
+  const el = document.getElementById(id);
+  if (!el) return undefined;
+  const v = el.value.trim();
+  return v === '' ? undefined : v;
+}
+
+function encodeMultipart(obj) {
+  return new URLSearchParams(
+    Object.entries(obj).filter(([, v]) => v !== undefined)
+  );
+}
+
+function showFitError(id, msg) {
+  const el = document.getElementById(id);
+  if (!el) return;
+  el.textContent = msg;
+  el.style.display = 'block';
+}
+
+// ── 四合一渲染：契合徽章 + 百分制 + 维度雷达图 + LLM 文本 ──
+function renderFitResult(container, data) {
+  if (!container) return;
+  container.innerHTML = '';
+  container.classList.add('show');
+
+  const results = Array.isArray(data.results) ? data.results : [];
+  const summary = data.summary || '';
+  const passThreshold = data.pass_threshold || 60;
+
+  if (results.length === 0 && summary) {
+    // 兜底：仅有 NL 文本
+    const pre = document.createElement('pre');
+    pre.className = 'fit-summary';
+    pre.textContent = summary;
+    container.appendChild(pre);
+    return;
+  }
+
+  // 逐个 project 渲染
+  results.forEach((r, idx) => {
+    const percent = r.max_score > 0 ? Math.round(r.total_score / r.max_score * 100) : 0;
+    const passed = r.is_pass;
+    // 如有多个项目，加上编号标题
+    const projLabel = results.length > 1
+      ? `${idx + 1}. ${r.project_name}`
+      : r.project_name;
+
+    // 1) 契合徽章
+    const badge = document.createElement('div');
+    badge.className = 'fit-badge ' + (passed ? 'pass' : 'fail');
+    badge.textContent = passed ? '✓ 契合' : '✗ 未契合';
+    // 居中对齐容器
+    const badgeWrap = document.createElement('div');
+    badgeWrap.style.textAlign = 'center';
+    badgeWrap.appendChild(badge);
+    container.appendChild(badgeWrap);
+
+    // 2) 项目卡片（百分制 + 维度条 + 雷达图）
+    const card = document.createElement('div');
+    card.className = 'fit-project';
+    card.innerHTML = `
+      <div class="fit-project-header">
+        <span class="fit-project-name">${escapeHtml(projLabel)}</span>
+        <span style="font-size:12px;color:var(--text-secondary)">总分 ${r.total_score} / ${r.max_score}</span>
+      </div>
+    `;
+
+    // 百分制环形环
+    const scoreWrap = document.createElement('div');
+    scoreWrap.className = 'fit-score';
+    const r26 = 26;
+    const circ = 2 * Math.PI * r26;
+    const offset = circ * (1 - percent / 100);
+    scoreWrap.innerHTML = `
+      <div class="fit-score-ring">
+        <svg width="56" height="56" viewBox="0 0 56 56">
+          <circle class="ring-bg" cx="28" cy="28" r="${r26}"/>
+          <circle class="ring-fg ${passed ? 'pass' : 'fail'}" cx="28" cy="28" r="${r26}"
+            stroke-dasharray="${circ}" stroke-dashoffset="${offset}"/>
+        </svg>
+        <div class="fit-score-num">
+          <span class="pct">${percent}%</span>
+          <span class="lbl">${passed ? '契合' : '未契合'}</span>
+        </div>
+      </div>
+    `;
+    card.appendChild(scoreWrap);
+
+    // 维度明细条
+    const dims = Array.isArray(r.dimensions) ? r.dimensions : [];
+    if (dims.length > 0) {
+      const dimsWrap = document.createElement('div');
+      dimsWrap.className = 'fit-dims';
+      dims.forEach(d => {
+        const pct = d.max > 0 ? Math.round(d.score / d.max * 100) : 0;
+        const fillClass = pct >= 60 ? 'hi' : (pct >= 30 ? 'mid' : 'low');
+        const row = document.createElement('div');
+        row.className = 'fit-dim';
+        row.innerHTML = `
+          <span class="fit-dim-name">${escapeHtml(d.name || d.key)}</span>
+          <div class="fit-dim-bar"><div class="fit-dim-bar-fill ${fillClass}" style="width:${pct}%"></div></div>
+          <span class="fit-dim-val">${d.score}/${d.max}</span>
+        `;
+        dimsWrap.appendChild(row);
+      });
+      card.appendChild(dimsWrap);
+
+      // 雷达图
+      const radar = document.createElement('div');
+      radar.className = 'fit-radar';
+      const canvas = document.createElement('canvas');
+      radar.appendChild(canvas);
+      card.appendChild(radar);
+      // 使用 requestAnimationFrame 保证容器已布局
+      requestAnimationFrame(() => renderFitRadar(canvas, dims));
+    }
+
+    container.appendChild(card);
+  });
+
+  // 4) LLM 文本（统一摘要）
+  if (summary) {
+    const pre = document.createElement('pre');
+    pre.className = 'fit-summary';  // 员工视角 → 不添加 .student（深蓝色边框，正式）
+    pre.textContent = summary;
+    container.appendChild(pre);
+  }
+}
+
+// ── Chart.js 雷达图（无依赖回退：当 Chart.js 未加载时，采用纯文本维度清单） ──
+function renderFitRadar(canvas, dims) {
+  if (typeof Chart === 'undefined') {
+    // 回退：移除雷达容器，维度条已经表达了信息
+    const wrap = canvas.parentElement;
+    if (wrap) wrap.style.display = 'none';
+    return;
+  }
+  // 销毁旧实例（如果有）
+  const prev = FIT_CHARTS.get(canvas);
+  if (prev) prev.destroy();
+
+  const labels = dims.map(d => d.name || d.key);
+  const dataScores = dims.map(d => d.max > 0 ? +(d.score / d.max * 100).toFixed(1) : 0);
+  // 闭合雷达：末尾补首项
+  const closedLabels = labels.length >= 3 ? [...labels, labels[0]] : labels;
+  const closedData = dims.length >= 3 ? [...dataScores, dataScores[0]] : dataScores;
+
+  const chart = new Chart(canvas, {
+    type: 'radar',
+    data: {
+      labels: closedLabels,
+      datasets: [{
+        label: '维度得分率 (%)',
+        data: closedData,
+        fill: true,
+        backgroundColor: 'rgba(74, 144, 217, 0.18)',
+        borderColor: 'rgba(74, 144, 217, 0.9)',
+        pointBackgroundColor: '#4a90d9',
+        pointBorderColor: '#fff',
+        pointBorderWidth: 1.5,
+        borderWidth: 2,
+      }],
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: true,
+      aspectRatio: 1,
+      scales: {
+        r: {
+          min: 0, max: 100,
+          ticks: { stepSize: 25, display: false },
+          grid: { color: 'rgba(0,0,0,0.08)' },
+          angleLines: { color: 'rgba(0,0,0,0.08)' },
+          pointLabels: {
+            font: { size: 11 },
+            color: '#475569',
+          },
+        },
+      },
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          callbacks: {
+            label: ctx => `${ctx.label}: ${ctx.raw}%`,
+          },
+        },
+      },
+    },
+  });
+  FIT_CHARTS.set(canvas, chart);
 }
