@@ -294,14 +294,19 @@ def _handle_recommend(message, params, context, sess, conv_id):
     # 从当前消息提取参数，累加到 slots
     _collect_recommend_slots(message, slots)
 
-    required = ["education", "target_country"]
+    # 必须齐全的核心字段（与推荐引擎评分维度对齐）
+    # 学历(30) + 专业(35) + 语言(20) + 国家(10) = 95/100 分依赖这四个字段
+    required = ["education", "target_major", "language_score", "target_country"]
     missing = [f for f in required if not slots.get(f)]
 
-    # 追问轮次超限 → 走通用推荐
-    if missing and sess.get("followup_rounds", 0) < 3:
+    # 追问轮次超限 → 走通用推荐（从3提升到5，保证4个必填字段+1次容错）
+    MAX_REQUIRED_ROUNDS = 5
+    if missing and sess.get("followup_rounds", 0) < MAX_REQUIRED_ROUNDS:
         sess["followup_rounds"] = sess.get("followup_rounds", 0) + 1
         q_map = {
             "education": "请问你目前是什么学历呢？（高中/本科/硕士）",
+            "target_major": "想申请什么专业方向呢？（如计算机、商科、机械、金融等）",
+            "language_score": '目前有雅思、托福或德语成绩吗？大概多少分呢？（没有的话可以说"暂无"）',
             "target_country": "想申请哪个国家的留学？（目前我们主要做德国和新加坡）",
         }
         ask = "\n".join(q_map.get(f, f"请补充：{f}") for f in missing[:1])
@@ -323,14 +328,34 @@ def _handle_recommend(message, params, context, sess, conv_id):
     })
 
     rec_result = sa_recommend(conv_id)
-    if rec_result.get("code") != 0 or not rec_result.get("data"):
-        # 降级：直接查课程
+
+    # 提取推荐结果；最高分低于阈值视为"无有效匹配"
+    recs = []
+    if rec_result.get("code") == 0 and rec_result.get("data"):
+        all_recs = rec_result["data"].get("recommendations", [])[:5]
+        recs = all_recs if (all_recs and all_recs[0].get("score", 0) >= 40) else []
+
+    if not recs:
+        # ══════════════════════════════════════════════════════════
+        # 无有效匹配时不直接打发用户找顾问，
+        # 而是继续追问缺失的可选信息，收集够了再重新推荐
+        # ══════════════════════════════════════════════════════════
+        enrichment = _ask_enrichment_field(sess)
+        if enrichment:
+            # 给出追问 + 当前已知的背景摘要，保持对话继续
+            return (
+                enrichment
+                + "\n📌 当前已记住的背景："
+                + _format_known_slots(slots)
+            )
+
+        # 所有可追问字段都齐了（或已达上限）：降级兜底展示
         courses = sa_get_courses(
             country=slots.get("target_country", ""),
             limit=5,
         )
         if courses.get("data"):
-            lines = ["基于你的背景，目前匹配到的课程有：\n"]
+            lines = ["基于你的背景，这里有一些相近的项目供参考：\n"]
             for c in courses["data"][:5]:
                 lines.append(
                     f"· **{c.get('course_name','')}** ({c.get('category','')})\n"
@@ -338,13 +363,11 @@ def _handle_recommend(message, params, context, sess, conv_id):
                     f"语言: {c.get('language_requirement','无要求')} | "
                     f"¥{c.get('price',0):,.0f}"
                 )
-            lines.append("\n有感兴趣的可以免费试听或预约顾问一对一咨询～")
+            lines.append("\n以上可能不是100%匹配，如需更精准的推荐可以告诉我更多信息"
+                         "（GPA / 预算 / 实习经验），或直接预约顾问定制方案 🎓")
             return "\n".join(lines)
-        return "目前暂未找到完全匹配的项目，建议直接联系顾问定制方案～"
-
-    recs = rec_result["data"].get("recommendations", [])[:5]
-    if not recs:
-        return "目前没有完全匹配你背景的项目，建议直接咨询顾问定制～"
+        return ("暂时没有找到合适的匹配项目。建议直接拨打我们的顾问热线，"
+                "让老师一对一帮你出方案，也可以留下手机号我让顾问回联系你 📞")
 
     lines = ["🎯 基于你的背景，为你推荐以下项目：\n"]
     for i, r in enumerate(recs, 1):
@@ -358,8 +381,68 @@ def _handle_recommend(message, params, context, sess, conv_id):
             lines.append(f"   匹配原因: {'、'.join(r['reasons'])}")
         lines.append("")
 
-    lines.append("感兴趣的可以继续详细了解，或者预约留学顾问一对一深度咨询 🎓")
+    lines.append("感兴趣的话可以继续详细了解，也可以告诉我更多偏好（GPA / 预算 / 入学时间），我帮你进一步缩小范围 🎓")
+    # 推荐成功：清理追问标记，下次重新跑推荐流程时恢复干净状态
+    sess.pop("enrichment_asked", None)
     return "\n".join(lines)
+
+
+# 用于"收集更多信息"阶段的可选字段（按追问优先级排序）
+_ENRICHMENT_FIELDS = [
+    ("gpa",         "方便说一下你的 GPA 或均分吗？（例如 3.2/4.0 或 82/100）"),
+    ("budget",      "你的留学预算大概在什么范围？（例如 15 万/年、总预算 30 万）"),
+    ("intake",      "计划什么时间入学呢？（如 2027 秋季）"),
+    ("work_experience", "有没有相关的工作或实习经验？"),
+]
+# 用于和用户确认"已记住"的字段顺序与可读标签
+_KNOWN_FIELD_LABELS = [
+    ("education",       "学历"),
+    ("target_major",    "专业"),
+    ("language_score",  "语言"),
+    ("target_country",  "国家"),
+    ("gpa",             "GPA"),
+    ("budget",          "预算"),
+    ("intake",          "入学时间"),
+    ("work_experience", "经验"),
+]
+
+
+def _ask_enrichment_field(sess: dict) -> str:
+    """
+    当推荐无有效匹配时，从可选字段中挑一个还没收集、还没追问过的字段来问。
+    返回追问话术（str），若所有可选字段都已问过则返回空串。
+    """
+    slots = sess["slots"]
+    asked = sess.setdefault("enrichment_asked", [])
+    # 总共追问上限（含必填 + 额外），防止无限循环
+    if sess.get("followup_rounds", 0) >= 8:
+        return ""
+    for field, question in _ENRICHMENT_FIELDS:
+        if field in asked:
+            continue
+        if slots.get(field):
+            # 已有值但还没记为 asked，反正不会重复问
+            asked.append(field)
+            continue
+        # 找到缺失也未追问过的 → 追问
+        asked.append(field)
+        sess["followup_rounds"] = sess.get("followup_rounds", 0) + 1
+        return (
+            "为了给你更精准的推荐，再了解一下：\n\n"
+            + question
+            + "\n（边聊边记住你的信息，回答越详细推荐越准哦～）"
+        )
+    return ""
+
+
+def _format_known_slots(slots: dict) -> str:
+    """拼出"已记住的背景"短摘要，供追问时展示"""
+    parts = []
+    for field, label in _KNOWN_FIELD_LABELS:
+        val = slots.get(field)
+        if val:
+            parts.append(f" {label}={val}")
+    return ("".join(parts)) if parts else "（暂无）"
 
 
 def _collect_recommend_slots(message: str, slots: dict):
@@ -402,6 +485,14 @@ def _collect_recommend_slots(message: str, slots: dict):
     m = re.search(r"(?:想读|申请|专业|方向)[是为]?[：:\s]*([一-龥A-Za-z]{2,20})", message)
     if m:
         slots["target_major"] = m.group(1)
+    # 兜底：用户直接回答专业名时也能识别
+    if not slots.get("target_major"):
+        for kw in ["计算机", "商科", "金融", "会计", "管理", "工程", "机械",
+                   "电子", "土木", "医学", "法学", "艺术", "生物", "化学",
+                   "物理", "数学", "传媒", "教育", "心理", "人工智能", "数据"]:
+            if kw in msg:
+                slots["target_major"] = kw
+                break
 
     # 姓名+手机
     m = re.search(r"(?:我叫|姓名|名字)[：:\s]*([一-龥]{2,4})", message)
