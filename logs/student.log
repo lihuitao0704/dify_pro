@@ -1,0 +1,15 @@
+Traceback (most recent call last):
+  File "<frozen runpy>", line 198, in _run_module_as_main
+  File "<frozen runpy>", line 88, in _run_code
+  File "D:\dify_pro\student_agent\main_jb.py", line 9, in <module>
+    from fastapi import FastAPI, Request
+ModuleNotFoundError: No module named 'fastapi'
+Traceback (most recent call last):
+  File "<frozen runpy>", line 198, in _run_module_as_main
+  File "<frozen runpy>", line 88, in _run_code
+  File "D:\dify_pro\student_agent\main_jb.py", line 18, in <module>
+    from .db import init_database, query_one
+  File "D:\dify_pro\student_agent\db.py", line 7, in <module>
+    import pymysql
+ModuleNotFoundError: No module named 'pymysql'
+[Config] ря╪сть .env: D:\dify_pro\student_agent\.env

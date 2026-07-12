@@ -1,0 +1,22 @@
+Traceback (most recent call last):
+  File "<frozen runpy>", line 198, in _run_module_as_main
+  File "<frozen runpy>", line 88, in _run_code
+  File "D:\dify_pro\summary_report\main.py", line 14, in <module>
+    from fastapi import FastAPI
+ModuleNotFoundError: No module named 'fastapi'
+Traceback (most recent call last):
+  File "<frozen runpy>", line 198, in _run_module_as_main
+  File "<frozen runpy>", line 88, in _run_code
+  File "D:\dify_pro\summary_report\main.py", line 17, in <module>
+    from summary_report.api.routes import all_routers
+  File "D:\dify_pro\summary_report\api\routes\__init__.py", line 5, in <module>
+    from summary_report.api.routes.complaint import router as complaint_router
+  File "D:\dify_pro\summary_report\api\routes\complaint.py", line 7, in <module>
+    from summary_report.services.complaint_report_service import generate
+  File "D:\dify_pro\summary_report\services\complaint_report_service.py", line 8, in <module>
+    from summary_report.services.nl2sql_service import build_complaint_schema, run_nl2sql_pipeline
+  File "D:\dify_pro\summary_report\services\nl2sql_service.py", line 12, in <module>
+    from summary_report.core.db import execute_sql, fetch_db_schema
+  File "D:\dify_pro\summary_report\core\db.py", line 16, in <module>
+    import pymysql
+ModuleNotFoundError: No module named 'pymysql'

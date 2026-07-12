@@ -1,0 +1,33 @@
+Traceback (most recent call last):
+  File "D:\dify_pro\Event & Lecture Registration\Event_Lecture_api.py", line 6, in <module>
+    from fastapi import FastAPI
+ModuleNotFoundError: No module named 'fastapi'
+D:\dify_pro\Event & Lecture Registration\Event_Lecture_api.py:39: DeprecationWarning: 
+        on_event is deprecated, use lifespan event handlers instead.
+
+        Read more about it in the
+        [FastAPI docs for Lifespan Events](https://fastapi.tiangolo.com/advanced/events/).
+        
+  @app.on_event("startup")
+INFO:     Will watch for changes in these directories: ['D:\\dify_pro\\Event & Lecture Registration']
+INFO:     Uvicorn running on http://0.0.0.0:8011 (Press CTRL+C to quit)
+INFO:     Started reloader process [22740] using WatchFiles
+INFO:     Started server process [21544]
+INFO:     Waiting for application startup.
+ERROR:    Traceback (most recent call last):
+  File "C:\Users\Windows\AppData\Local\Programs\Python\Python311\Lib\site-packages\starlette\routing.py", line 638, in lifespan
+    async with self.lifespan_context(app) as maybe_state:
+  File "C:\Users\Windows\AppData\Local\Programs\Python\Python311\Lib\site-packages\fastapi\routing.py", line 257, in __aenter__
+    await self._router._startup()
+  File "C:\Users\Windows\AppData\Local\Programs\Python\Python311\Lib\site-packages\fastapi\routing.py", line 6326, in _startup
+    handler()
+  File "D:\dify_pro\Event & Lecture Registration\Event_Lecture_api.py", line 42, in _startup
+    _ensure_unique_constraints()
+  File "D:\dify_pro\Event & Lecture Registration\Event_Lecture.py", line 82, in _ensure_unique_constraints
+    conn = get_conn()
+           ^^^^^^^^^^
+  File "D:\dify_pro\Event & Lecture Registration\Event_Lecture.py", line 74, in get_conn
+    import pymysql
+ModuleNotFoundError: No module named 'pymysql'
+
+ERROR:    Application startup failed. Exiting.
