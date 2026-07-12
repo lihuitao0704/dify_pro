@@ -91,18 +91,22 @@ def print_banner():
 
 
 def start_service(key, svc):
-    """启动单个服务（后台进程）"""
+    """启动单个服务（后台进程，保留输出到日志）"""
     cwd = ROOT / svc["dir"]
     print(f"  🚀 启动 {svc['name']} (:{svc['port']})...", end=" ", flush=True)
     try:
+        # 日志输出到文件，便于排查问题
+        log_dir = ROOT / "logs"
+        log_dir.mkdir(exist_ok=True)
+        log_file = (log_dir / f"{key}.log").open("a", encoding="utf-8")
         proc = subprocess.Popen(
             svc["cmd"],
             cwd=str(cwd),
-            stdout=subprocess.DEVNULL,
-            stderr=subprocess.DEVNULL,
+            stdout=log_file,
+            stderr=subprocess.STDOUT,
             creationflags=subprocess.CREATE_NO_WINDOW if sys.platform == "win32" else 0,
         )
-        print("✅")
+        print(f"✅ (日志: logs/{key}.log)")
         return proc
     except Exception as e:
         print(f"❌ 失败: {e}")
