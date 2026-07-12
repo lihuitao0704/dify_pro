@@ -55,10 +55,41 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   });
 
+  // ── 快速提问 ──
+  document.querySelectorAll('.sidebar-nav a[data-quick]').forEach(a => {
+    a.addEventListener('click', (e) => {
+      e.preventDefault();
+      const msg = a.dataset.quick;
+      if (msg) quickSend(msg);
+    });
+  });
+
   // ── 初始加载 ──
   refreshProfile();
   refreshReminders();
 });
+
+// ── 工具函数 ──
+function timeAgo(dateStr) {
+  if (!dateStr) return '';
+  const diff = Date.now() - new Date(dateStr).getTime();
+  const mins = Math.floor(diff / 60000);
+  if (mins < 1) return '刚刚';
+  if (mins < 60) return mins + '分钟前';
+  const hours = Math.floor(mins / 60);
+  if (hours < 24) return hours + '小时前';
+  const days = Math.floor(hours / 24);
+  if (days < 30) return days + '天前';
+  const months = Math.floor(days / 30);
+  return months + '个月前';
+}
+
+const EMOJI_MAP = { '正常':'😊','焦虑':'😰','低落':'😢','孤独':'💔','适应困难':'🌧️','积极':'😄' };
+const FLAG_MAP = { '新加坡':'🇸🇬','法国':'🇫🇷','英国':'🇬🇧','美国':'🇺🇸','德国':'🇩🇪','日本':'🇯🇵','澳洲':'🇦🇺','加拿大':'🇨🇦','香港':'🇭🇰','荷兰':'🇳🇱' };
+const EVENT_ICON = { '论文DDL':'📝','考试':'📚','答辩':'🎤','选课截止':'✏️' };
+const APP_STEPS = ['选校定校','材料准备','文书撰写','文书审核','递交申请','等待Offer','签证办理'];
+
+function el(id) { return document.getElementById(id); }
 
 // ── 面板切换 ──
 function switchPanel(panel) {
@@ -90,16 +121,29 @@ async function refreshProfile() {
     const r = await fetch(`${STUDENT_API}/my/profile/${id}`);
     const data = await r.json();
     const emotion = data.mental?.emotion || '正常';
-    const risk = data.mental?.risk_level || 'low';
+    const riskLevel = data.mental?.risk_level || 'low';
     const score = data.mental?.risk_score || 0;
-    document.getElementById('emotionStatus').textContent = emotion;
-    const riskColor = { low: '#10b981', medium: '#f59e0b', high: '#ef4444', critical: '#dc2626' };
-    document.getElementById('emotionStatus').style.color = riskColor[risk] || '#10b981';
-    document.getElementById('emotionRisk').textContent = `风险等级: ${risk} | 评分: ${score}`;
+
+    const riskPct = Math.min(100, Math.max(0, score));
+    const card = el('emotionCard');
+    card.className = 'card risk-' + riskLevel;
+
+    el('emotionEmoji').textContent = EMOJI_MAP[emotion] || '😊';
+    el('emotionStatus').textContent = emotion;
+    el('emotionStatus').style.color = { low:'#10b981', medium:'#f59e0b', high:'#f97316', critical:'#dc2626' }[riskLevel] || '#10b981';
+    el('emotionRisk').textContent = `风险评分 ${score}/100  ·  ${riskLevel === 'low' ? '状态良好' : riskLevel === 'medium' ? '需关注' : riskLevel === 'high' ? '⚠️ 高风险' : '🚨 危急'}`;
+    el('riskFill').style.width = riskPct + '%';
+
+    const upEl = el('upgradeStatus');
     if (data.upgrades && data.upgrades.length > 0) {
       const u = data.upgrades[0];
-      document.getElementById('upgradeStatus').textContent =
-        `${u.interest_country || ''} ${u.interest_degree || ''} (${u.conversion_status || ''})`;
+      const flag = FLAG_MAP[u.interest_country] || '🌍';
+      const st = u.conversion_status || '';
+      const stBadge = { 'converted':'✅ 已转化','contacted':'📞 已联系','interested':'⭐ 感兴趣','identified':'🔍 已识别','lost':'❌ 已流失' }[st] || st;
+      upEl.innerHTML = `<div style="font-size:18px;font-weight:700;margin-bottom:2px">${flag} ${u.interest_country || ''} ${u.interest_degree || ''}</div>
+        <div style="font-size:12px;color:#64748b">${stBadge}</div>`;
+    } else {
+      upEl.innerHTML = '<span style="color:#94a3b8">暂无升学意向记录</span>';
     }
   } catch (e) { /* ignore */ }
 }
@@ -111,22 +155,31 @@ async function refreshSchedule() {
     const r = await fetch(`${STUDENT_API}/my/schedule/${id}`);
     const data = await r.json();
     const deadlines = data.deadlines || [];
-    const list = document.getElementById('scheduleList');
+    const list = el('scheduleList');
     if (deadlines.length === 0) {
-      list.innerHTML = '<div class="list-item"><span class="label">暂无日程</span></div>';
+      list.innerHTML = '<div class="empty-state"><div style="font-size:36px;margin-bottom:8px;opacity:.4">📅</div>暂无日程安排</div>';
+      el('scheduleBadge').style.display = 'none';
       return;
     }
-    list.innerHTML = deadlines.slice(0, 8).map(d => `
-      <div class="list-item">
-        <span>${d.title || d.event_type}</span>
-        <span class="value" style="font-size:12px;color:${d.days_left < 3 ? '#ef4444' : '#64748b'}">
-          ${d.days_left != null ? d.days_left + '天' : ''}
-        </span>
-      </div>
-    `).join('');
-    const badge = document.getElementById('scheduleBadge');
+    list.innerHTML = deadlines.slice(0, 8).map(d => {
+      const days = d.days_left;
+      const cls = days == null ? 'safe' : days < 0 ? 'overdue' : days < 3 ? 'urgent' : days < 7 ? 'warning' : 'safe';
+      const txt = days == null ? '--' : days < 0 ? '已过期' : days === 0 ? '今天' : days + '天';
+      const icon = EVENT_ICON[d.event_type] || '📌';
+      const date = d.deadline ? d.deadline.slice(0, 16).replace('T', ' ') : '';
+      return `<div class="ddl-card">
+        <div class="ddl-icon">${icon}</div>
+        <div class="ddl-info">
+          <div class="ddl-title">${d.title || d.event_type}</div>
+          ${d.course_name ? `<div class="ddl-course">${d.course_name}</div>` : ''}
+          ${date ? `<div class="ddl-date">${date}</div>` : ''}
+        </div>
+        <span class="badge-ddl ${cls}">${txt}</span>
+      </div>`;
+    }).join('');
+    const badge = el('scheduleBadge');
     badge.textContent = deadlines.length;
-    badge.style.display = deadlines.length > 0 ? '' : 'none';
+    badge.style.display = '';
   } catch (e) { /* ignore */ }
 }
 
@@ -137,14 +190,27 @@ async function refreshTickets() {
     const r = await fetch(`${STUDENT_API}/my/tickets/${id}`);
     const data = await r.json();
     const tickets = data.tickets || [];
-    document.getElementById('ticketList').innerHTML = tickets.length === 0
-      ? '<div class="list-item"><span class="label">暂无工单</span></div>'
-      : tickets.map(t => `
-        <div class="list-item">
-          <span>[${t.category}] ${t.title}</span>
-          <span class="status-dot ${t.status === 'resolved' ? 'ok' : t.status === 'processing' ? 'warn' : 'pending'}"></span>
+    const list = el('ticketList');
+    if (tickets.length === 0) {
+      list.innerHTML = '<div class="empty-state"><div style="font-size:36px;margin-bottom:8px;opacity:.4">📋</div>暂无工单</div>';
+      return;
+    }
+    const typeCls = { '生活服务':'life','服务质量':'teach','签证办理':'visa','院校申请':'apply','教务':'teach','财务':'visa','后勤':'life' };
+    list.innerHTML = tickets.map(t => {
+      const cls = typeCls[t.complaint_type] || 'other';
+      const statusCls = t.handle_status === '已完结' ? 'ok' : t.handle_status === '处理中' ? 'warn' : 'pending';
+      const statusText = t.handle_status || '待处理';
+      const detail = (t.complaint_detail || '').length > 50 ? (t.complaint_detail || '').slice(0, 50) + '...' : (t.complaint_detail || '');
+      return `<div class="ticket-card">
+        <div class="ticket-meta">
+          <span class="badge-tag ${cls}">${t.complaint_type || '其他'}</span>
+          <span class="status-dot ${statusCls}"></span>
+          <span>${statusText}</span>
+          <span style="margin-left:auto">${timeAgo(t.create_time)}</span>
         </div>
-      `).join('');
+        <div class="ticket-body">${detail || '--'}</div>
+      </div>`;
+    }).join('');
   } catch (e) { /* ignore */ }
 }
 
@@ -155,14 +221,38 @@ async function refreshProgress() {
     const r = await fetch(`${STUDENT_API}/my/schedule/${id}`);
     const data = await r.json();
     const apps = data.applications || [];
-    document.getElementById('progressList').innerHTML = apps.length === 0
-      ? '<div class="list-item"><span class="label">暂无申请记录</span></div>'
-      : apps.map(a => `
-        <div class="list-item">
-          <span>${a.program_name} @ ${a.university}</span>
-          <span class="value" style="font-size:12px">${a.current_step}</span>
+    const list = el('progressList');
+    if (apps.length === 0) {
+      list.innerHTML = `<div class="empty-state"><div style="font-size:36px;margin-bottom:8px;opacity:.4">📊</div>暂无申请记录</div>
+        <div style="text-align:center;font-size:12px;color:#94a3b8;margin-top:4px">跟小留说"查申请进度"开始追踪</div>`;
+      return;
+    }
+    list.innerHTML = apps.map(a => {
+      const curStep = a.current_step || '';
+      const curIdx = APP_STEPS.findIndex(s => curStep.includes(s) || s.includes(curStep));
+      const effectiveIdx = curIdx >= 0 ? curIdx : 0;
+      const stepsHtml = APP_STEPS.map((step, i) => {
+        let dotCls = 'pending', dotIcon = '';
+        if (i < effectiveIdx) { dotCls = 'done'; dotIcon = '✓'; }
+        else if (i === effectiveIdx) { dotCls = 'current'; dotIcon = '●'; }
+        return `<div class="timeline-step">
+          <div class="timeline-dot ${dotCls}">${dotIcon}</div>
+          <div class="timeline-label">
+            <span class="step-name" style="color:${i === effectiveIdx ? 'var(--primary)' : i < effectiveIdx ? '#10b981' : '#94a3b8'}">${step}</span>
+            ${i === effectiveIdx ? '<span class="step-status">← 当前</span>' : ''}
+          </div>
+        </div>`;
+      }).join('');
+      const statusColor = { 'in_progress':'#3b82f6','completed':'#10b981','withdrawn':'#94a3b8' };
+      return `<div class="card" style="margin-bottom:12px">
+        <div style="font-size:13px;font-weight:700;margin-bottom:2px">${a.program_name}</div>
+        <div style="font-size:11px;color:#64748b;margin-bottom:10px">
+          🏫 ${a.university || ''}
+          <span style="display:inline-block;margin-left:6px;padding:1px 6px;border-radius:4px;font-size:10px;background:${(statusColor[a.application_status] || '#94a3b8')}15;color:${statusColor[a.application_status] || '#94a3b8'}">${a.application_status || ''}</span>
         </div>
-      `).join('');
+        <div class="timeline">${stepsHtml}</div>
+      </div>`;
+    }).join('');
   } catch (e) { /* ignore */ }
 }
 
@@ -173,14 +263,17 @@ async function refreshReminders() {
     const r = await fetch(`${STUDENT_API}/reminders/${id}`);
     const data = await r.json();
     const reminders = data.reminders || [];
-    document.getElementById('reminderCount').textContent = reminders.length;
-    document.getElementById('reminderCount').style.display = reminders.length > 0 ? '' : 'none';
-    document.getElementById('reminderList').innerHTML = reminders.length === 0
-      ? '<div class="list-item"><span class="label">暂无提醒</span></div>'
+    el('reminderCount').textContent = reminders.length;
+    el('reminderCount').style.display = reminders.length > 0 ? '' : 'none';
+    el('reminderList').innerHTML = reminders.length === 0
+      ? '<div class="list-item" style="justify-content:center;color:#94a3b8">暂无提醒</div>'
       : reminders.slice(0, 5).map(r => `
         <div class="list-item">
-          <span>${r.message || r.remind_type}</span>
-          <button class="quick-action" onclick="markRead(${r.id})">已读</button>
+          <span style="font-size:12px;line-height:1.4;flex:1;margin-right:8px">
+            <span style="display:inline-block;width:6px;height:6px;border-radius:50%;background:var(--danger);margin-right:6px;vertical-align:middle"></span>
+            ${r.message || r.remind_type || ''}
+          </span>
+          <button class="quick-action" onclick="markRead(${r.id})" style="flex-shrink:0">已读</button>
         </div>
       `).join('');
   } catch (e) { /* ignore */ }

@@ -30,7 +30,7 @@ logger = logging.getLogger(__name__)
 # ============================================================
 class AuthMiddleware(BaseHTTPMiddleware):
     SKIP_PATHS = {"/", "/health", "/docs", "/openapi.json", "/favicon.ico",
-                  "/static", "/login", "/auth/login"}
+                  "/static", "/login", "/auth/login", "/portal"}
 
     async def dispatch(self, request: Request, call_next):
         if not API_AUTH_ENABLED:
@@ -88,6 +88,29 @@ app.add_middleware(AuthMiddleware)
 static_dir = os.path.join(os.path.dirname(__file__), "static")
 os.makedirs(static_dir, exist_ok=True)
 app.mount("/static", StaticFiles(directory=static_dir), name="static")
+
+# ── 统一门户前端（直连 student_agent:8000 时也可使用） ──
+_unified_dir = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "unified_frontend")
+
+@app.get("/portal")
+def portal_index():
+    return FileResponse(os.path.join(_unified_dir, "index.html"))
+
+@app.get("/portal/css/{filename}")
+def portal_css(filename: str):
+    return FileResponse(os.path.join(_unified_dir, "css", filename))
+
+@app.get("/portal/js/{filename}")
+def portal_js(filename: str):
+    return FileResponse(os.path.join(_unified_dir, "js", filename))
+
+@app.get("/portal/student-dashboard")
+def portal_student_dashboard():
+    return FileResponse(os.path.join(_unified_dir, "student-dashboard.html"))
+
+@app.get("/portal/employee-dashboard")
+def portal_employee_dashboard():
+    return FileResponse(os.path.join(_unified_dir, "employee-dashboard.html"))
 
 
 # ============================================================
