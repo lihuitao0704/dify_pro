@@ -72,22 +72,32 @@ function initLoginForms() {
     }
   });
 
-  // Employee login
+  // Employee login — 统一 account 表验证
   document.getElementById('employeeLoginForm').addEventListener('submit', async e => {
     e.preventDefault();
     const user = document.getElementById('employeeUser').value.trim();
     const pass = document.getElementById('employeePass').value;
     try {
-      // TODO: 等 enterprise_agent 暴露 /auth/login 后替换
-      // 演示用硬编码 admin/admin123
-      if (user === 'admin' && pass === 'admin123') {
-        localStorage.setItem('user_role', 'employee');
-        localStorage.setItem('user_name', user);
-        localStorage.setItem('employee_token', 'demo-token');
+      const resp = await fetch('http://localhost:8000/auth/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ username: user, password: pass }),
+      });
+      const r = await resp.json();
+      if (r.success) {
+        const s = r.student;
+        Auth.set({
+          role: 'employee',
+          user_id: s.user_id,
+          user_name: s.name,
+          user_type: s.user_type || '员工',
+          token: 'token-' + Date.now(),
+          exp: Date.now()/1000 + 86400,
+        });
         toast('登录成功！正在进入企业工作台...', 'success');
         setTimeout(() => window.open('/portal/employee-dashboard', '_self'), 600);
       } else {
-        toast('用户名或密码错误', 'error');
+        toast(r.message || '用户名或密码不正确', 'error');
       }
     } catch (err) {
       toast('登录失败：' + err.message, 'error');
