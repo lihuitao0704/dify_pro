@@ -5,6 +5,7 @@ document.addEventListener('DOMContentLoaded', () => {
   initLoginTabs();
   initLoginForms();
   initPublicChat();
+  initSmartDiagnose();
 });
 
 // ============================================================
@@ -90,6 +91,238 @@ function initLoginForms() {
       }
     } catch (err) {
       toast('登录失败：' + err.message, 'error');
+    }
+  });
+}
+
+// ============================================================
+// 智能诊断 (Smart Diagnosis Modal)
+// ============================================================
+
+// 标签切换：form / upload
+function switchDiagnoseTab(tab) {
+  const formPanel = document.getElementById('diagnoseFormPanel');
+  const uploadPanel = document.getElementById('diagnoseUploadPanel');
+  const tabForm = document.getElementById('tabForm');
+  const tabUpload = document.getElementById('tabUpload');
+  const resultBox = document.getElementById('d_resultBox');
+  const errorMsg = document.getElementById('d_errorMsg');
+
+  // 隐藏之前的结果
+  resultBox.classList.remove('show', 'success', 'fail');
+  errorMsg.style.display = 'none';
+
+  if (tab === 'form') {
+    formPanel.style.display = '';
+    uploadPanel.style.display = 'none';
+    tabForm.classList.add('active');
+    tabUpload.classList.remove('active');
+  } else {
+    formPanel.style.display = 'none';
+    uploadPanel.style.display = '';
+    tabUpload.classList.add('active');
+    tabForm.classList.remove('active');
+  }
+}
+
+// 简历上传相关变量
+let resumeFile = null;
+
+// 初始化文件上传区域事件
+function initResumeUpload() {
+  const dropZone = document.getElementById('d_dropZone');
+  const fileInput = document.getElementById('d_fileInput');
+
+  // 点击触发文件选择
+  dropZone.addEventListener('click', () => fileInput.click());
+
+  // 文件选择
+  fileInput.addEventListener('change', (e) => {
+    const file = e.target.files[0];
+    if (file) handleResumeFile(file);
+  });
+
+  // 拖拽事件
+  dropZone.addEventListener('dragover', (e) => {
+    e.preventDefault();
+    dropZone.classList.add('dragover');
+  });
+  dropZone.addEventListener('dragleave', () => {
+    dropZone.classList.remove('dragover');
+  });
+  dropZone.addEventListener('drop', (e) => {
+    e.preventDefault();
+    dropZone.classList.remove('dragover');
+    const file = e.dataTransfer.files[0];
+    if (file) handleResumeFile(file);
+  });
+}
+
+function handleResumeFile(file) {
+  const allowedExt = ['txt', 'pdf', 'docx'];
+  const ext = file.name.rsplit('.', 1)[-1].toLowerCase();
+  if (!allowedExt.includes(ext)) {
+    showDiagnoseError('不支持的文件格式，仅支持 TXT / PDF / DOCX');
+    return;
+  }
+  if (file.size > 10 * 1024 * 1024) {
+    showDiagnoseError('文件过大，请上传 10MB 以内的文件');
+    return;
+  }
+  resumeFile = file;
+  document.getElementById('d_fileName').textContent = file.name;
+  document.getElementById('d_fileInfo').style.display = 'flex';
+  document.getElementById('d_uploadBtn').disabled = false;
+  // 隐藏错误
+  document.getElementById('d_errorMsg').style.display = 'none';
+}
+
+function clearResumeFile() {
+  resumeFile = null;
+  document.getElementById('d_fileInput').value = '';
+  document.getElementById('d_fileInfo').style.display = 'none';
+  document.getElementById('d_uploadBtn').disabled = true;
+}
+
+function submitResume() {
+  if (!resumeFile) return;
+
+  const loading = document.getElementById('d_loading');
+  const errorMsg = document.getElementById('d_errorMsg');
+  const resultBox = document.getElementById('d_resultBox');
+  const resultTitle = document.getElementById('d_resultTitle');
+  const resultContent = document.getElementById('d_resultContent');
+  const uploadBtn = document.getElementById('d_uploadBtn');
+
+  errorMsg.style.display = 'none';
+  resultBox.classList.remove('show', 'success', 'fail');
+  uploadBtn.disabled = true;
+  loading.style.display = 'block';
+
+  // 构建 FormData 上传文件
+  const fd = new FormData();
+  fd.append('file', resumeFile);
+
+  fetch('http://localhost:8080/api/agent/resume/upload', {
+    method: 'POST',
+    body: fd,
+  })
+    .then(async (res) => {
+      const data = await res.json();
+      if (data.code !== 0) throw new Error(data.msg || '诊断失败');
+
+      const result = data.data.assessment_result || '诊断完成，无详细结论。';
+      resultContent.textContent = result;
+      if (result.includes('已通过') && !result.includes('已通过 0 人')) {
+        resultBox.classList.add('success');
+        resultTitle.textContent = '研判结论 - 已通过';
+      } else {
+        resultBox.classList.add('fail');
+        resultTitle.textContent = '研判结论 - 暂未达标';
+      }
+      resultBox.classList.add('show');
+    })
+    .catch((err) => {
+      showDiagnoseError(err.message);
+    })
+    .finally(() => {
+      uploadBtn.disabled = false;
+      loading.style.display = 'none';
+    });
+}
+
+function showDiagnoseError(msg) {
+  const errorMsg = document.getElementById('d_errorMsg');
+  errorMsg.textContent = '错误：' + msg;
+  errorMsg.style.display = 'block';
+}
+function openDiagnose() {
+  document.getElementById('diagnoseModal').classList.add('active');
+  // 隐藏之前的结果
+  document.getElementById('d_resultBox').classList.remove('show', 'success', 'fail');
+  document.getElementById('d_errorMsg').style.display = 'none';
+  document.getElementById('d_submitBtn').disabled = false;
+}
+function closeDiagnose() {
+  document.getElementById('diagnoseModal').classList.remove('active');
+}
+document.getElementById('smartDiagnoseBtn').addEventListener('click', openDiagnose);
+// 点击弹窗外部关闭
+document.getElementById('diagnoseModal').addEventListener('click', (e) => {
+  if (e.target === document.getElementById('diagnoseModal')) closeDiagnose();
+});
+
+function initSmartDiagnose() {
+  initResumeUpload();
+  document.getElementById('diagnoseForm').addEventListener('submit', async function(e) {
+    e.preventDefault();
+
+    const submitBtn = document.getElementById('d_submitBtn');
+    const loading = document.getElementById('d_loading');
+    const errorMsg = document.getElementById('d_errorMsg');
+    const resultBox = document.getElementById('d_resultBox');
+    const resultTitle = document.getElementById('d_resultTitle');
+    const resultContent = document.getElementById('d_resultContent');
+
+    // 隐藏之前的结果
+    errorMsg.style.display = 'none';
+    resultBox.classList.remove('show', 'success', 'fail');
+    submitBtn.disabled = true;
+    loading.style.display = 'block';
+
+    // 收集表单数据
+    const formData = {
+      name: document.getElementById('d_name').value,
+      age: parseInt(document.getElementById('d_age').value),
+      major: document.getElementById('d_major').value,
+      education: document.getElementById('d_education').value,
+      target_major: document.getElementById('d_target_major').value,
+      language_score: document.getElementById('d_language_score').value,
+      target_country: document.getElementById('d_target_country').value,
+      gpa: parseFloat(document.getElementById('d_gpa').value),
+      budget: parseFloat(document.getElementById('d_budget').value),
+      phone: document.getElementById('d_phone').value,
+      development: document.getElementById('d_development').value,
+      abilities: document.getElementById('d_abilities').value,
+      is_Closed_loop: document.getElementById('d_is_Closed_loop').value,
+      wechat: document.getElementById('d_wechat').value || null,
+      email: document.getElementById('d_email').value || null,
+      conversation_id: null
+    };
+
+    try {
+      // 调用 Assessment 研判接口
+      const res = await fetch('http://localhost:8080/api/agent/resume/add', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(formData)
+      });
+      const data = await res.json();
+
+      if (data.code !== 0) {
+        throw new Error(data.msg || '诊断失败');
+      }
+
+      const result = data.data.assessment_result || '诊断完成，无详细结论。';
+      resultContent.textContent = result;
+
+      // 根据结论判断是"通过"还是"未通过"
+      if (result.includes('已通过') && !result.includes('已通过 0 人')) {
+        resultBox.classList.add('success');
+        resultTitle.textContent = '研判结论 - 已通过';
+      } else {
+        resultBox.classList.add('fail');
+        resultTitle.textContent = '研判结论 - 暂未达标';
+      }
+
+      resultBox.classList.add('show');
+
+    } catch (err) {
+      errorMsg.textContent = '错误：' + err.message;
+      errorMsg.style.display = 'block';
+    } finally {
+      submitBtn.disabled = false;
+      loading.style.display = 'none';
     }
   });
 }

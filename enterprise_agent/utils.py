@@ -51,3 +51,71 @@ def verify_user_identity(user_id: int, user_type: str):
         raise HTTPException(status_code=400, detail=f"无效的用户类型：{user_type}")
     if user_id < 1:
         raise HTTPException(status_code=400, detail="无效的用户ID")
+
+
+# ==================== 共享日期工具（消除路由间重复代码） ====================
+
+def _flexible_parse_date(date_str: str):
+    """
+    灵活解析日期字符串。支持多种格式：
+    - YYYY-MM-DD / YYYY-M-D（标准与无前导零）
+    - YYYY/MM/DD / YYYY/M/D（斜杠分隔）
+    - YYYY年MM月DD日（中文格式）
+    返回 datetime.date 对象，失败返回 None。
+    """
+    from datetime import datetime
+
+    date_str = date_str.strip()
+
+    # 尝试多种格式
+    formats = [
+        "%Y-%m-%d", "%Y-%-m-%-d",
+        "%Y/%m/%d", "%Y/%-m/%-d",
+        "%Y年%m月%d日", "%Y年%-m月%-d日",
+    ]
+    # 先尝试完整格式列表
+    for fmt in formats:
+        try:
+            return datetime.strptime(date_str, fmt).date()
+        except (ValueError, AttributeError):
+            continue
+
+    # 尝试从带时间的字符串中提取日期部分 "2026-01-01 10:00:00"
+    for sep in [" ", "T"]:
+        if sep in date_str:
+            try:
+                return datetime.strptime(date_str.split(sep)[0], "%Y-%m-%d").date()
+            except (ValueError, AttributeError):
+                continue
+
+    return None
+
+
+def parse_date(date_str: str, field_name: str = "日期"):
+    """
+    验证并解析日期字符串。
+    支持 YYYY-MM-DD、YYYY-M-D、YYYY/MM/DD、YYYY年MM月DD日 等格式。
+    成功返回 datetime.date 对象，失败抛出 HTTPException。
+    """
+    result = _flexible_parse_date(date_str)
+    if result is None:
+        raise HTTPException(
+            status_code=400,
+            detail=f"{field_name}格式错误，请使用 YYYY-MM-DD 格式（如 2026-01-01）",
+        )
+    return result
+
+
+def parse_and_validate_dates(start_date: str, end_date: str):
+    """
+    解析并校验起止日期对。
+    返回 (start_date_obj, end_date_obj)。
+    自动抛出 HTTPException。
+    """
+    start = parse_date(start_date, "开始日期")
+    end = parse_date(end_date, "结束日期")
+
+    if end < start:
+        raise HTTPException(status_code=400, detail="结束日期不能早于开始日期")
+
+    return start, end

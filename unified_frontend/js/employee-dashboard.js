@@ -64,8 +64,23 @@ function switchPanel(panel) {
   const titles = {
     chat: '💬 企业 AI 助手', todo: '📋 待办事项',
     customers: '👥 客户管理', leaves: '📝 请假审批', scores: '📊 成绩管理',
+    smartReport: '📈 智能报告',
   };
   document.getElementById('topTitle').textContent = titles[panel] || '💬 企业 AI 助手';
+
+  // 切换报告面板的显示/隐藏
+  const reportPanel = document.getElementById('smartReportPanel');
+  const chatPanel = document.getElementById('chatPanel');
+  const infoPanel = document.getElementById('infoPanel');
+  if (panel === 'smartReport') {
+    reportPanel.style.display = 'flex';
+    chatPanel.style.display = 'none';
+    if (infoPanel) infoPanel.style.display = 'none';
+  } else {
+    reportPanel.style.display = 'none';
+    chatPanel.style.display = '';
+    if (infoPanel) infoPanel.style.display = '';
+  }
 }
 
 async function refreshTodo() {
@@ -153,3 +168,173 @@ function closeModal(id) { document.getElementById(id).classList.remove('active')
 document.addEventListener('click', (e) => {
   if (e.target.classList.contains('modal-overlay')) e.target.classList.remove('active');
 });
+
+// ═══════════════════════════════════════════════════════════
+// 智能报告 (summary_report API @ localhost:8003)
+// ═══════════════════════════════════════════════════════════
+
+const REPORT_API = 'http://localhost:8003/report';
+
+// 报告类型 → 默认占位提示
+const REPORT_PLACEHOLDERS = {
+  customer_operation: '如：最近一周各渠道的客户数量和签约转化率',
+  employee_daily:     '如：本周各部门日报提交情况和工作产出',
+  student_mental:     '如：本月学生整体情绪态势和高风险学生名单',
+  complaint_weekly:   '如：本周投诉总量、处理进度和积压预警',
+  nl2sql:             '如：各国家方向的课程数量和价格分布',
+};
+
+let currentReportType = 'customer_operation';
+
+// ── 报告类型切换 ──
+document.querySelectorAll('.report-type-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.report-type-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    currentReportType = btn.dataset.report;
+    const input = document.getElementById('reportQuestion');
+    input.placeholder = REPORT_PLACEHOLDERS[currentReportType] || '';
+    input.value = '';
+    // 隐藏旧结果，显示空状态
+    document.getElementById('reportResult').style.display = 'none';
+    document.getElementById('reportEmpty').style.display = '';
+  });
+});
+
+// ── 生成报告 ──
+async function generateSmartReport() {
+  const question = document.getElementById('reportQuestion').value.trim();
+  if (!question) {
+    toast('请输入你的问题', 'error');
+    return;
+  }
+
+  const btn = document.getElementById('generateReportBtn');
+  const loading = document.getElementById('reportLoading');
+  const resultDiv = document.getElementById('reportResult');
+  const emptyDiv = document.getElementById('reportEmpty');
+
+  btn.disabled = true;
+  btn.textContent = '⏳ 分析中...';
+  loading.style.display = 'flex';
+  resultDiv.style.display = 'none';
+  emptyDiv.style.display = 'none';
+
+  try {
+    const r = await fetch(`${REPORT_API}/${currentReportType}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      body: 'question=' + encodeURIComponent(question),
+    });
+
+    if (!r.ok) {
+      const errText = await r.text();
+      let errMsg = `请求失败 (HTTP ${r.status})`;
+      try {
+        const errJson = JSON.parse(errText);
+        errMsg = errJson.detail || errMsg;
+      } catch (_) {}
+      toast(errMsg, 'error');
+      emptyDiv.style.display = '';
+      return;
+    }
+
+    const data = await r.json();
+    renderSmartReport(data);
+    resultDiv.style.display = '';
+  } catch (e) {
+    toast('请求失败: ' + e.message, 'error');
+    emptyDiv.style.display = '';
+  } finally {
+    btn.disabled = false;
+    btn.textContent = '📈 生成报告';
+    loading.style.display = 'none';
+  }
+}
+
+// ── 渲染报告 ──
+function renderSmartReport(data) {
+  // 1. 渲染润色后的报告文本（Markdown → HTML）
+  const answerDiv = document.getElementById('reportAnswer');
+  answerDiv.innerHTML = markdownToHtml(data.answer || '暂无报告内容');
+
+  // 2. 渲染数据表格
+  const tablesDiv = document.getElementById('reportTables');
+  if (data.results && data.results.length > 0) {
+    tablesDiv.innerHTML = '<h3 class="report-tables-title">📋 数据明细</h3>'
+      + data.results.map((r, i) => renderResultTable(r, i + 1)).join('');
+  } else {
+    tablesDiv.innerHTML = '';
+  }
+}
+
+// ── 单条结果渲染为表格 ──
+function renderResultTable(result, index) {
+  if (result.type !== 'SELECT' || !result.rows || result.rows.length === 0) {
+    return `<div class="result-block">
+      <div class="result-sql">SQL ${index}: ${escapeHtml(result.sql || '')}</div>
+      <p style="color:#64748b;font-size:13px;margin:8px 0">(无数据)</p>
+    </div>`;
+  }
+
+  const cols = result.columns || Object.keys(result.rows[0]);
+  return `<div class="result-block">
+    <div class="result-meta">查询 ${index} — 共 ${result.count} 条记录</div>
+    <div class="table-wrap">
+      <table class="data-table">
+        <thead><tr>${cols.map(c => `<th>${escapeHtml(c)}</th>`).join('')}</tr></thead>
+        <tbody>
+          ${result.rows.map(row => `<tr>${cols.map(c => {
+            const v = row[c];
+            if (v === null || v === undefined) return '<td class="null">—</td>';
+            const s = String(v);
+            // 截断过长文本
+            return `<td title="${escapeHtml(s)}">${escapeHtml(s.length > 100 ? s.slice(0, 100) + '...' : s)}</td>`;
+          }).join('')}</tr>`).join('')}
+        </tbody>
+      </table>
+    </div>
+    <details class="result-sql-detail">
+      <summary>查看 SQL</summary>
+      <code>${escapeHtml(result.sql || '')}</code>
+    </details>
+  </div>`;
+}
+
+// ── 简易 Markdown → HTML ──
+function markdownToHtml(md) {
+  if (!md) return '';
+  let html = escapeHtml(md);
+
+  // 标题
+  html = html.replace(/^### (.+)$/gm, '<h4>$1</h4>');
+  html = html.replace(/^## (.+)$/gm, '<h3>$1</h3>');
+  html = html.replace(/^# (.+)$/gm, '<h2>$1</h2>');
+
+  // 粗体 + 斜体
+  html = html.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
+  html = html.replace(/\*(.+?)\*/g, '<em>$1</em>');
+
+  // 无序列表
+  html = html.replace(/^- (.+)$/gm, '<li>$1</li>');
+  html = html.replace(/(<li>.*<\/li>\n?)+/g, '<ul>$&</ul>');
+
+  // 数字列表
+  html = html.replace(/^\d+\.\s+(.+)$/gm, '<li>$1</li>');
+
+  // 分隔线
+  html = html.replace(/^---+$/gm, '<hr>');
+
+  // 换行
+  html = html.replace(/\n\n/g, '</p><p>');
+  html = html.replace(/\n/g, '<br>');
+
+  return '<p>' + html + '</p>';
+}
+
+// ── HTML 转义 ──
+function escapeHtml(str) {
+  const div = document.createElement('div');
+  div.textContent = str;
+  return div.innerHTML;
+}

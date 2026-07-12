@@ -17,7 +17,7 @@ from enterprise_agent.models import (
     StudentComplaint, StudentScore, LeaveApplication, Account,
 )
 
-logging.basicConfig(level=logging.INFO, format="%(asctime)s | %(levelname)-5s | %(message)s")
+logging.basicConfig(level=logging.INFO, format="%(asctime)s | %(levelname)-5s | %(name)s | %(message)s", datefmt="%Y-%m-%d %H:%M:%S")
 logger = logging.getLogger("seed")
 
 NOW = datetime.now()
@@ -108,8 +108,9 @@ def seed_all():
             if exists:
                 continue
             ut = "管理者" if emp.emp_id in mgr_ids else "员工"
+            from enterprise_agent.security import hash_password
             db.add(Account(
-                username=emp.emp_name, password="123456", real_name=emp.emp_name,
+                username=emp.emp_name, password=hash_password("123456"), real_name=emp.emp_name,
                 user_type=ut, dept_id=emp.dept_id, phone=emp.phone, email=emp.email,
                 status=1, create_time=NOW, update_time=NOW,
             ))

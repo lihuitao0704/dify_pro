@@ -29,6 +29,7 @@
         <a href="#agents">智能体</a>
       </nav>
       <div class="header-actions">
+        <button class="btn btn-primary btn-sm" id="smartDiagnoseBtn">智能诊断</button>
         <button class="btn btn-secondary btn-sm" id="loginBtn">登录</button>
       </div>
     </div>
@@ -168,6 +169,147 @@
     </section>
 
   </main>
+
+  <!-- ============ 智能诊断 Modal ============ -->
+  <div class="modal-overlay" id="diagnoseModal">
+    <div class="modal diagnose-modal">
+      <button class="modal-close" onclick="closeDiagnose()">×</button>
+      <h2 class="diagnose-title">🎯 智能诊断</h2>
+      <p class="diagnose-subtitle">AI 助手为你评估最适合的留学项目</p>
+
+      <!-- 标签切换 -->
+      <div class="diagnose-tabs">
+        <button class="diagnose-tab active" id="tabForm" onclick="switchDiagnoseTab('form')">手动填写</button>
+        <button class="diagnose-tab" id="tabUpload" onclick="switchDiagnoseTab('upload')">上传简历</button>
+      </div>
+
+      <!-- 表单填写区 -->
+      <div id="diagnoseFormPanel">
+      <form id="diagnoseForm" class="diagnose-form">
+        <div class="form-row">
+          <div class="form-group">
+            <label>姓名 <span class="required">*</span></label>
+            <input type="text" id="d_name" placeholder="请输入姓名" required>
+          </div>
+          <div class="form-group">
+            <label>年龄 <span class="required">*</span></label>
+            <input type="number" id="d_age" placeholder="请输入年龄" min="1" max="100" required>
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label>当前专业 <span class="required">*</span></label>
+            <input type="text" id="d_major" placeholder="如：车辆工程" required>
+          </div>
+          <div class="form-group">
+            <label>当前学历 <span class="required">*</span></label>
+            <select id="d_education" required>
+              <option value="">请选择</option>
+              <option value="高中">高中</option>
+              <option value="本科">本科</option>
+              <option value="硕士">硕士</option>
+              <option value="博士">博士</option>
+              <option value="其他">其他</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label>目标申请专业 <span class="required">*</span></label>
+            <input type="text" id="d_target_major" placeholder="如：人工智能" required>
+          </div>
+          <div class="form-group">
+            <label>语言成绩 <span class="required">*</span></label>
+            <input type="text" id="d_language_score" placeholder="如：雅思 7.0 / 托福 100" required>
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label>目标留学国家 <span class="required">*</span></label>
+            <input type="text" id="d_target_country" placeholder="如：新加坡" required>
+          </div>
+          <div class="form-group">
+            <label>GPA <span class="required">*</span></label>
+            <input type="number" id="d_gpa" placeholder="如：3.5" step="0.01" min="0" max="4" required>
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label>留学预算（元）<span class="required">*</span></label>
+            <input type="number" id="d_budget" placeholder="如：200000" min="0" required>
+          </div>
+          <div class="form-group">
+            <label>手机号码 <span class="required">*</span></label>
+            <input type="text" id="d_phone" placeholder="请输入手机号" required>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label>发展需求 <span class="required">*</span></label>
+          <textarea id="d_development" placeholder="请描述你的职业发展需求和规划..." required></textarea>
+        </div>
+
+        <div class="form-group">
+          <label>综合能力 <span class="required">*</span></label>
+          <textarea id="d_abilities" placeholder="请描述学生的综合能力，如专业技能、项目经验等..." required></textarea>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label>是否接受封闭式实训 <span class="required">*</span></label>
+            <select id="d_is_Closed_loop" required>
+              <option value="">请选择</option>
+              <option value="是">是</option>
+              <option value="否">否</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="form-divider"></div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label>微信号 <span class="optional">选填</span></label>
+            <input type="text" id="d_wechat" placeholder="请输入微信号">
+          </div>
+          <div class="form-group">
+            <label>电子邮箱 <span class="optional">选填</span></label>
+            <input type="email" id="d_email" placeholder="请输入邮箱">
+          </div>
+        </div>
+
+        <button type="submit" class="btn btn-primary btn-submit" id="d_submitBtn">开始诊断</button>
+      </form>
+      </div><!-- /#diagnoseFormPanel -->
+
+      <!-- 简历上传区 -->
+      <div id="diagnoseUploadPanel" style="display:none">
+        <div class="resume-upload-area" id="d_dropZone">
+          <div class="resume-upload-icon">📄</div>
+          <p class="resume-upload-text">拖拽简历文件到此处，或 <span class="resume-upload-link">点击选择文件</span></p>
+          <p class="resume-upload-hint">支持格式：TXT / PDF / DOCX，最大 10MB</p>
+          <input type="file" id="d_fileInput" accept=".txt,.pdf,.docx" style="display:none">
+        </div>
+        <div class="resume-file-info" id="d_fileInfo" style="display:none">
+          <span class="resume-file-name" id="d_fileName"></span>
+          <button class="resume-file-remove" onclick="clearResumeFile()">×</button>
+        </div>
+        <button class="btn btn-primary btn-submit" id="d_uploadBtn" onclick="submitResume()" style="margin-top:16px" disabled>开始诊断</button>
+      </div>
+
+      <div class="diagnose-loading" id="d_loading">正在分析中，请稍候...</div>
+      <div class="diagnose-error" id="d_errorMsg"></div>
+
+      <div class="result-box" id="d_resultBox">
+        <h3 id="d_resultTitle">研判结论</h3>
+        <pre id="d_resultContent"></pre>
+      </div>
+    </div>
+  </div>
 
   <!-- ============ Login Modal ============ -->
   <div class="modal-overlay" id="loginModal">

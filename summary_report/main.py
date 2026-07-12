@@ -11,8 +11,11 @@ FastAPI 应用入口。
     uvicorn summary_report.main:app --host 0.0.0.0 --port 8000
 """
 
+from pathlib import Path
+
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import HTMLResponse
 
 from summary_report.api.routes import all_routers
 from summary_report.api.schemas import HealthResponse, RootResponse
@@ -65,6 +68,15 @@ def root() -> dict:
         "docs": "/docs",
         "health": "/health",
     }
+
+
+@app.get("/test", response_class=HTMLResponse, include_in_schema=False)
+def test_panel():
+    """智能报告独立测试页面（无需登录）。"""
+    test_html = Path(__file__).parent / "test_report.html"
+    if not test_html.is_file():
+        return HTMLResponse("<h1>测试页面文件未找到</h1>", status_code=404)
+    return HTMLResponse(test_html.read_text(encoding="utf-8"))
 
 
 @app.get("/health", response_model=HealthResponse)

@@ -52,6 +52,7 @@ def add_customer(req: CustomerAddRequest, db: Session = Depends(get_db)):
         )
         db.add(customer)
         db.flush()  # 获取自增ID
+        db.commit()  # 显式提交事务
 
         logger.info(f"客户录入成功: ID={customer.customer_id}, 姓名={customer.customer_name}")
         return ApiResponse(data={"customer_id": customer.customer_id})
@@ -224,6 +225,7 @@ def update_customer_status(req: CustomerStatusUpdateRequest, db: Session = Depen
         customer.current_status = req.new_status
         customer.update_time = datetime.now()
 
+        db.commit()
         logger.info(f"客户状态更新: ID={req.customer_id}, {old_status} -> {req.new_status}")
         return ApiResponse(data={"customer_id": req.customer_id, "new_status": req.new_status})
 
@@ -266,6 +268,7 @@ def follow_customer(req: CustomerFollowRequest, db: Session = Depends(get_db)):
             customer.follow_record = new_record
 
         customer.update_time = datetime.now()
+        db.commit()
 
         logger.info(f"跟进记录已追加: 客户ID={req.customer_id}")
         return ApiResponse(data={"customer_id": req.customer_id, "follow_record": customer.follow_record})
