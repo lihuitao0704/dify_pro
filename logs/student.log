@@ -103,3 +103,23 @@ ERROR:    [Errno 10048] error while attempting to bind on address ('0.0.0.0', 80
 INFO:     Waiting for application shutdown.
 [Agent] 已关闭
 INFO:     Application shutdown complete.
+[Config] 已加载 .env: C:\Users\Windows\Desktop\整体项目合并后-副本\student_agent\.env
+INFO:     Started server process [9988]
+INFO:     Waiting for application startup.
+==================================================
+  学生智能助手 Agent 启动中...
+==================================================
+[DB] 数据库 `dify_pro` 已就绪
+[DB] 9 张表已就绪（教师表由教师Agent管理）
+[DB] 种子数据已写入
+[KB] FAQ加载: 28条（已过滤学生相关）
+[KB] 知识库就绪: 49个片段, 28条FAQ, 9篇文档
+[Reminder] APScheduler 未安装，跳过定时调度（手动调用 scan_and_remind() 仍可用）
+  聊天页面: http://localhost:8000
+  API文档:  http://localhost:8000/docs
+==================================================
+INFO:     Application startup complete.
+ERROR:    [Errno 10048] error while attempting to bind on address ('0.0.0.0', 8000): 通常每个套接字地址(协议/网络地址/端口)只允许使用一次。
+INFO:     Waiting for application shutdown.
+[Agent] 已关闭
+INFO:     Application shutdown complete.

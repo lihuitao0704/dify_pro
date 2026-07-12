@@ -668,4 +668,11 @@ INFO:     Application startup complete.
 2026-07-12 12:18:49 | INFO  | enterprise_agent.scheduler |   - 处理中的投诉: 3 条
 2026-07-12 12:18:54 | INFO  | watchfiles.main | 5 changes detected
 WARNING:  WatchFiles detected changes in 'student_agent\services\leave_service.py'. Reloading...
- 
+ SECURITY: Using default database password '123456'! Set DB_PASSWORD in .env or environment variable.
+2026-07-12 13:43:31 | INFO  | agent | Config loaded: host=192.168.48.121, db=dify_pro
+Traceback (most recent call last):
+  File "<frozen runpy>", line 198, in _run_module_as_main
+  File "<frozen runpy>", line 88, in _run_code
+  File "C:\Users\Windows\Desktop\整体项目合并后-副本\enterprise_agent\main.py", line 20, in <module>
+    from enterprise_agent.security import (
+ModuleNotFoundError: No module named 'enterprise_agent.security'
