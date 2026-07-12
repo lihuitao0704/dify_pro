@@ -180,25 +180,28 @@ def handle_academic(student_id: int, message: str, params: dict, context: list) 
         scores = query_scores(student_id)
         return _format_scores(scores)
 
-    # ── 课程查询 ──
+    # ── 课程查询（跨服务表 courses，不存在时降级）──
     if any(kw in message for kw in ["课程", "项目", "培训", "学什么"]):
-        country = None
-        for c in ["新加坡", "德国", "日本", "韩国", "英国", "美国", "澳洲", "加拿大"]:
-            if c in message: country = c; break
-        sql = "SELECT course_name, category, sub_category, country, duration, price, description FROM courses WHERE is_active=1"
-        params = []
-        if country:
-            sql += " AND country=%s"; params.append(country)
-        sql += " ORDER BY id LIMIT 6"
-        rows = db.query(sql, tuple(params) if params else None)
-        if not rows:
-            return f"暂时没有{'关于' + country if country else ''}的课程信息～"
-        lines = [f"📚 {'关于' + country + '的' if country else ''}课程推荐："]
-        for r in rows:
-            lines.append(f"· {r['course_name']} | {r['category']}/{r.get('sub_category','')} | {r['duration']} | ¥{r.get('price',0)}")
-            if r.get('description'):
-                lines.append(f"  {r['description'][:80]}")
-        return "\n".join(lines)
+        try:
+            country = None
+            for c in ["新加坡", "德国", "日本", "韩国", "英国", "美国", "澳洲", "加拿大"]:
+                if c in message: country = c; break
+            sql = "SELECT course_name, category, sub_category, country, duration, price, description FROM courses WHERE is_active=1"
+            params = []
+            if country:
+                sql += " AND country=%s"; params.append(country)
+            sql += " ORDER BY id LIMIT 6"
+            rows = db.query(sql, tuple(params) if params else None)
+            if rows:
+                lines = [f"📚 {'关于' + country + '的' if country else ''}课程推荐："]
+                for r in rows:
+                    lines.append(f"· {r['course_name']} | {r['category']}/{r.get('sub_category','')} | {r['duration']} | ¥{r.get('price',0)}")
+                    if r.get('description'):
+                        lines.append(f"  {r['description'][:80]}")
+                return "\n".join(lines)
+        except Exception:
+            pass
+        return f"暂时没有{'关于' + country if country else ''}的课程信息～"
 
     # ── 日程查询 ──
     schedule = query_schedule(student_id)

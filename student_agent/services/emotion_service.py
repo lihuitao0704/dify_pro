@@ -72,7 +72,7 @@ _l2_negatives = {
     "文化冲击": "cultural", "不适应这里": "cultural", "语言障碍": "cultural",
     "种族歧视": "cultural", "被区别对待": "cultural",
     "没朋友": "social", "融不进去": "social", "被孤立": "social",
-    "没人玩": "social", "交了不到朋友": "social",
+    "没人玩": "social", "交不到朋友": "social",
     "家人不理解": "cultural", "父母施压": "cultural", "花了家里很多钱": "cultural",
     "签证出问题": "cultural", "签证焦虑": "cultural",
 }

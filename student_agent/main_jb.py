@@ -357,7 +357,7 @@ def leave_submit(req: LeaveSubmitRequest, request: Request):
     try: _require_self_or_forbid(req.student_id, request)
     except PermissionError: return JSONResponse(status_code=403, content={"detail": "无权访问"})
     stu = query_one("SELECT name FROM student WHERE id = %s", (req.student_id,))
-    tid = insert("leave_request", {
+    tid = insert("leave_application", {
         "applicant_id": req.student_id,
         "applicant_type": "学生",
         "student_name": stu["name"] if stu else "同学",

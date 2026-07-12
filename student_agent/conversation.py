@@ -120,8 +120,8 @@ def get_student_context(student_id: int) -> dict:
         "SELECT * FROM student WHERE id = %s", (student_id,)
     )
     mental = _db.query_one(
-        """SELECT current_emotion, risk_score, risk_level, total_chat_count,
-                  negative_count, teacher_notified
+        """SELECT current_emotion, risk_score, risk_level, negative_keywords_count,
+                  consecutive_negative_days, teacher_notified
            FROM mental_health_profile WHERE student_id = %s""",
         (student_id,)
     )

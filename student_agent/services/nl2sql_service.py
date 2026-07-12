@@ -130,8 +130,8 @@ QUERY_TEMPLATES = [
         "name": "统计请假记录",
         "pattern": r"(?:统计|查).*(?:请假|休假).*|请假.*(?:统计|次数|多少|几次)",
         "sql": """SELECT status, COUNT(*) AS cnt
-                  FROM leave_request
-                  WHERE student_id = %s
+                  FROM leave_application
+                  WHERE applicant_id = %s AND applicant_type = '学生'
                   GROUP BY status""",
         "params_func": lambda sid: (sid,),
         "description": "按状态统计请假记录",

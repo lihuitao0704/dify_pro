@@ -197,62 +197,72 @@ def _handle_emotion_update(student_id: int, emotion: dict, user_msg: str) -> str
 
 
 def _handle_life_guide(student_id: int, message: str, params: dict, context: list) -> str:
-    # 课程查询
+    # 课程查询（跨服务表 courses，不存在时降级到知识库）
     if any(kw in message for kw in ["课程", "项目", "专业", "学什么", "培训"]):
-        country = None
-        for c in ["新加坡", "德国", "日本", "韩国", "英国", "美国", "澳洲", "加拿大"]:
-            if c in message: country = c; break
-        sql = "SELECT course_name, category, sub_category, country, duration, price, description FROM courses WHERE is_active=1"
-        params = []
-        if country:
-            sql += " AND country=%s"
-            params.append(country)
-        sql += " ORDER BY id LIMIT 6"
-        rows = _db.query(sql, tuple(params) if params else None)
-        if not rows:
-            return f"暂时没有{'关于' + country if country else ''}的课程信息～"
-        lines = [f"📚 {'关于' + country + '的' if country else ''}课程推荐："]
-        for r in rows:
-            lines.append(f"· {r['course_name']} | {r['category']}/{r.get('sub_category','')} | {r['duration']} | ¥{r.get('price',0)}")
-            if r.get('description'):
-                lines.append(f"  {r['description'][:80]}")
-        return "\n".join(lines)
+        try:
+            country = None
+            for c in ["新加坡", "德国", "日本", "韩国", "英国", "美国", "澳洲", "加拿大"]:
+                if c in message: country = c; break
+            sql = "SELECT course_name, category, sub_category, country, duration, price, description FROM courses WHERE is_active=1"
+            params = []
+            if country:
+                sql += " AND country=%s"
+                params.append(country)
+            sql += " ORDER BY id LIMIT 6"
+            rows = _db.query(sql, tuple(params) if params else None)
+            if rows:
+                lines = [f"📚 {'关于' + country + '的' if country else ''}课程推荐："]
+                for r in rows:
+                    lines.append(f"· {r['course_name']} | {r['category']}/{r.get('sub_category','')} | {r['duration']} | ¥{r.get('price',0)}")
+                    if r.get('description'):
+                        lines.append(f"  {r['description'][:80]}")
+                return "\n".join(lines)
+        except Exception:
+            pass  # 表不存在，降级到知识库
+        # 降级：提示用户
+        return f"课程信息暂时无法查询，你可以直接问我关于{'留学' + country if country else '留学'}的问题，我来帮你解答～"
 
-    # 查询我的报名记录
+    # 查询我的报名记录（跨服务表 lecture_registrations/activity_registrations）
     if any(kw in message for kw in ["我报名", "我的报名", "报了", "报名了", "参加了"]) and any(kw in message for kw in ["讲座", "活动"]):
-        name_row = _db.query_one("SELECT name FROM student WHERE id=%s", (student_id,))
-        sname = name_row["name"] if name_row else ""
-        if not sname: return "未能识别你的身份，请确认已正确登录～"
-        if "讲座" in message:
-            rows = _db.query(
-                "SELECT l.title, l.event_time, l.location FROM lecture_registrations r JOIN lectures l ON r.lecture_id=l.lecture_id WHERE r.name COLLATE utf8mb4_unicode_ci =%s ORDER BY l.event_time DESC", (sname,))
-            if not rows: return "你还没有报名任何讲座～"
-            lines = ["📋 你报名的讲座："]
-        else:
-            rows = _db.query(
-                "SELECT a.title, a.event_time, a.location FROM activity_registrations r JOIN activities a ON r.activity_id=a.activity_id WHERE r.name COLLATE utf8mb4_unicode_ci =%s ORDER BY a.event_time DESC", (sname,))
-            if not rows: return "你还没有报名任何活动～"
-            lines = ["📋 你报名的活动："]
-        for r in rows:
-            lines.append(f"· {r['title']} | 🕐 {str(r['event_time'])[:16]} | 📍 {r.get('location','')}")
-        return "\n".join(lines)
+        try:
+            name_row = _db.query_one("SELECT name FROM student WHERE id=%s", (student_id,))
+            sname = name_row["name"] if name_row else ""
+            if not sname: return "未能识别你的身份，请确认已正确登录～"
+            if "讲座" in message:
+                rows = _db.query(
+                    "SELECT l.title, l.event_time, l.location FROM lecture_registrations r JOIN lectures l ON r.lecture_id=l.lecture_id WHERE r.name COLLATE utf8mb4_unicode_ci =%s ORDER BY l.event_time DESC", (sname,))
+                if not rows: return "你还没有报名任何讲座～"
+                lines = ["📋 你报名的讲座："]
+            else:
+                rows = _db.query(
+                    "SELECT a.title, a.event_time, a.location FROM activity_registrations r JOIN activities a ON r.activity_id=a.activity_id WHERE r.name COLLATE utf8mb4_unicode_ci =%s ORDER BY a.event_time DESC", (sname,))
+                if not rows: return "你还没有报名任何活动～"
+                lines = ["📋 你报名的活动："]
+            for r in rows:
+                lines.append(f"· {r['title']} | 🕐 {str(r['event_time'])[:16]} | 📍 {r.get('location','')}")
+            return "\n".join(lines)
+        except Exception:
+            return "报名记录暂时无法查询，请在活动页面查看～"
 
-    # 活动/讲座查询
+    # 活动/讲座查询（跨服务表 lectures/activities）
     if any(kw in message for kw in ["活动", "社团", "讲座", "分享会", "见面会", "迎新"]):
-        is_lecture = any(kw in message for kw in ["讲座", "分享会", "见面会"])
-        table = "lectures" if is_lecture else "activities"
-        rows = _db.query(
-            f"SELECT title, event_time, location, registration_method, "
-            f"{'speaker' if is_lecture else 'registration_method'} "
-            f"FROM {table} WHERE event_time >= NOW() ORDER BY event_time ASC LIMIT 5")
-        if not rows:
-            return f"近期没有{'讲座' if is_lecture else '活动'}安排～可以先关注其他信息哦！"
-        lines = [f"{'📚 近期讲座' if is_lecture else '🎉 近期活动'}："]
-        for r in rows:
-            tm = str(r.get('event_time',''))[:16]
-            sp = f" | 主讲：{r.get('speaker','')}" if is_lecture and r.get('speaker') else ""
-            lines.append(f"· {r['title']}\n  🕐 {tm} | 📍 {r.get('location','')}{sp} | {r.get('registration_method','')}")
-        return "\n".join(lines)
+        try:
+            is_lecture = any(kw in message for kw in ["讲座", "分享会", "见面会"])
+            table = "lectures" if is_lecture else "activities"
+            rows = _db.query(
+                f"SELECT title, event_time, location, registration_method, "
+                f"{'speaker' if is_lecture else 'registration_method'} "
+                f"FROM {table} WHERE event_time >= NOW() ORDER BY event_time ASC LIMIT 5")
+            if rows:
+                lines = [f"{'📚 近期讲座' if is_lecture else '🎉 近期活动'}："]
+                for r in rows:
+                    tm = str(r.get('event_time',''))[:16]
+                    sp = f" | 主讲：{r.get('speaker','')}" if is_lecture and r.get('speaker') else ""
+                    lines.append(f"· {r['title']}\n  🕐 {tm} | 📍 {r.get('location','')}{sp} | {r.get('registration_method','')}")
+                return "\n".join(lines)
+        except Exception:
+            pass  # 表不存在，降级到通用回复
+        return f"近期{'讲座' if is_lecture else '活动'}信息暂时无法查询～可以先关注其他信息哦！"
 
     generic_words = ["海外生活", "生活指南", "海外指南", "生活支持"]
     if any(kw in message for kw in generic_words) and len(message) <= 15:

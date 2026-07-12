@@ -556,6 +556,24 @@ TABLE_LIST = [
     INDEX idx_created (created_at)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci"""),
 
+    ("leave_application", """CREATE TABLE IF NOT EXISTS leave_application (
+    id              INT AUTO_INCREMENT PRIMARY KEY,
+    applicant_id    BIGINT NOT NULL COMMENT '申请人ID（学生ID或员工ID）',
+    applicant_type  VARCHAR(20) NOT NULL DEFAULT '学生' COMMENT '申请人类型：学生/员工',
+    student_name    VARCHAR(50) COMMENT '学生姓名',
+    leave_type      VARCHAR(20) NOT NULL COMMENT '请假类型：事假/病假/年假/其他',
+    start_date      DATE NOT NULL COMMENT '请假开始日期',
+    end_date        DATE NOT NULL COMMENT '请假结束日期',
+    reason          TEXT COMMENT '请假原因',
+    status          TINYINT NOT NULL DEFAULT 0 COMMENT '0-待审批/1-已通过/2-已驳回',
+    approval_user   VARCHAR(50) COMMENT '审批人姓名',
+    create_time     DATETIME DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+    update_time     DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+    INDEX idx_applicant (applicant_type, applicant_id),
+    INDEX idx_status (status),
+    INDEX idx_dates (start_date, end_date)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci"""),
+
     ("academic_schedule", """CREATE TABLE IF NOT EXISTS academic_schedule (
     id               INT AUTO_INCREMENT PRIMARY KEY,
     student_id       INT NOT NULL,
@@ -629,6 +647,35 @@ TABLE_LIST = [
     INDEX idx_student (student_id),
     INDEX idx_status (conversion_status),
     INDEX idx_degree (interest_degree)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci"""),
+
+    ("student_complaint", """CREATE TABLE IF NOT EXISTS student_complaint (
+    id              BIGINT AUTO_INCREMENT PRIMARY KEY,
+    student_id      BIGINT NOT NULL,
+    complaint_detail TEXT NOT NULL,
+    complaint_type  VARCHAR(32),
+    handle_status   VARCHAR(16) DEFAULT '待处理',
+    handler_user_id BIGINT,
+    create_time     DATETIME DEFAULT CURRENT_TIMESTAMP,
+    update_time     DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    INDEX idx_student (student_id),
+    INDEX idx_handler (handler_user_id),
+    INDEX idx_status (handle_status)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci"""),
+
+    ("student_score", """CREATE TABLE IF NOT EXISTS student_score (
+    id            BIGINT AUTO_INCREMENT PRIMARY KEY,
+    student_id    BIGINT NOT NULL,
+    subject       VARCHAR(64) NOT NULL,
+    score         DECIMAL(5,1) NOT NULL,
+    exam_type     VARCHAR(32),
+    exam_date     DATE,
+    admin_user_id BIGINT DEFAULT 0,
+    input_time    DATETIME DEFAULT CURRENT_TIMESTAMP,
+    create_time   DATETIME DEFAULT CURRENT_TIMESTAMP,
+    update_time   DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    INDEX idx_student (student_id),
+    INDEX idx_admin (admin_user_id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci"""),
 
     ("conversation_session", """CREATE TABLE IF NOT EXISTS conversation_session (

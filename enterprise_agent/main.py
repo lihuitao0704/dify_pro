@@ -13,12 +13,10 @@ import uvicorn
 from fastapi import FastAPI, Request, HTTPException, Depends
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse, HTMLResponse
-from typing import Optional
-
 from enterprise_agent.config import APP_CONFIG, logger
 from enterprise_agent.database import test_connection
 from enterprise_agent.security import (
-    verify_password_compat, migrate_hash, create_jwt, verify_jwt, bearer_token,
+    verify_password_compat, migrate_hash, create_jwt, verify_jwt,
 )
 
 # ==================== 创建应用 ====================
@@ -41,21 +39,15 @@ app.add_middleware(
     expose_headers=["*"],
 )
 
-# ==================== JWT 依赖注入（兼容旧版 Query Param） ====================
+# ==================== JWT 依赖注入 ====================
 
-def get_current_user(
-    request: Request,
-    current_user_id: Optional[int] = None,
-    current_user_type: Optional[str] = None,
-) -> dict:
+def get_current_user(request: Request) -> dict:
     """
-    获取当前用户信息。
-    优先从 JWT 解析（Authorization: Bearer <token>），
-    回退到 Query Param（兼容前端旧版调用）。
+    从 JWT（Authorization: Bearer <token>）解析当前用户信息。
     """
-    # 尝试从 JWT 获取
-    token = bearer_token(dict(request.headers))
-    if token:
+    auth = request.headers.get("authorization", "")
+    if auth.lower().startswith("bearer "):
+        token = auth.split(" ", 1)[-1].strip()
         payload = verify_jwt(token)
         if payload:
             return {
@@ -64,15 +56,6 @@ def get_current_user(
                 "real_name": payload.get("real_name", ""),
                 "username": payload.get("username", ""),
             }
-
-    # 回退到 Query Param（兼容模式）
-    if current_user_id is not None and current_user_type is not None:
-        return {
-            "user_id": current_user_id,
-            "user_type": current_user_type,
-            "real_name": "",
-            "username": "",
-        }
 
     raise HTTPException(status_code=401, detail="未登录或 Token 已过期")
 
