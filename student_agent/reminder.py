@@ -34,7 +34,10 @@ def _scan_academic_reminders() -> list[dict]:
     for s in schedules:
         deadline = s["deadline"]
         if isinstance(deadline, str):
-            deadline = datetime.strptime(deadline, "%Y-%m-%d %H:%M:%S")
+            try:
+                deadline = datetime.strptime(deadline[:19], "%Y-%m-%d %H:%M:%S")
+            except (ValueError, IndexError):
+                continue
         hours_left = (deadline - now).total_seconds() / 3600
         days_left = hours_left / 24
 
@@ -127,8 +130,14 @@ def _scan_upgrade_reminders() -> list[dict]:
 def _days_since(dt) -> int:
     """距今天数"""
     if isinstance(dt, str):
-        dt = datetime.strptime(dt[:19], "%Y-%m-%d %H:%M:%S")
-    return (datetime.now() - dt).days
+        try:
+            dt = datetime.strptime(dt[:19], "%Y-%m-%d %H:%M:%S")
+        except (ValueError, IndexError):
+            return 999
+    try:
+        return (datetime.now() - dt).days
+    except TypeError:
+        return 999
 
 
 def _build_academic_msg(s: dict, days_left: float, hours_left: float) -> str:
