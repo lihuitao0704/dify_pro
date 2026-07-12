@@ -71,7 +71,7 @@ const Auth = {
   // ── 学生登录（统一账户密码，查 account 表） ──
   async studentLogin(username, password) {
     const urls = [
-      `http://localhost:8000/auth/login`,
+      `/auth/login`,
     ];
     for (const url of urls) {
       try {
@@ -105,7 +105,7 @@ const Auth = {
   // ── 员工登录 ──
   async employeeLogin(username, password) {
     const urls = [
-      `http://localhost:8001/auth/login`,
+      `/auth/login`,
     ];
     for (const url of urls) {
       try {

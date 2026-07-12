@@ -37,7 +37,7 @@ function initLoginTabs() {
 }
 
 function initLoginForms() {
-  const LOGIN_API = 'http://localhost:8000/auth/login';
+  const LOGIN_API = '/auth/login';
 
   async function doLogin(role) {
     const userEl = document.getElementById(role === 'student' ? 'studentUser' : 'employeeUser');

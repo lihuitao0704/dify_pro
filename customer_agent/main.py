@@ -141,6 +141,68 @@ def health():
 
 
 # ============================================================
+# 统一登录（account表，与student_agent共享）
+# ============================================================
+@app.post("/auth/login")
+async def auth_login(request: Request):
+    """统一登录：支持 account表(用户名+密码，bcrypt/明文兼容) 和 student表(学号+姓名)"""
+    import pymysql, json as _json
+    from student_agent.config import DB_CONFIG
+
+    body = await request.json()
+    username = (body.get("username") or "").strip()
+    password = (body.get("password") or "").strip()
+    sid = body.get("student_id") or 0
+    sname = (body.get("name") or "").strip()
+
+    def check_pw(plain, stored):
+        try:
+            import bcrypt
+            return bcrypt.checkpw(plain.encode(), stored.encode())
+        except Exception:
+            return plain == stored
+
+    conn = pymysql.connect(**DB_CONFIG)
+    conn.autocommit(True)
+    try:
+        with conn.cursor() as cur:
+            if username and password:
+                cur.execute(
+                    """SELECT user_id, username, password, real_name, user_type, student_id, phone, email
+                       FROM account WHERE username = %s AND status = 1""", (username,))
+                row = cur.fetchone()
+                if not row:
+                    return {"success": False, "message": "用户名或密码不正确"}
+                cols = [c[0] for c in cur.description]
+                user = dict(zip(cols, row))
+                if not check_pw(password, user["password"]):
+                    return {"success": False, "message": "用户名或密码不正确"}
+                uid = user.get("student_id") or user["user_id"]
+                dname = user["real_name"] or user["username"]
+                if user.get("student_id"):
+                    cur.execute("SELECT name FROM student WHERE id = %s", (user["student_id"],))
+                    sr = cur.fetchone()
+                    if sr: dname = sr[0]
+                return {"success": True, "student": {
+                    "id": uid, "name": dname, "user_id": user["user_id"],
+                    "user_type": user["user_type"], "student_id": user.get("student_id"),
+                    "phone": user.get("phone",""), "email": user.get("email","")}}
+            if sid and sname:
+                cur.execute("SELECT id, name, education, major FROM student WHERE id=%s AND name=%s", (sid, sname))
+                row = cur.fetchone()
+                if row:
+                    cols = [c[0] for c in cur.description]
+                    stu = dict(zip(cols, row))
+                    return {"success": True, "student": {
+                        "id": stu["id"], "name": stu["name"],
+                        "education": stu.get("education",""), "major": stu.get("major","")}}
+                return {"success": False, "message": "学号或姓名不正确"}
+            return {"success": False, "message": "请提供用户名+密码 或 学号+姓名"}
+    finally:
+        conn.close()
+
+
+# ============================================================
 # 直接运行入口
 # ============================================================
 if __name__ == "__main__":
