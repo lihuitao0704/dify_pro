@@ -20,3 +20,80 @@ Traceback (most recent call last):
   File "D:\dify_pro\summary_report\core\db.py", line 16, in <module>
     import pymysql
 ModuleNotFoundError: No module named 'pymysql'
+2026-07-12 09:32:59 [INFO] __main__: 启动 智能报告API v2.0.0 @ 0.0.0.0:8001
+INFO:     Started server process [17212]
+INFO:     Waiting for application startup.
+INFO:     Application startup complete.
+ERROR:    [Errno 10048] error while attempting to bind on address ('0.0.0.0', 8001): 通常每个套接字地址(协议/网络地址/端口)只允许使用一次。
+INFO:     Waiting for application shutdown.
+INFO:     Application shutdown complete.
+2026-07-12 09:34:56 [INFO] __main__: 启动 智能报告API v2.0.0 @ 0.0.0.0:8001
+INFO:     Started server process [26296]
+INFO:     Waiting for application startup.
+INFO:     Application startup complete.
+ERROR:    [Errno 10048] error while attempting to bind on address ('0.0.0.0', 8001): 通常每个套接字地址(协议/网络地址/端口)只允许使用一次。
+INFO:     Waiting for application shutdown.
+INFO:     Application shutdown complete.
+2026-07-12 10:27:56 [INFO] __main__: 启动 智能报告API v2.0.0 @ 0.0.0.0:8001
+INFO:     Started server process [19068]
+INFO:     Waiting for application startup.
+INFO:     Application startup complete.
+ERROR:    [Errno 10048] error while attempting to bind on address ('0.0.0.0', 8001): 通常每个套接字地址(协议/网络地址/端口)只允许使用一次。
+INFO:     Waiting for application shutdown.
+INFO:     Application shutdown complete.
+2026-07-12 10:31:14 [INFO] __main__: 启动 智能报告API v2.0.0 @ 0.0.0.0:8001
+INFO:     Started server process [22284]
+INFO:     Waiting for application startup.
+INFO:     Application startup complete.
+ERROR:    [Errno 10048] error while attempting to bind on address ('0.0.0.0', 8001): 通常每个套接字地址(协议/网络地址/端口)只允许使用一次。
+INFO:     Waiting for application shutdown.
+INFO:     Application shutdown complete.
+2026-07-12 10:35:28 [INFO] __main__: 启动 智能报告API v2.0.0 @ 0.0.0.0:8001
+INFO:     Started server process [23160]
+INFO:     Waiting for application startup.
+INFO:     Application startup complete.
+ERROR:    [Errno 10048] error while attempting to bind on address ('0.0.0.0', 8001): 通常每个套接字地址(协议/网络地址/端口)只允许使用一次。
+INFO:     Waiting for application shutdown.
+INFO:     Application shutdown complete.
+2026-07-12 10:59:36 [INFO] __main__: 启动 智能报告API v2.0.0 @ 0.0.0.0:8001
+INFO:     Started server process [17092]
+INFO:     Waiting for application startup.
+INFO:     Application startup complete.
+ERROR:    [Errno 10048] error while attempting to bind on address ('0.0.0.0', 8001): 通常每个套接字地址(协议/网络地址/端口)只允许使用一次。
+INFO:     Waiting for application shutdown.
+INFO:     Application shutdown complete.
+2026-07-12 11:32:15 [INFO] __main__: 启动 智能报告API v2.0.0 @ 0.0.0.0:8001
+INFO:     Started server process [13292]
+INFO:     Waiting for application startup.
+INFO:     Application startup complete.
+ERROR:    [Errno 10048] error while attempting to bind on address ('0.0.0.0', 8001): 通常每个套接字地址(协议/网络地址/端口)只允许使用一次。
+INFO:     Waiting for application shutdown.
+INFO:     Application shutdown complete.
+2026-07-12 11:49:27 [INFO] __main__: 启动 智能报告API v2.0.0 @ 0.0.0.0:8001
+INFO:     Started server process [26184]
+INFO:     Waiting for application startup.
+INFO:     Application startup complete.
+ERROR:    [Errno 10048] error while attempting to bind on address ('0.0.0.0', 8001): 通常每个套接字地址(协议/网络地址/端口)只允许使用一次。
+INFO:     Waiting for application shutdown.
+INFO:     Application shutdown complete.
+2026-07-12 11:57:48 [INFO] __main__: 启动 智能报告API v2.0.0 @ 0.0.0.0:8001
+INFO:     Started server process [13896]
+INFO:     Waiting for application startup.
+INFO:     Application startup complete.
+ERROR:    [Errno 10048] error while attempting to bind on address ('0.0.0.0', 8001): 通常每个套接字地址(协议/网络地址/端口)只允许使用一次。
+INFO:     Waiting for application shutdown.
+INFO:     Application shutdown complete.
+2026-07-12 12:03:15 [INFO] __main__: 启动 智能报告API v2.0.0 @ 0.0.0.0:8001
+INFO:     Started server process [2328]
+INFO:     Waiting for application startup.
+INFO:     Application startup complete.
+ERROR:    [Errno 10048] error while attempting to bind on address ('0.0.0.0', 8001): 通常每个套接字地址(协议/网络地址/端口)只允许使用一次。
+INFO:     Waiting for application shutdown.
+INFO:     Application shutdown complete.
+2026-07-12 12:08:51 [INFO] __main__: 启动 智能报告API v2.0.0 @ 0.0.0.0:8001
+INFO:     Started server process [19780]
+INFO:     Waiting for application startup.
+INFO:     Application startup complete.
+ERROR:    [Errno 10048] error while attempting to bind on address ('0.0.0.0', 8001): 通常每个套接字地址(协议/网络地址/端口)只允许使用一次。
+INFO:     Waiting for application shutdown.
+INFO:     Application shutdown complete.

@@ -1,2 +1,68 @@
 C:\Users\Windows\AppData\Local\Programs\Python\Python311\python.exe: Error while finding module specification for 'study_abroad_agent.app' (ModuleNotFoundError: No module named 'study_abroad_agent')
 C:\Users\Windows\AppData\Local\Programs\Python\Python311\python.exe: Error while finding module specification for 'study_abroad_agent.app' (ModuleNotFoundError: No module named 'study_abroad_agent')
+Traceback (most recent call last):
+  File "<frozen runpy>", line 198, in _run_module_as_main
+  File "<frozen runpy>", line 88, in _run_code
+  File "C:\Users\Windows\Desktop\dify_pro\study_abroad_agent\app.py", line 13, in <module>
+    from dify_pro.study_abroad_agent.api import ROUTERS
+ModuleNotFoundError: No module named 'dify_pro'
+Traceback (most recent call last):
+  File "<frozen runpy>", line 198, in _run_module_as_main
+  File "<frozen runpy>", line 88, in _run_code
+  File "C:\Users\Windows\Desktop\整体项目合并后-副本\study_abroad_agent\app.py", line 13, in <module>
+    from dify_pro.study_abroad_agent.api import ROUTERS
+ModuleNotFoundError: No module named 'dify_pro'
+Traceback (most recent call last):
+  File "<frozen runpy>", line 198, in _run_module_as_main
+  File "<frozen runpy>", line 88, in _run_code
+  File "C:\Users\Windows\Desktop\整体项目合并后-副本\study_abroad_agent\app.py", line 13, in <module>
+    from dify_pro.study_abroad_agent.api import ROUTERS
+ModuleNotFoundError: No module named 'dify_pro'
+Traceback (most recent call last):
+  File "<frozen runpy>", line 198, in _run_module_as_main
+  File "<frozen runpy>", line 88, in _run_code
+  File "C:\Users\Windows\Desktop\整体项目合并后-副本\study_abroad_agent\app.py", line 13, in <module>
+    from dify_pro.study_abroad_agent.api import ROUTERS
+ModuleNotFoundError: No module named 'dify_pro'
+Traceback (most recent call last):
+  File "<frozen runpy>", line 198, in _run_module_as_main
+  File "<frozen runpy>", line 88, in _run_code
+  File "C:\Users\Windows\Desktop\整体项目合并后-副本\study_abroad_agent\app.py", line 13, in <module>
+    from dify_pro.study_abroad_agent.api import ROUTERS
+ModuleNotFoundError: No module named 'dify_pro'
+Traceback (most recent call last):
+  File "<frozen runpy>", line 198, in _run_module_as_main
+  File "<frozen runpy>", line 88, in _run_code
+  File "C:\Users\Windows\Desktop\整体项目合并后-副本\study_abroad_agent\app.py", line 13, in <module>
+    from dify_pro.study_abroad_agent.api import ROUTERS
+ModuleNotFoundError: No module named 'dify_pro'
+Traceback (most recent call last):
+  File "<frozen runpy>", line 198, in _run_module_as_main
+  File "<frozen runpy>", line 88, in _run_code
+  File "C:\Users\Windows\Desktop\整体项目合并后-副本\study_abroad_agent\app.py", line 13, in <module>
+    from dify_pro.study_abroad_agent.api import ROUTERS
+ModuleNotFoundError: No module named 'dify_pro'
+Traceback (most recent call last):
+  File "<frozen runpy>", line 198, in _run_module_as_main
+  File "<frozen runpy>", line 88, in _run_code
+  File "C:\Users\Windows\Desktop\整体项目合并后-副本\study_abroad_agent\app.py", line 13, in <module>
+    from dify_pro.study_abroad_agent.api import ROUTERS
+ModuleNotFoundError: No module named 'dify_pro'
+Traceback (most recent call last):
+  File "<frozen runpy>", line 198, in _run_module_as_main
+  File "<frozen runpy>", line 88, in _run_code
+  File "C:\Users\Windows\Desktop\整体项目合并后-副本\study_abroad_agent\app.py", line 13, in <module>
+    from dify_pro.study_abroad_agent.api import ROUTERS
+ModuleNotFoundError: No module named 'dify_pro'
+Traceback (most recent call last):
+  File "<frozen runpy>", line 198, in _run_module_as_main
+  File "<frozen runpy>", line 88, in _run_code
+  File "C:\Users\Windows\Desktop\整体项目合并后-副本\study_abroad_agent\app.py", line 13, in <module>
+    from dify_pro.study_abroad_agent.api import ROUTERS
+ModuleNotFoundError: No module named 'dify_pro'
+Traceback (most recent call last):
+  File "<frozen runpy>", line 198, in _run_module_as_main
+  File "<frozen runpy>", line 88, in _run_code
+  File "C:\Users\Windows\Desktop\整体项目合并后-副本\study_abroad_agent\app.py", line 13, in <module>
+    from dify_pro.study_abroad_agent.api import ROUTERS
+ModuleNotFoundError: No module named 'dify_pro'

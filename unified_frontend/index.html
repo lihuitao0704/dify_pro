@@ -181,15 +181,15 @@
       <!-- Student -->
       <form class="login-form active" id="studentLoginForm">
         <div class="form-group">
-          <label>学号</label>
-          <input type="text" id="studentId" placeholder="1001-1005" required />
+          <label>用户名</label>
+          <input type="text" id="studentUser" placeholder="请输入用户名" required />
         </div>
         <div class="form-group">
-          <label>姓名</label>
-          <input type="text" id="studentName" placeholder="张三" required />
+          <label>密码</label>
+          <input type="password" id="studentPass" placeholder="请输入密码" required />
         </div>
         <button type="submit" class="btn btn-primary" style="width:100%">进入学生助手</button>
-        <p class="login-hint">测试账号：1001 / 张三</p>
+        <p class="login-hint">测试账号：student1 / 123456</p>
       </form>
 
       <!-- Employee -->
@@ -217,6 +217,7 @@
   <div id="toastContainer"></div>
 
   <script src="/portal/js/utils.js"></script>
+  <script src="/portal/js/auth.js"></script>
   <script src="/portal/js/portal.js"></script>
 </body>
 </html>

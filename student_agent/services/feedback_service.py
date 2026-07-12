@@ -10,31 +10,20 @@
 """
 
 import logging
-from datetime import datetime, timedelta
+from datetime import datetime
 from typing import Optional
 
 from student_agent import db
 from student_agent import llm
-from student_agent.config import TEACHER_AGENT_URL
 
 logger = logging.getLogger(__name__)
 
-# ============================================================
-# 常量
-# ============================================================
-
-# 默认 SLA 时长（小时）
-DEFAULT_SLA_HOURS = 24
-
-# 紧急工单 SLA（小时）
-URGENT_SLA_HOURS = 4
-
-# 状态显示映射
+# 状态映射（student_complaint.handle_status）
 STATUS_DISPLAY = {
-    "open": "📭 待处理",
-    "processing": "🔄 处理中",
-    "resolved": "✅ 已解决",
-    "closed": "📁 已关闭",
+    "待处理": "📭 待处理",
+    "处理中": "🔄 处理中",
+    "已完结": "✅ 已完结",
+    "驳回": "📁 已驳回",
 }
 
 # 模糊反馈关键词（信息不足，需要追问）
@@ -44,89 +33,50 @@ VAGUE_KEYWORDS = [
 ]
 
 
-def _calculate_sla_deadline(urgency: str) -> str:
-    """
-    计算工单 SLA 截止时间。
-
-    来自 education-service-api 的 SLA 模式：
-      sla_deadline = datetime.now() + timedelta(hours=config.SLA_HOURS)
-
-    紧急工单 4 小时内响应，普通工单 24 小时。
-
-    参数:
-        urgency: "urgent" 或 "normal"
-
-    返回:
-        SLA 截止时间字符串 "YYYY-MM-DD HH:MM:SS"
-    """
-    hours = URGENT_SLA_HOURS if urgency == "urgent" else DEFAULT_SLA_HOURS
-    deadline = datetime.now() + timedelta(hours=hours)
-    return deadline.strftime("%Y-%m-%d %H:%M:%S")
-
-
 def create_ticket(
     student_id: int,
     message: str,
     title: str = None,
     category: str = None,
     summary: str = None,
-    urgency: str = "normal",
+    urgency: str = None,
 ) -> int:
     """
-    创建反馈工单。
-
-    参数说明：
-      - title、category、summary 可由调用方传入，也可由 LLM 自动生成
-      - urgency 可根据关键词自动判定
+    创建投诉记录（student_complaint 表，与企业端统一）。
 
     参数:
         student_id: 学生ID
         message:    原始消息内容
-        title:      工单标题（None 则自动截取前50字）
-        category:   分类标签（None 则 LLM 自动分类）
-        summary:    摘要（None 则 LLM 自动生成）
-        urgency:    紧急度 "normal" / "urgent"（None 则自动判定）
+        title:      标题（拼入 complaint_detail）
+        category:   分类标签 → complaint_type
+        summary:    摘要（拼入 complaint_detail）
+        urgency:    紧急度（用于日志）
 
     返回:
-        新工单ID
+        新记录ID
     """
-    # 自动生成摘要
-    if summary is None:
-        summary = llm.summarize(message)
-
-    # 自动分类
     if category is None:
         category = llm.classify_category(message)
 
-    # 自动判定紧急度
-    if urgency is None:
-        urgency = "urgent" if any(
-            w in message for w in ["急", "严重", "马上", "立刻"]
-        ) else "normal"
+    # complaint_detail = 标题 + 摘要 + 原文拼接
+    parts = []
+    if title and title != message[:50]:
+        parts.append(f"【{title}】")
+    if summary and len(summary) > 0 and summary != message[:150]:
+        parts.append(f"摘要：{summary}")
+    parts.append(message)
+    complaint_detail = "\n".join(parts)
 
-    # 自动生成标题
-    if title is None:
-        title = message[:50]
-
-    priority = 10 if urgency == "urgent" else 5
-
-    sla_deadline = _calculate_sla_deadline(urgency)
-
-    ticket_id = db.insert("feedback_ticket", {
+    ticket_id = db.insert("student_complaint", {
         "student_id": student_id,
-        "title": title,
-        "content": message,
-        "summary": summary,
-        "category": category,
-        "urgency": urgency,
-        "status": "open",
-        "priority": priority,
-        "sla_deadline": sla_deadline,
+        "complaint_detail": complaint_detail,
+        "complaint_type": category,
+        "handle_status": "待处理",
     })
 
     logger.info(
-        "工单已创建: id=%s, student=%d, category=%s, urgency=%s, SLA=%s",
-        ticket_id, student_id, category, urgency, sla_deadline,
+        "投诉已创建: id=%s, student=%d, type=%s",
+        ticket_id, student_id, category,
     )
     return ticket_id
 
@@ -138,7 +88,7 @@ def query_tickets(
     limit: int = 5,
 ) -> list[dict]:
     """
-    查询学生反馈工单列表。
+    查询学生投诉记录（student_complaint 表）。
 
     参数:
         student_id: 学生ID
@@ -147,24 +97,23 @@ def query_tickets(
         limit:      返回条数上限
 
     返回:
-        工单记录列表
+        投诉记录列表
     """
     conditions = ["student_id = %s"]
     params = [student_id]
 
     if status:
-        conditions.append("status = %s")
+        conditions.append("handle_status = %s")
         params.append(status)
     if category:
-        conditions.append("category = %s")
+        conditions.append("complaint_type = %s")
         params.append(category)
 
     where = " AND ".join(conditions)
-    sql = f"""SELECT id, title, category, urgency, status, handler_name,
-                     resolution, sla_deadline, created_at
-              FROM feedback_ticket
+    sql = f"""SELECT id, complaint_type, complaint_detail, handle_status, create_time
+              FROM student_complaint
               WHERE {where}
-              ORDER BY created_at DESC
+              ORDER BY create_time DESC
               LIMIT %s"""
     params.append(limit)
 
@@ -173,10 +122,10 @@ def query_tickets(
 
 def _format_tickets_message(tickets: list[dict]) -> str:
     """
-    将工单列表格式化为用户可读的文本。
+    将投诉列表格式化为用户可读的文本。
 
     参数:
-        tickets: 工单列表
+        tickets: 投诉记录列表
 
     返回:
         格式化文本
@@ -184,14 +133,11 @@ def _format_tickets_message(tickets: list[dict]) -> str:
     if not tickets:
         return "你还没有提交过反馈或投诉～有什么问题可以直接告诉我！"
 
-    lines = ["📋 你的反馈工单："]
+    lines = ["📋 你的反馈记录："]
     for t in tickets:
-        status_text = STATUS_DISPLAY.get(t["status"], t["status"])
-        line = f"· [{t['category']}] {t['title']} — {status_text}"
-        if t.get("resolution"):
-            line += f"\n  处理：{t['resolution'][:80]}"
-        if t.get("sla_deadline"):
-            line += f"\n  SLA截止：{str(t['sla_deadline'])[:16]}"
+        status_text = STATUS_DISPLAY.get(t.get("handle_status", ""), t.get("handle_status", "未知"))
+        detail = (t.get("complaint_detail") or "")[:60]
+        line = f"· [{t.get('complaint_type', '')}] {detail} — {status_text}"
         lines.append(line)
     return "\n".join(lines)
 
@@ -230,10 +176,10 @@ def get_vague_prompt() -> str:
 def build_success_message(ticket_id: int, category: str,
                            summary: str, urgency: str) -> str:
     """
-    生成工单创建成功的回复消息。
+    生成投诉创建成功的回复消息。
 
     参数:
-        ticket_id: 新工单ID
+        ticket_id: 新记录ID
         category:  分类
         summary:   摘要
         urgency:   紧急度
@@ -241,14 +187,11 @@ def build_success_message(ticket_id: int, category: str,
     返回:
         回复文本
     """
-    urgency_text = "🚨 紧急工单" if urgency == "urgent" else "📝 普通工单"
-    sla_hours = URGENT_SLA_HOURS if urgency == "urgent" else DEFAULT_SLA_HOURS
-
     return (
-        f"已收到你的反馈，工单已创建 ✅\n"
-        f"{urgency_text} | 分类：{category}\n"
+        f"已收到你的反馈，已记录 ✅\n"
+        f"分类：{category}\n"
         f"📋 摘要：{summary}\n"
-        f"我们会在 {sla_hours} 小时内跟进处理，你下次登录时可以在'我的'面板查看工单进度～"
+        f"我们会在24小时内跟进处理，你下次登录时可以在'我的'面板查看进度～"
     )
 
 
@@ -257,9 +200,9 @@ def handle_feedback(student_id: int, message: str, params: dict, context: list) 
     处理投诉/反馈意图完整 handler。
 
     流程：
-      1. 检测查询模式 → 查工单列表
+      1. 检测查询模式 → 查记录列表
       2. 检测信息不足 → 追问
-      3. 新建工单 → LLM 摘要 + 分类 + 紧急度判定
+      3. 新建记录 → LLM 摘要 + 分类
 
     参数:
         student_id: 学生ID
@@ -279,7 +222,7 @@ def handle_feedback(student_id: int, message: str, params: dict, context: list) 
     if is_vague_feedback(message):
         return get_vague_prompt()
 
-    # ── 新建工单 ──
+    # ── 新建记录 ──
     title = params.get("title", message[:50])
     category = llm.classify_category(message)
     summary = llm.summarize(message)
@@ -300,38 +243,34 @@ def handle_feedback(student_id: int, message: str, params: dict, context: list) 
 
 
 # ============================================================
-# 工单管理（供管理后台 / 教师端使用）
+# 投诉管理（供管理后台 / 教师端使用）
 # ============================================================
 
 def update_ticket_status(
     ticket_id: int,
     status: str,
-    handler_name: str = None,
-    resolution: str = None,
+    handler_user_id: int = None,
 ) -> bool:
     """
-    更新工单状态和处理信息。
+    更新投诉处理状态。
 
     参数:
-        ticket_id:    工单ID
-        status:       新状态
-        handler_name: 处理人姓名
-        resolution:   处理方案
+        ticket_id:       记录ID
+        status:          新状态（'待处理'/'处理中'/'已完结'/'驳回'）
+        handler_user_id: 处理人用户ID
 
     返回:
         是否更新成功
     """
-    update_data = {"status": status}
-
-    if handler_name:
-        update_data["handler_name"] = handler_name
-    if resolution:
-        update_data["resolution"] = resolution
-    if status in ("resolved", "closed"):
-        update_data["resolved_at"] = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    update_data = {
+        "handle_status": status,
+        "update_time": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+    }
+    if handler_user_id:
+        update_data["handler_user_id"] = handler_user_id
 
     affected = db.update(
-        "feedback_ticket",
+        "student_complaint",
         {"id": ticket_id},
         update_data,
     )
@@ -340,60 +279,55 @@ def update_ticket_status(
 
 def get_ticket(ticket_id: int) -> Optional[dict]:
     """
-    查询单条工单详情。
+    查询单条投诉详情。
 
     参数:
-        ticket_id: 工单ID
+        ticket_id: 记录ID
 
     返回:
-        工单 dict 或 None
+        投诉 dict 或 None
     """
     return db.query_one(
-        """SELECT * FROM feedback_ticket WHERE id = %s""",
+        """SELECT * FROM student_complaint WHERE id = %s""",
         (ticket_id,)
     )
 
 
 def list_overdue_tickets() -> list[dict]:
     """
-    查询所有超过 SLA 截止时间仍未关闭的工单。
-
-    来自 education-service-api 的超时工单查询模式：
-      status IN (未关闭) AND sla_deadline < NOW()
+    查询所有超过24小时仍未处理的投诉。
 
     返回:
-        超时工单列表，按 SLA 截止时间升序
+        超时记录列表，按创建时间升序
     """
     return db.query(
-        """SELECT id, student_id, title, category, urgency, status,
-                  sla_deadline, created_at
-           FROM feedback_ticket
-           WHERE status IN ('open', 'processing')
-             AND sla_deadline IS NOT NULL
-             AND sla_deadline < NOW()
-           ORDER BY sla_deadline ASC"""
+        """SELECT id, student_id, complaint_type, handle_status, create_time
+           FROM student_complaint
+           WHERE handle_status IN ('待处理', '处理中')
+             AND create_time < DATE_SUB(NOW(), INTERVAL 24 HOUR)
+           ORDER BY create_time ASC"""
     )
 
 
 def count_student_tickets(student_id: int, status: str = None) -> int:
     """
-    统计学生工单数量。
+    统计学生投诉数量。
 
     参数:
         student_id: 学生ID
         status:     按状态筛选（None 表示全部）
 
     返回:
-        工单数量
+        投诉数量
     """
     if status:
         row = db.query_one(
-            "SELECT COUNT(*) AS cnt FROM feedback_ticket WHERE student_id = %s AND status = %s",
+            "SELECT COUNT(*) AS cnt FROM student_complaint WHERE student_id = %s AND handle_status = %s",
             (student_id, status)
         )
     else:
         row = db.query_one(
-            "SELECT COUNT(*) AS cnt FROM feedback_ticket WHERE student_id = %s",
+            "SELECT COUNT(*) AS cnt FROM student_complaint WHERE student_id = %s",
             (student_id,)
         )
     return row["cnt"] if row else 0

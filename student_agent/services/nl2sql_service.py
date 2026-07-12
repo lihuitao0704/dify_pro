@@ -157,6 +157,27 @@ QUERY_TEMPLATES = [
         "description": "查询学生基本信息",
     },
     {
+        "name": "查询我的成绩",
+        "pattern": r"(?:我的|我).*(?:成绩|分数|绩点)|(?:成绩|分数|绩点|gpa).*(?:查询|多少|怎么|如何)",
+        "sql": """SELECT subject, score, exam_type, exam_date
+                  FROM student_score
+                  WHERE student_id = %s
+                  ORDER BY exam_date DESC""",
+        "params_func": lambda sid: (sid,),
+        "description": "查询学生的考试成绩列表",
+    },
+    {
+        "name": "统计成绩",
+        "pattern": r"(?:统计|汇总|平均).*(?:成绩|分数)|.*(?:平均分|最高分|最低分)",
+        "sql": """SELECT exam_type, COUNT(*) AS n, AVG(score) AS avg_score,
+                         MAX(score) AS max_score, MIN(score) AS min_score
+                  FROM student_score
+                  WHERE student_id = %s
+                  GROUP BY exam_type""",
+        "params_func": lambda sid: (sid,),
+        "description": "按考试类型统计成绩（平均分/最高/最低）",
+    },
+    {
         "name": "通用查询",
         "pattern": r".*",
         "sql": """SELECT id, event_type, title, deadline,

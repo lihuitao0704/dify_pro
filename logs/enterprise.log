@@ -14,3 +14,658 @@ Traceback (most recent call last):
   File "D:\dify_pro\enterprise_agent\database.py", line 5, in <module>
     from sqlalchemy import create_engine, text
 ModuleNotFoundError: No module named 'sqlalchemy'
+SECURITY: Using default database password '123456'! Set DB_PASSWORD in .env or environment variable.
+2026-07-12 09:32:55 | INFO  | agent | Config loaded: host=192.168.48.121, db=dify_pro
+C:\Users\Windows\Desktop\dify_pro\enterprise_agent\main.py:45: DeprecationWarning: 
+        on_event is deprecated, use lifespan event handlers instead.
+
+        Read more about it in the
+        [FastAPI docs for Lifespan Events](https://fastapi.tiangolo.com/advanced/events/).
+        
+  @app.on_event("startup")
+2026-07-12 09:32:56 | INFO  | agent | Routes registered: /api/agent/* (27 modules)
+INFO:     Will watch for changes in these directories: ['C:\\Users\\Windows\\Desktop\\dify_pro']
+INFO:     Uvicorn running on http://0.0.0.0:8001 (Press CTRL+C to quit)
+INFO:     Started reloader process [22444] using WatchFiles
+SECURITY: Using default database password '123456'! Set DB_PASSWORD in .env or environment variable.
+2026-07-12 09:32:56 | INFO  | agent | Config loaded: host=192.168.48.121, db=dify_pro
+2026-07-12 09:32:57 | INFO  | agent | Routes registered: /api/agent/* (27 modules)
+2026-07-12 09:32:57 | INFO  | agent | Routes registered: /api/agent/* (27 modules)
+INFO:     Started server process [19440]
+INFO:     Waiting for application startup.
+2026-07-12 09:32:59 | INFO  | watchfiles.main | 1 change detected
+2026-07-12 09:33:07 | INFO  | agent | DB status: FAILED
+2026-07-12 09:33:07 | WARNING | agent | Check DB_HOST/DB_PORT/DB_USER/DB_PASSWORD in .env
+2026-07-12 09:33:07 | INFO  | enterprise_agent.scheduler | 待办推送调度器已启动，扫描间隔: 300s
+2026-07-12 09:33:07 | INFO  | agent | 待办推送调度器已启动
+INFO:     Application startup complete.
+2026-07-12 09:33:17 | ERROR | enterprise_agent.scheduler | 扫描待办失败: (pymysql.err.OperationalError) (2003, "Can't connect to MySQL server on '192.168.48.121' (timed out)")
+(Background on this error at: https://sqlalche.me/e/20/e3q8)
+SECURITY: Using default database password '123456'! Set DB_PASSWORD in .env or environment variable.
+2026-07-12 09:34:52 | INFO  | agent | Config loaded: host=192.168.48.121, db=dify_pro
+C:\Users\Windows\Desktop\整体项目合并后-副本\enterprise_agent\main.py:45: DeprecationWarning: 
+        on_event is deprecated, use lifespan event handlers instead.
+
+        Read more about it in the
+        [FastAPI docs for Lifespan Events](https://fastapi.tiangolo.com/advanced/events/).
+        
+  @app.on_event("startup")
+2026-07-12 09:34:53 | INFO  | agent | Routes registered: /api/agent/* (27 modules)
+INFO:     Will watch for changes in these directories: ['C:\\Users\\Windows\\Desktop\\整体项目合并后-副本']
+INFO:     Uvicorn running on http://0.0.0.0:8001 (Press CTRL+C to quit)
+INFO:     Started reloader process [21684] using WatchFiles
+SECURITY: Using default database password '123456'! Set DB_PASSWORD in .env or environment variable.
+2026-07-12 09:34:53 | INFO  | agent | Config loaded: host=192.168.48.121, db=dify_pro
+2026-07-12 09:34:54 | INFO  | watchfiles.main | 5 changes detected
+2026-07-12 09:34:54 | INFO  | agent | Routes registered: /api/agent/* (27 modules)
+2026-07-12 09:34:54 | INFO  | agent | Routes registered: /api/agent/* (27 modules)
+INFO:     Started server process [23528]
+INFO:     Waiting for application startup.
+2026-07-12 09:34:55 | INFO  | watchfiles.main | 9 changes detected
+2026-07-12 09:34:55 | INFO  | watchfiles.main | 9 changes detected
+2026-07-12 09:34:55 | INFO  | watchfiles.main | 74 changes detected
+2026-07-12 09:34:56 | INFO  | watchfiles.main | 57 changes detected
+2026-07-12 09:34:57 | INFO  | watchfiles.main | 1 change detected
+2026-07-12 09:34:57 | INFO  | watchfiles.main | 5 changes detected
+2026-07-12 09:34:58 | INFO  | watchfiles.main | 9 changes detected
+2026-07-12 09:34:58 | INFO  | watchfiles.main | 18 changes detected
+2026-07-12 09:35:00 | INFO  | watchfiles.main | 17 changes detected
+2026-07-12 09:35:00 | INFO  | watchfiles.main | 19 changes detected
+2026-07-12 09:35:04 | INFO  | agent | DB status: FAILED
+2026-07-12 09:35:04 | WARNING | agent | Check DB_HOST/DB_PORT/DB_USER/DB_PASSWORD in .env
+2026-07-12 09:35:04 | INFO  | enterprise_agent.scheduler | 待办推送调度器已启动，扫描间隔: 300s
+2026-07-12 09:35:04 | INFO  | agent | 待办推送调度器已启动
+INFO:     Application startup complete.
+2026-07-12 09:35:04 | INFO  | watchfiles.main | 5 changes detected
+2026-07-12 09:35:05 | INFO  | watchfiles.main | 1 change detected
+2026-07-12 09:35:06 | INFO  | watchfiles.main | 9 changes detected
+2026-07-12 09:35:14 | ERROR | enterprise_agent.scheduler | 扫描待办失败: (pymysql.err.OperationalError) (2003, "Can't connect to MySQL server on '192.168.48.121' (timed out)")
+(Background on this error at: https://sqlalche.me/e/20/e3q8)
+2026-07-12 09:40:24 | ERROR | enterprise_agent.scheduler | 扫描待办失败: (pymysql.err.OperationalError) (2003, "Can't connect to MySQL server on '192.168.48.121' (timed out)")
+(Background on this error at: https://sqlalche.me/e/20/e3q8)
+2026-07-12 09:42:51 | INFO  | watchfiles.main | 91 changes detected
+2026-07-12 09:45:30 | INFO  | watchfiles.main | 1 change detected
+2026-07-12 09:45:34 | ERROR | enterprise_agent.scheduler | 扫描待办失败: (pymysql.err.OperationalError) (2003, "Can't connect to MySQL server on '192.168.48.121' (timed out)")
+(Background on this error at: https://sqlalche.me/e/20/e3q8)
+2026-07-12 09:50:07 | INFO  | watchfiles.main | 1 change detected
+2026-07-12 09:50:09 | INFO  | watchfiles.main | 7 changes detected
+2026-07-12 09:50:34 | INFO  | enterprise_agent.scheduler | 待办扫描: 发现 4 类待办，共 23 条
+2026-07-12 09:50:34 | INFO  | enterprise_agent.scheduler |   - 待审批请假: 5 条
+2026-07-12 09:50:34 | INFO  | enterprise_agent.scheduler |   - 待处理投诉: 1 条
+2026-07-12 09:50:34 | INFO  | enterprise_agent.scheduler |   - 待跟进客户: 14 条
+2026-07-12 09:50:34 | INFO  | enterprise_agent.scheduler |   - 处理中的投诉: 3 条
+2026-07-12 09:50:54 | INFO  | watchfiles.main | 3 changes detected
+2026-07-12 09:54:55 | INFO  | watchfiles.main | 1 change detected
+2026-07-12 09:55:09 | INFO  | watchfiles.main | 1 change detected
+2026-07-12 09:55:24 | INFO  | watchfiles.main | 1 change detected
+2026-07-12 09:55:28 | INFO  | watchfiles.main | 1 change detected
+2026-07-12 09:55:34 | INFO  | enterprise_agent.scheduler | 待办扫描: 发现 4 类待办，共 23 条
+2026-07-12 09:55:34 | INFO  | enterprise_agent.scheduler |   - 待审批请假: 5 条
+2026-07-12 09:55:34 | INFO  | enterprise_agent.scheduler |   - 待处理投诉: 1 条
+2026-07-12 09:55:34 | INFO  | enterprise_agent.scheduler |   - 待跟进客户: 14 条
+2026-07-12 09:55:34 | INFO  | enterprise_agent.scheduler |   - 处理中的投诉: 3 条
+2026-07-12 09:56:37 | INFO  | watchfiles.main | 5 changes detected
+2026-07-12 09:56:42 | INFO  | watchfiles.main | 5 changes detected
+2026-07-12 09:56:47 | INFO  | watchfiles.main | 5 changes detected
+WARNING:  WatchFiles detected changes in 'Assessment\assessment.py'. Reloading...
+ 2026-07-12 10:00:34 | INFO  | enterprise_agent.scheduler | 待办扫描: 发现 4 类待办，共 23 条
+2026-07-12 10:00:34 | INFO  | enterprise_agent.scheduler |   - 待审批请假: 5 条
+2026-07-12 10:00:34 | INFO  | enterprise_agent.scheduler |   - 待处理投诉: 1 条
+2026-07-12 10:00:34 | INFO  | enterprise_agent.scheduler |   - 待跟进客户: 14 条
+2026-07-12 10:00:34 | INFO  | enterprise_agent.scheduler |   - 处理中的投诉: 3 条
+2026-07-12 10:05:34 | INFO  | enterprise_agent.scheduler | 待办扫描: 发现 4 类待办，共 23 条
+2026-07-12 10:05:34 | INFO  | enterprise_agent.scheduler |   - 待审批请假: 5 条
+2026-07-12 10:05:34 | INFO  | enterprise_agent.scheduler |   - 待处理投诉: 1 条
+2026-07-12 10:05:34 | INFO  | enterprise_agent.scheduler |   - 待跟进客户: 14 条
+2026-07-12 10:05:34 | INFO  | enterprise_agent.scheduler |   - 处理中的投诉: 3 条
+2026-07-12 10:10:34 | INFO  | enterprise_agent.scheduler | 待办扫描: 发现 4 类待办，共 23 条
+2026-07-12 10:10:34 | INFO  | enterprise_agent.scheduler |   - 待审批请假: 5 条
+2026-07-12 10:10:34 | INFO  | enterprise_agent.scheduler |   - 待处理投诉: 1 条
+2026-07-12 10:10:34 | INFO  | enterprise_agent.scheduler |   - 待跟进客户: 14 条
+2026-07-12 10:10:34 | INFO  | enterprise_agent.scheduler |   - 处理中的投诉: 3 条
+SECURITY: Using default database password '123456'! Set DB_PASSWORD in .env or environment variable.
+2026-07-12 10:27:52 | INFO  | agent | Config loaded: host=192.168.48.121, db=dify_pro
+C:\Users\Windows\Desktop\整体项目合并后-副本\enterprise_agent\main.py:45: DeprecationWarning: 
+        on_event is deprecated, use lifespan event handlers instead.
+
+        Read more about it in the
+        [FastAPI docs for Lifespan Events](https://fastapi.tiangolo.com/advanced/events/).
+        
+  @app.on_event("startup")
+2026-07-12 10:27:53 | INFO  | agent | Routes registered: /api/agent/* (27 modules)
+INFO:     Will watch for changes in these directories: ['C:\\Users\\Windows\\Desktop\\整体项目合并后-副本']
+INFO:     Uvicorn running on http://0.0.0.0:8001 (Press CTRL+C to quit)
+INFO:     Started reloader process [17856] using WatchFiles
+SECURITY: Using default database password '123456'! Set DB_PASSWORD in .env or environment variable.
+2026-07-12 10:27:54 | INFO  | agent | Config loaded: host=192.168.48.121, db=dify_pro
+2026-07-12 10:27:54 | INFO  | watchfiles.main | 5 changes detected
+2026-07-12 10:27:54 | INFO  | agent | Routes registered: /api/agent/* (27 modules)
+2026-07-12 10:27:54 | INFO  | agent | Routes registered: /api/agent/* (27 modules)
+INFO:     Started server process [7512]
+INFO:     Waiting for application startup.
+2026-07-12 10:27:54 | INFO  | agent | Database OK: 192.168.48.121:3306/dify_pro
+2026-07-12 10:27:54 | INFO  | agent | DB status: connected
+2026-07-12 10:27:54 | INFO  | enterprise_agent.scheduler | 待办推送调度器已启动，扫描间隔: 300s
+2026-07-12 10:27:54 | INFO  | agent | 待办推送调度器已启动
+INFO:     Application startup complete.
+2026-07-12 10:27:54 | INFO  | enterprise_agent.scheduler | 待办扫描: 发现 4 类待办，共 23 条
+2026-07-12 10:27:54 | INFO  | enterprise_agent.scheduler |   - 待审批请假: 5 条
+2026-07-12 10:27:54 | INFO  | enterprise_agent.scheduler |   - 待处理投诉: 1 条
+2026-07-12 10:27:54 | INFO  | enterprise_agent.scheduler |   - 待跟进客户: 14 条
+2026-07-12 10:27:54 | INFO  | enterprise_agent.scheduler |   - 处理中的投诉: 3 条
+2026-07-12 10:27:54 | INFO  | watchfiles.main | 4 changes detected
+2026-07-12 10:27:55 | INFO  | watchfiles.main | 12 changes detected
+2026-07-12 10:27:55 | INFO  | watchfiles.main | 4 changes detected
+2026-07-12 10:27:55 | INFO  | watchfiles.main | 63 changes detected
+2026-07-12 10:27:56 | INFO  | watchfiles.main | 44 changes detected
+2026-07-12 10:27:57 | INFO  | watchfiles.main | 1 change detected
+2026-07-12 10:27:57 | INFO  | watchfiles.main | 5 changes detected
+2026-07-12 10:27:58 | INFO  | watchfiles.main | 8 changes detected
+2026-07-12 10:27:58 | INFO  | watchfiles.main | 15 changes detected
+2026-07-12 10:28:01 | INFO  | watchfiles.main | 13 changes detected
+2026-07-12 10:28:01 | INFO  | watchfiles.main | 11 changes detected
+2026-07-12 10:28:02 | INFO  | watchfiles.main | 4 changes detected
+2026-07-12 10:29:34 | INFO  | watchfiles.main | 5 changes detected
+2026-07-12 10:29:51 | INFO  | watchfiles.main | 5 changes detected
+2026-07-12 10:30:09 | INFO  | watchfiles.main | 5 changes detected
+2026-07-12 10:30:23 | INFO  | watchfiles.main | 5 changes detected
+2026-07-12 10:32:54 | INFO  | enterprise_agent.scheduler | 待办扫描: 发现 4 类待办，共 23 条
+2026-07-12 10:32:54 | INFO  | enterprise_agent.scheduler |   - 待审批请假: 5 条
+2026-07-12 10:32:54 | INFO  | enterprise_agent.scheduler |   - 待处理投诉: 1 条
+2026-07-12 10:32:54 | INFO  | enterprise_agent.scheduler |   - 待跟进客户: 14 条
+2026-07-12 10:32:54 | INFO  | enterprise_agent.scheduler |   - 处理中的投诉: 3 条
+i.tiangolo.com/advanced/events/).
+        
+  @app.on_event("startup")
+2026-07-12 10:31:11 | INFO  | agent | Routes registered: /api/agent/* (27 modules)
+INFO:     Will watch for changes in these directories: ['C:\\Users\\Windows\\Desktop\\整体项目合并后-副本']
+INFO:     Uvicorn running on http://0.0.0.0:8001 (Press CTRL+C to quit)
+INFO:     Started reloader process [15208] using WatchFiles
+SECURITY: Using default database password '123456'! Set DB_PASSWORD in .env or environment variable.
+2026-07-12 10:31:12 | INFO  | agent | Config loaded: host=192.168.48.121, db=dify_pro
+2026-07-12 10:31:12 | INFO  | agent | Routes registered: /api/agent/* (27 modules)
+2026-07-12 10:31:12 | INFO  | agent | Routes registered: /api/agent/* (27 modules)
+INFO:     Started server process [12876]
+INFO:     Waiting for application startup.
+2026-07-12 10:31:12 | INFO  | agent | Database OK: 192.168.48.121:3306/dify_pro
+2026-07-12 10:31:12 | INFO  | agent | DB status: connected
+2026-07-12 10:31:12 | INFO  | enterprise_agent.scheduler | 待办推送调度器已启动，扫描间隔: 300s
+2026-07-12 10:31:12 | INFO  | agent | 待办推送调度器已启动
+INFO:     Application startup complete.
+2026-07-12 10:31:12 | INFO  | enterprise_agent.scheduler | 待办扫描: 发现 4 类待办，共 23 条
+2026-07-12 10:31:12 | INFO  | enterprise_agent.scheduler |   - 待审批请假: 5 条
+2026-07-12 10:31:12 | INFO  | enterprise_agent.scheduler |   - 待处理投诉: 1 条
+2026-07-12 10:31:12 | INFO  | enterprise_agent.scheduler |   - 待跟进客户: 14 条
+2026-07-12 10:31:12 | INFO  | enterprise_agent.scheduler |   - 处理中的投诉: 3 条
+2026-07-12 10:31:15 | INFO  | watchfiles.main | 1 change detected
+2026-07-12 10:32:17 | INFO  | watchfiles.main | 16 changes detected
+2026-07-12 10:34:06 | INFO  | watchfiles.main | 5 changes detected
+2026-07-12 10:34:22 | INFO  | watchfiles.main | 5 changes detected
+2026-07-12 10:34:37 | INFO  | watchfiles.main | 5 changes detected
+2026-07-12 10:35:14 | INFO  | watchfiles.main | 1 change detected
+2026-07-12 10:35:20 | INFO  | watchfiles.main | 1 change detected
+2026-07-12 10:36:12 | INFO  | enterprise_agent.scheduler | 待办扫描: 发现 4 类待办，共 23 条
+2026-07-12 10:36:12 | INFO  | enterprise_agent.scheduler |   - 待审批请假: 5 条
+2026-07-12 10:36:12 | INFO  | enterprise_agent.scheduler |   - 待处理投诉: 1 条
+2026-07-12 10:36:12 | INFO  | enterprise_agent.scheduler |   - 待跟进客户: 14 条
+2026-07-12 10:36:12 | INFO  | enterprise_agent.scheduler |   - 处理中的投诉: 3 条
+i.tiangolo.com/advanced/events/).
+        
+  @app.on_event("startup")
+2026-07-12 10:35:24 | INFO  | agent | Routes registered: /api/agent/* (27 modules)
+INFO:     Will watch for changes in these directories: ['C:\\Users\\Windows\\Desktop\\整体项目合并后-副本']
+INFO:     Uvicorn running on http://0.0.0.0:8001 (Press CTRL+C to quit)
+INFO:     Started reloader process [10620] using WatchFiles
+SECURITY: Using default database password '123456'! Set DB_PASSWORD in .env or environment variable.
+2026-07-12 10:35:25 | INFO  | agent | Config loaded: host=192.168.48.121, db=dify_pro
+2026-07-12 10:35:25 | INFO  | agent | Routes registered: /api/agent/* (27 modules)
+2026-07-12 10:35:26 | INFO  | agent | Routes registered: /api/agent/* (27 modules)
+INFO:     Started server process [21592]
+INFO:     Waiting for application startup.
+2026-07-12 10:35:26 | INFO  | agent | Database OK: 192.168.48.121:3306/dify_pro
+2026-07-12 10:35:26 | INFO  | agent | DB status: connected
+2026-07-12 10:35:26 | INFO  | enterprise_agent.scheduler | 待办推送调度器已启动，扫描间隔: 300s
+2026-07-12 10:35:26 | INFO  | agent | 待办推送调度器已启动
+INFO:     Application startup complete.
+2026-07-12 10:35:26 | INFO  | enterprise_agent.scheduler | 待办扫描: 发现 4 类待办，共 23 条
+2026-07-12 10:35:26 | INFO  | enterprise_agent.scheduler |   - 待审批请假: 5 条
+2026-07-12 10:35:26 | INFO  | enterprise_agent.scheduler |   - 待处理投诉: 1 条
+2026-07-12 10:35:26 | INFO  | enterprise_agent.scheduler |   - 待跟进客户: 14 条
+2026-07-12 10:35:26 | INFO  | enterprise_agent.scheduler |   - 处理中的投诉: 3 条
+2026-07-12 10:35:28 | INFO  | watchfiles.main | 1 change detected
+SECURITY: Using default database password '123456'! Set DB_PASSWORD in .env or environment variable.
+2026-07-12 10:59:32 | INFO  | agent | Config loaded: host=192.168.48.121, db=dify_pro
+C:\Users\Windows\Desktop\整体项目合并后-副本\enterprise_agent\main.py:45: DeprecationWarning: 
+        on_event is deprecated, use lifespan event handlers instead.
+
+        Read more about it in the
+        [FastAPI docs for Lifespan Events](https://fastapi.tiangolo.com/advanced/events/).
+        
+  @app.on_event("startup")
+2026-07-12 10:59:32 | INFO  | agent | Routes registered: /api/agent/* (27 modules)
+INFO:     Will watch for changes in these directories: ['C:\\Users\\Windows\\Desktop\\整体项目合并后-副本']
+INFO:     Uvicorn running on http://0.0.0.0:8001 (Press CTRL+C to quit)
+INFO:     Started reloader process [24904] using WatchFiles
+SECURITY: Using default database password '123456'! Set DB_PASSWORD in .env or environment variable.
+2026-07-12 10:59:33 | INFO  | agent | Config loaded: host=192.168.48.121, db=dify_pro
+2026-07-12 10:59:33 | INFO  | agent | Routes registered: /api/agent/* (27 modules)
+2026-07-12 10:59:33 | INFO  | agent | Routes registered: /api/agent/* (27 modules)
+INFO:     Started server process [22508]
+INFO:     Waiting for application startup.
+2026-07-12 10:59:33 | INFO  | agent | Database OK: 192.168.48.121:3306/dify_pro
+2026-07-12 10:59:33 | INFO  | agent | DB status: connected
+2026-07-12 10:59:33 | INFO  | enterprise_agent.scheduler | 待办推送调度器已启动，扫描间隔: 300s
+2026-07-12 10:59:33 | INFO  | agent | 待办推送调度器已启动
+INFO:     Application startup complete.
+2026-07-12 10:59:33 | INFO  | enterprise_agent.scheduler | 待办扫描: 发现 4 类待办，共 23 条
+2026-07-12 10:59:33 | INFO  | enterprise_agent.scheduler |   - 待审批请假: 5 条
+2026-07-12 10:59:33 | INFO  | enterprise_agent.scheduler |   - 待处理投诉: 1 条
+2026-07-12 10:59:33 | INFO  | enterprise_agent.scheduler |   - 待跟进客户: 14 条
+2026-07-12 10:59:33 | INFO  | enterprise_agent.scheduler |   - 处理中的投诉: 3 条
+2026-07-12 10:59:36 | INFO  | watchfiles.main | 1 change detected
+2026-07-12 11:01:41 | INFO  | watchfiles.main | 5 changes detected
+2026-07-12 11:04:33 | INFO  | enterprise_agent.scheduler | 待办扫描: 发现 4 类待办，共 23 条
+2026-07-12 11:04:33 | INFO  | enterprise_agent.scheduler |   - 待审批请假: 5 条
+2026-07-12 11:04:33 | INFO  | enterprise_agent.scheduler |   - 待处理投诉: 1 条
+2026-07-12 11:04:33 | INFO  | enterprise_agent.scheduler |   - 待跟进客户: 14 条
+2026-07-12 11:04:33 | INFO  | enterprise_agent.scheduler |   - 处理中的投诉: 3 条
+2026-07-12 11:05:20 | INFO  | watchfiles.main | 1 change detected
+2026-07-12 11:05:43 | INFO  | watchfiles.main | 1 change detected
+2026-07-12 11:06:27 | INFO  | watchfiles.main | 5 changes detected
+2026-07-12 11:06:43 | INFO  | watchfiles.main | 5 changes detected
+WARNING:  WatchFiles detected changes in 'student_agent\main_jb.py'. Reloading...
+ INFO:     Shutting down
+INFO:     Waiting for application shutdown.
+INFO:     Application shutdown complete.
+INFO:     Finished server process [22508]
+2026-07-12 11:09:32 | INFO  | watchfiles.main | 39 changes detected
+WARNING:  WatchFiles detected changes in 'student_agent\reminder.py', 'student_agent\main_jb.py', 'student_agent\agent.py'. Reloading...
+ SECURITY: Using default database password '123456'! Set DB_PASSWORD in .env or environment variable.
+2026-07-12 11:09:32 | INFO  | agent | Config loaded: host=192.168.48.121, db=dify_pro
+Traceback (most recent call last):
+  File "<string>", line 1, in <module>
+  File "C:\Users\Windows\.conda\envs\ai0511\Lib\multiprocessing\spawn.py", line 122, in spawn_main
+    exitcode = _main(fd, parent_sentinel)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Windows\.conda\envs\ai0511\Lib\multiprocessing\spawn.py", line 131, in _main
+    prepare(preparation_data)
+  File "C:\Users\Windows\.conda\envs\ai0511\Lib\multiprocessing\spawn.py", line 244, in prepare
+    _fixup_main_from_name(data['init_main_from_name'])
+  File "C:\Users\Windows\.conda\envs\ai0511\Lib\multiprocessing\spawn.py", line 268, in _fixup_main_from_name
+    main_content = runpy.run_module(mod_name,
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "<frozen runpy>", line 226, in run_module
+  File "<frozen runpy>", line 98, in _run_module_code
+  File "<frozen runpy>", line 88, in _run_code
+  File "C:\Users\Windows\Desktop\整体项目合并后-副本\enterprise_agent\main.py", line 15, in <module>
+    from enterprise_agent.database import test_connection
+  File "C:\Users\Windows\Desktop\整体项目合并后-副本\enterprise_agent\database.py", line 5, in <module>
+    from sqlalchemy import create_engine, text
+  File "C:\Users\Windows\.conda\envs\ai0511\Lib\site-packages\sqlalchemy\__init__.py", line 12, in <module>
+    from . import util as _util
+  File "C:\Users\Windows\.conda\envs\ai0511\Lib\site-packages\sqlalchemy\util\__init__.py", line 14, in <module>
+    from ._collections import coerce_generator_arg as coerce_generator_arg
+  File "C:\Users\Windows\.conda\envs\ai0511\Lib\site-packages\sqlalchemy\util\_collections.py", line 39, in <module>
+    from ._has_cy import HAS_CYEXTENSION
+  File "C:\Users\Windows\.conda\envs\ai0511\Lib\site-packages\sqlalchemy\util\_has_cy.py", line 32, in <module>
+    _import_cy_extensions()
+  File "C:\Users\Windows\.conda\envs\ai0511\Lib\site-packages\sqlalchemy\util\_has_cy.py", line 20, in _import_cy_extensions
+    from ..cyextension import util
+  File "lib/sqlalchemy/cyextension/util.pyx", line 9, in init sqlalchemy.cyextension.util
+  File "C:\Users\Windows\.conda\envs\ai0511\Lib\site-packages\sqlalchemy\exc.py", line 27, in <module>
+    from .util import compat
+  File "C:\Users\Windows\.conda\envs\ai0511\Lib\site-packages\sqlalchemy\util\compat.py", line 50, in <module>
+    arm = "aarch" in platform.machine().lower()
+                     ^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Windows\.conda\envs\ai0511\Lib\platform.py", line 963, in machine
+    return uname().machine
+           ^^^^^^^
+  File "C:\Users\Windows\.conda\envs\ai0511\Lib\platform.py", line 861, in uname
+    release, version, csd, ptype = win32_ver()
+                                   ^^^^^^^^^^^
+  File "C:\Users\Windows\.conda\envs\ai0511\Lib\platform.py", line 371, in win32_ver
+    major, minor, build = map(int, _syscmd_ver()[2].split('.'))
+                                   ^^^^^^^^^^^^^
+  File "C:\Users\Windows\.conda\envs\ai0511\Lib\platform.py", line 284, in _syscmd_ver
+    info = subprocess.check_output(cmd,
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Windows\.conda\envs\ai0511\Lib\subprocess.py", line 466, in check_output
+    return run(*popenargs, stdout=PIPE, timeout=timeout, check=True,
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Windows\.conda\envs\ai0511\Lib\subprocess.py", line 550, in run
+    stdout, stderr = process.communicate(input, timeout=timeout)
+                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Windows\.conda\envs\ai0511\Lib\subprocess.py", line 1196, in communicate
+    stdout = self.stdout.read()
+             ^^^^^^^^^^^^^^^^^^
+KeyboardInterrupt
+SECURITY: Using default database password '123456'! Set DB_PASSWORD in .env or environment variable.
+2026-07-12 11:09:33 | INFO  | agent | Config loaded: host=192.168.48.121, db=dify_pro
+2026-07-12 11:09:33 | INFO  | agent | Routes registered: /api/agent/* (27 modules)
+2026-07-12 11:09:34 | INFO  | agent | Routes registered: /api/agent/* (27 modules)
+INFO:     Started server process [9788]
+INFO:     Waiting for application startup.
+2026-07-12 11:09:34 | INFO  | agent | Database OK: 192.168.48.121:3306/dify_pro
+2026-07-12 11:09:34 | INFO  | agent | DB status: connected
+2026-07-12 11:09:34 | INFO  | enterprise_agent.scheduler | 待办推送调度器已启动，扫描间隔: 300s
+2026-07-12 11:09:34 | INFO  | agent | 待办推送调度器已启动
+INFO:     Application startup complete.
+2026-07-12 11:09:34 | INFO  | enterprise_agent.scheduler | 待办扫描: 发现 4 类待办，共 23 条
+2026-07-12 11:09:34 | INFO  | enterprise_agent.scheduler |   - 待审批请假: 5 条
+2026-07-12 11:09:34 | INFO  | enterprise_agent.scheduler |   - 待处理投诉: 1 条
+2026-07-12 11:09:34 | INFO  | enterprise_agent.scheduler |   - 待跟进客户: 14 条
+2026-07-12 11:09:34 | INFO  | enterprise_agent.scheduler |   - 处理中的投诉: 3 条
+2026-07-12 11:09:36 | INFO  | watchfiles.main | 5 changes detected
+WARNING:  WatchFiles detected changes in 'student_agent\agent.py'. Reloading...
+ SECURITY: Using default database password '123456'! Set DB_PASSWORD in .env or environment variable.
+2026-07-12 11:32:11 | INFO  | agent | Config loaded: host=192.168.48.121, db=dify_pro
+C:\Users\Windows\Desktop\整体项目合并后-副本\enterprise_agent\main.py:45: DeprecationWarning: 
+        on_event is deprecated, use lifespan event handlers instead.
+
+        Read more about it in the
+        [FastAPI docs for Lifespan Events](https://fastapi.tiangolo.com/advanced/events/).
+        
+  @app.on_event("startup")
+2026-07-12 11:32:11 | INFO  | agent | Routes registered: /api/agent/* (27 modules)
+INFO:     Will watch for changes in these directories: ['C:\\Users\\Windows\\Desktop\\整体项目合并后-副本']
+INFO:     Uvicorn running on http://0.0.0.0:8001 (Press CTRL+C to quit)
+INFO:     Started reloader process [16756] using WatchFiles
+SECURITY: Using default database password '123456'! Set DB_PASSWORD in .env or environment variable.
+2026-07-12 11:32:12 | INFO  | agent | Config loaded: host=192.168.48.121, db=dify_pro
+2026-07-12 11:32:12 | INFO  | watchfiles.main | 5 changes detected
+2026-07-12 11:32:12 | INFO  | agent | Routes registered: /api/agent/* (27 modules)
+2026-07-12 11:32:12 | INFO  | agent | Routes registered: /api/agent/* (27 modules)
+INFO:     Started server process [18892]
+INFO:     Waiting for application startup.
+2026-07-12 11:32:12 | INFO  | agent | Database OK: 192.168.48.121:3306/dify_pro
+2026-07-12 11:32:12 | INFO  | agent | DB status: connected
+2026-07-12 11:32:12 | INFO  | enterprise_agent.scheduler | 待办推送调度器已启动，扫描间隔: 300s
+2026-07-12 11:32:12 | INFO  | agent | 待办推送调度器已启动
+INFO:     Application startup complete.
+2026-07-12 11:32:12 | INFO  | enterprise_agent.scheduler | 待办扫描: 发现 4 类待办，共 24 条
+2026-07-12 11:32:12 | INFO  | enterprise_agent.scheduler |   - 待审批请假: 6 条
+2026-07-12 11:32:12 | INFO  | enterprise_agent.scheduler |   - 待处理投诉: 1 条
+2026-07-12 11:32:12 | INFO  | enterprise_agent.scheduler |   - 待跟进客户: 14 条
+2026-07-12 11:32:12 | INFO  | enterprise_agent.scheduler |   - 处理中的投诉: 3 条
+2026-07-12 11:32:13 | INFO  | watchfiles.main | 4 changes detected
+2026-07-12 11:32:13 | INFO  | watchfiles.main | 4 changes detected
+2026-07-12 11:32:13 | INFO  | watchfiles.main | 12 changes detected
+2026-07-12 11:32:14 | INFO  | watchfiles.main | 63 changes detected
+2026-07-12 11:32:15 | INFO  | watchfiles.main | 44 changes detected
+2026-07-12 11:32:15 | INFO  | watchfiles.main | 1 change detected
+2026-07-12 11:32:15 | INFO  | watchfiles.main | 5 changes detected
+2026-07-12 11:32:16 | INFO  | watchfiles.main | 8 changes detected
+2026-07-12 11:32:17 | INFO  | watchfiles.main | 15 changes detected
+2026-07-12 11:32:18 | INFO  | watchfiles.main | 27 changes detected
+2026-07-12 11:35:43 | INFO  | watchfiles.main | 1 change detected
+2026-07-12 11:35:44 | INFO  | watchfiles.main | 7 changes detected
+2026-07-12 11:37:12 | INFO  | enterprise_agent.scheduler | 待办扫描: 发现 4 类待办，共 24 条
+2026-07-12 11:37:12 | INFO  | enterprise_agent.scheduler |   - 待审批请假: 6 条
+2026-07-12 11:37:12 | INFO  | enterprise_agent.scheduler |   - 待处理投诉: 1 条
+2026-07-12 11:37:12 | INFO  | enterprise_agent.scheduler |   - 待跟进客户: 14 条
+2026-07-12 11:37:12 | INFO  | enterprise_agent.scheduler |   - 处理中的投诉: 3 条
+INFO:     127.0.0.1:59138 - "POST /api/v1/student/leave-requests HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:59235 - "POST /api/v1/student/leave-requests HTTP/1.1" 404 Not Found
+2026-07-12 11:40:05 | INFO  | watchfiles.main | 5 changes detected
+WARNING:  WatchFiles detected changes in 'student_agent\services\leave_service.py'. Reloading...
+ INFO:     127.0.0.1:59283 - "POST /api/v1/student/leave-requests HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:59442 - "POST /api/v1/student/leave-requests HTTP/1.1" 404 Not Found
+SECURITY: Using default database password '123456'! Set DB_PASSWORD in .env or environment variable.
+2026-07-12 11:49:23 | INFO  | agent | Config loaded: host=192.168.48.121, db=dify_pro
+C:\Users\Windows\Desktop\整体项目合并后-副本\enterprise_agent\main.py:45: DeprecationWarning: 
+        on_event is deprecated, use lifespan event handlers instead.
+
+        Read more about it in the
+        [FastAPI docs for Lifespan Events](https://fastapi.tiangolo.com/advanced/events/).
+        
+  @app.on_event("startup")
+2026-07-12 11:49:24 | INFO  | agent | Routes registered: /api/agent/* (27 modules)
+INFO:     Will watch for changes in these directories: ['C:\\Users\\Windows\\Desktop\\整体项目合并后-副本']
+INFO:     Uvicorn running on http://0.0.0.0:8001 (Press CTRL+C to quit)
+INFO:     Started reloader process [24344] using WatchFiles
+SECURITY: Using default database password '123456'! Set DB_PASSWORD in .env or environment variable.
+2026-07-12 11:49:24 | INFO  | agent | Config loaded: host=192.168.48.121, db=dify_pro
+2026-07-12 11:49:25 | INFO  | watchfiles.main | 5 changes detected
+2026-07-12 11:49:25 | INFO  | agent | Routes registered: /api/agent/* (27 modules)
+2026-07-12 11:49:25 | INFO  | agent | Routes registered: /api/agent/* (27 modules)
+INFO:     Started server process [7408]
+INFO:     Waiting for application startup.
+2026-07-12 11:49:25 | INFO  | agent | Database OK: 192.168.48.121:3306/dify_pro
+2026-07-12 11:49:25 | INFO  | agent | DB status: connected
+2026-07-12 11:49:25 | INFO  | enterprise_agent.scheduler | 待办推送调度器已启动，扫描间隔: 300s
+2026-07-12 11:49:25 | INFO  | agent | 待办推送调度器已启动
+INFO:     Application startup complete.
+2026-07-12 11:49:25 | INFO  | enterprise_agent.scheduler | 待办扫描: 发现 4 类待办，共 25 条
+2026-07-12 11:49:25 | INFO  | enterprise_agent.scheduler |   - 待审批请假: 6 条
+2026-07-12 11:49:25 | INFO  | enterprise_agent.scheduler |   - 待处理投诉: 1 条
+2026-07-12 11:49:25 | INFO  | enterprise_agent.scheduler |   - 待跟进客户: 15 条
+2026-07-12 11:49:25 | INFO  | enterprise_agent.scheduler |   - 处理中的投诉: 3 条
+2026-07-12 11:49:25 | INFO  | watchfiles.main | 4 changes detected
+2026-07-12 11:49:26 | INFO  | watchfiles.main | 7 changes detected
+2026-07-12 11:49:26 | INFO  | watchfiles.main | 8 changes detected
+2026-07-12 11:49:26 | INFO  | watchfiles.main | 63 changes detected
+2026-07-12 11:49:27 | INFO  | watchfiles.main | 44 changes detected
+2026-07-12 11:49:28 | INFO  | watchfiles.main | 1 change detected
+2026-07-12 11:49:28 | INFO  | watchfiles.main | 5 changes detected
+2026-07-12 11:49:30 | INFO  | watchfiles.main | 4 changes detected
+2026-07-12 11:50:45 | INFO  | watchfiles.main | 1 change detected
+2026-07-12 11:51:03 | INFO  | watchfiles.main | 5 changes detected
+WARNING:  WatchFiles detected changes in 'student_agent\main_jb.py'. Reloading...
+ SECURITY: Using default database password '123456'! Set DB_PASSWORD in .env or environment variable.
+2026-07-12 11:57:44 | INFO  | agent | Config loaded: host=192.168.48.121, db=dify_pro
+C:\Users\Windows\Desktop\整体项目合并后-副本\enterprise_agent\main.py:45: DeprecationWarning: 
+        on_event is deprecated, use lifespan event handlers instead.
+
+        Read more about it in the
+        [FastAPI docs for Lifespan Events](https://fastapi.tiangolo.com/advanced/events/).
+        
+  @app.on_event("startup")
+2026-07-12 11:57:45 | INFO  | agent | Routes registered: /api/agent/* (27 modules)
+INFO:     Will watch for changes in these directories: ['C:\\Users\\Windows\\Desktop\\整体项目合并后-副本']
+INFO:     Uvicorn running on http://0.0.0.0:8001 (Press CTRL+C to quit)
+INFO:     Started reloader process [17092] using WatchFiles
+SECURITY: Using default database password '123456'! Set DB_PASSWORD in .env or environment variable.
+2026-07-12 11:57:46 | INFO  | agent | Config loaded: host=192.168.48.121, db=dify_pro
+2026-07-12 11:57:46 | INFO  | watchfiles.main | 5 changes detected
+2026-07-12 11:57:46 | INFO  | agent | Routes registered: /api/agent/* (27 modules)
+2026-07-12 11:57:46 | INFO  | agent | Routes registered: /api/agent/* (27 modules)
+INFO:     Started server process [24764]
+INFO:     Waiting for application startup.
+2026-07-12 11:57:46 | INFO  | agent | Database OK: 192.168.48.121:3306/dify_pro
+2026-07-12 11:57:46 | INFO  | agent | DB status: connected
+2026-07-12 11:57:46 | INFO  | enterprise_agent.scheduler | 待办推送调度器已启动，扫描间隔: 300s
+2026-07-12 11:57:46 | INFO  | agent | 待办推送调度器已启动
+INFO:     Application startup complete.
+2026-07-12 11:57:46 | INFO  | enterprise_agent.scheduler | 待办扫描: 发现 4 类待办，共 25 条
+2026-07-12 11:57:46 | INFO  | enterprise_agent.scheduler |   - 待审批请假: 6 条
+2026-07-12 11:57:46 | INFO  | enterprise_agent.scheduler |   - 待处理投诉: 1 条
+2026-07-12 11:57:46 | INFO  | enterprise_agent.scheduler |   - 待跟进客户: 15 条
+2026-07-12 11:57:46 | INFO  | enterprise_agent.scheduler |   - 处理中的投诉: 3 条
+2026-07-12 11:57:46 | INFO  | watchfiles.main | 4 changes detected
+2026-07-12 11:57:47 | INFO  | watchfiles.main | 7 changes detected
+2026-07-12 11:57:47 | INFO  | watchfiles.main | 8 changes detected
+2026-07-12 11:57:47 | INFO  | watchfiles.main | 63 changes detected
+2026-07-12 11:57:48 | INFO  | watchfiles.main | 44 changes detected
+2026-07-12 11:57:49 | INFO  | watchfiles.main | 1 change detected
+2026-07-12 11:57:49 | INFO  | watchfiles.main | 5 changes detected
+2026-07-12 11:57:51 | INFO  | watchfiles.main | 4 changes detected
+2026-07-12 11:58:08 | INFO  | watchfiles.main | 1 change detected
+INFO:     127.0.0.1:60728 - "GET /api/v1/student/leave-requests?student_id=1 HTTP/1.1" 404 Not Found
+2026-07-12 12:00:05 | INFO  | watchfiles.main | 5 changes detected
+WARNING:  WatchFiles detected changes in 'student_agent\services\leave_service.py'. Reloading...
+ SECURITY: Using default database password '123456'! Set DB_PASSWORD in .env or environment variable.
+2026-07-12 12:03:11 | INFO  | agent | Config loaded: host=192.168.48.121, db=dify_pro
+C:\Users\Windows\Desktop\整体项目合并后-副本\enterprise_agent\main.py:45: DeprecationWarning: 
+        on_event is deprecated, use lifespan event handlers instead.
+
+        Read more about it in the
+        [FastAPI docs for Lifespan Events](https://fastapi.tiangolo.com/advanced/events/).
+        
+  @app.on_event("startup")
+2026-07-12 12:03:11 | INFO  | agent | Routes registered: /api/agent/* (27 modules)
+INFO:     Will watch for changes in these directories: ['C:\\Users\\Windows\\Desktop\\整体项目合并后-副本']
+INFO:     Uvicorn running on http://0.0.0.0:8001 (Press CTRL+C to quit)
+INFO:     Started reloader process [4528] using WatchFiles
+SECURITY: Using default database password '123456'! Set DB_PASSWORD in .env or environment variable.
+2026-07-12 12:03:12 | INFO  | agent | Config loaded: host=192.168.48.121, db=dify_pro
+2026-07-12 12:03:12 | INFO  | watchfiles.main | 5 changes detected
+2026-07-12 12:03:12 | INFO  | agent | Routes registered: /api/agent/* (27 modules)
+2026-07-12 12:03:12 | INFO  | agent | Routes registered: /api/agent/* (27 modules)
+INFO:     Started server process [19688]
+INFO:     Waiting for application startup.
+2026-07-12 12:03:12 | INFO  | agent | Database OK: 192.168.48.121:3306/dify_pro
+2026-07-12 12:03:12 | INFO  | agent | DB status: connected
+2026-07-12 12:03:12 | INFO  | enterprise_agent.scheduler | 待办推送调度器已启动，扫描间隔: 300s
+2026-07-12 12:03:12 | INFO  | agent | 待办推送调度器已启动
+INFO:     Application startup complete.
+2026-07-12 12:03:12 | INFO  | enterprise_agent.scheduler | 待办扫描: 发现 4 类待办，共 25 条
+2026-07-12 12:03:12 | INFO  | enterprise_agent.scheduler |   - 待审批请假: 6 条
+2026-07-12 12:03:12 | INFO  | enterprise_agent.scheduler |   - 待处理投诉: 1 条
+2026-07-12 12:03:12 | INFO  | enterprise_agent.scheduler |   - 待跟进客户: 15 条
+2026-07-12 12:03:12 | INFO  | enterprise_agent.scheduler |   - 处理中的投诉: 3 条
+2026-07-12 12:03:13 | INFO  | watchfiles.main | 4 changes detected
+2026-07-12 12:03:13 | INFO  | watchfiles.main | 4 changes detected
+2026-07-12 12:03:13 | INFO  | watchfiles.main | 12 changes detected
+2026-07-12 12:03:14 | INFO  | watchfiles.main | 63 changes detected
+2026-07-12 12:03:15 | INFO  | watchfiles.main | 44 changes detected
+2026-07-12 12:03:15 | INFO  | watchfiles.main | 1 change detected
+2026-07-12 12:03:15 | INFO  | watchfiles.main | 5 changes detected
+2026-07-12 12:03:16 | INFO  | watchfiles.main | 8 changes detected
+2026-07-12 12:03:17 | INFO  | watchfiles.main | 15 changes detected
+2026-07-12 12:03:18 | INFO  | watchfiles.main | 17 changes detected
+2026-07-12 12:03:18 | INFO  | watchfiles.main | 11 changes detected
+2026-07-12 12:05:44 | INFO  | watchfiles.main | 5 changes detected
+WARNING:  WatchFiles detected changes in 'student_agent\services\leave_service.py'. Reloading...
+ SECURITY: Using default database password '123456'! Set DB_PASSWORD in .env or environment variable.
+2026-07-12 12:08:47 | INFO  | agent | Config loaded: host=192.168.48.121, db=dify_pro
+C:\Users\Windows\Desktop\整体项目合并后-副本\enterprise_agent\main.py:45: DeprecationWarning: 
+        on_event is deprecated, use lifespan event handlers instead.
+
+        Read more about it in the
+        [FastAPI docs for Lifespan Events](https://fastapi.tiangolo.com/advanced/events/).
+        
+  @app.on_event("startup")
+2026-07-12 12:08:48 | INFO  | agent | Routes registered: /api/agent/* (27 modules)
+INFO:     Will watch for changes in these directories: ['C:\\Users\\Windows\\Desktop\\整体项目合并后-副本']
+INFO:     Uvicorn running on http://0.0.0.0:8001 (Press CTRL+C to quit)
+INFO:     Started reloader process [26128] using WatchFiles
+SECURITY: Using default database password '123456'! Set DB_PASSWORD in .env or environment variable.
+2026-07-12 12:08:49 | INFO  | agent | Config loaded: host=192.168.48.121, db=dify_pro
+2026-07-12 12:08:49 | INFO  | watchfiles.main | 5 changes detected
+2026-07-12 12:08:49 | INFO  | agent | Routes registered: /api/agent/* (27 modules)
+2026-07-12 12:08:49 | INFO  | agent | Routes registered: /api/agent/* (27 modules)
+INFO:     Started server process [21020]
+INFO:     Waiting for application startup.
+2026-07-12 12:08:49 | INFO  | agent | Database OK: 192.168.48.121:3306/dify_pro
+2026-07-12 12:08:49 | INFO  | agent | DB status: connected
+2026-07-12 12:08:49 | INFO  | enterprise_agent.scheduler | 待办推送调度器已启动，扫描间隔: 300s
+2026-07-12 12:08:49 | INFO  | agent | 待办推送调度器已启动
+INFO:     Application startup complete.
+2026-07-12 12:08:49 | INFO  | enterprise_agent.scheduler | 待办扫描: 发现 4 类待办，共 27 条
+2026-07-12 12:08:49 | INFO  | enterprise_agent.scheduler |   - 待审批请假: 6 条
+2026-07-12 12:08:49 | INFO  | enterprise_agent.scheduler |   - 待处理投诉: 1 条
+2026-07-12 12:08:49 | INFO  | enterprise_agent.scheduler |   - 待跟进客户: 17 条
+2026-07-12 12:08:49 | INFO  | enterprise_agent.scheduler |   - 处理中的投诉: 3 条
+2026-07-12 12:08:49 | INFO  | watchfiles.main | 4 changes detected
+2026-07-12 12:08:50 | INFO  | watchfiles.main | 4 changes detected
+2026-07-12 12:08:50 | INFO  | watchfiles.main | 12 changes detected
+2026-07-12 12:08:50 | INFO  | watchfiles.main | 63 changes detected
+2026-07-12 12:08:51 | INFO  | watchfiles.main | 44 changes detected
+2026-07-12 12:08:52 | INFO  | watchfiles.main | 1 change detected
+2026-07-12 12:08:52 | INFO  | watchfiles.main | 5 changes detected
+2026-07-12 12:08:53 | INFO  | watchfiles.main | 8 changes detected
+2026-07-12 12:08:54 | INFO  | watchfiles.main | 15 changes detected
+2026-07-12 12:08:54 | INFO  | watchfiles.main | 13 changes detected
+2026-07-12 12:08:55 | INFO  | watchfiles.main | 15 changes detected
+INFO:     127.0.0.1:61611 - "GET /api/v1/student/leave-requests?student_id=1 HTTP/1.1" 404 Not Found
+2026-07-12 12:13:49 | INFO  | enterprise_agent.scheduler | 待办扫描: 发现 4 类待办，共 27 条
+2026-07-12 12:13:49 | INFO  | enterprise_agent.scheduler |   - 待审批请假: 6 条
+2026-07-12 12:13:49 | INFO  | enterprise_agent.scheduler |   - 待处理投诉: 1 条
+2026-07-12 12:13:49 | INFO  | enterprise_agent.scheduler |   - 待跟进客户: 17 条
+2026-07-12 12:13:49 | INFO  | enterprise_agent.scheduler |   - 处理中的投诉: 3 条
+2026-07-12 12:18:31 | INFO  | watchfiles.main | 5 changes detected
+WARNING:  WatchFiles detected changes in 'student_agent\services\leave_service.py'. Reloading...
+ INFO:     Shutting down
+INFO:     Waiting for application shutdown.
+INFO:     Application shutdown complete.
+INFO:     Finished server process [21020]
+2026-07-12 12:18:47 | INFO  | watchfiles.main | 5 changes detected
+WARNING:  WatchFiles detected changes in 'student_agent\services\leave_service.py'. Reloading...
+ SECURITY: Using default database password '123456'! Set DB_PASSWORD in .env or environment variable.
+2026-07-12 12:18:48 | INFO  | agent | Config loaded: host=192.168.48.121, db=dify_pro
+Traceback (most recent call last):
+  File "<string>", line 1, in <module>
+  File "C:\Users\Windows\.conda\envs\ai0511\Lib\multiprocessing\spawn.py", line 122, in spawn_main
+    exitcode = _main(fd, parent_sentinel)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Windows\.conda\envs\ai0511\Lib\multiprocessing\spawn.py", line 131, in _main
+    prepare(preparation_data)
+  File "C:\Users\Windows\.conda\envs\ai0511\Lib\multiprocessing\spawn.py", line 244, in prepare
+    _fixup_main_from_name(data['init_main_from_name'])
+  File "C:\Users\Windows\.conda\envs\ai0511\Lib\multiprocessing\spawn.py", line 268, in _fixup_main_from_name
+    main_content = runpy.run_module(mod_name,
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "<frozen runpy>", line 226, in run_module
+  File "<frozen runpy>", line 98, in _run_module_code
+  File "<frozen runpy>", line 88, in _run_code
+  File "C:\Users\Windows\Desktop\整体项目合并后-副本\enterprise_agent\main.py", line 15, in <module>
+    from enterprise_agent.database import test_connection
+  File "C:\Users\Windows\Desktop\整体项目合并后-副本\enterprise_agent\database.py", line 5, in <module>
+    from sqlalchemy import create_engine, text
+  File "C:\Users\Windows\.conda\envs\ai0511\Lib\site-packages\sqlalchemy\__init__.py", line 12, in <module>
+    from . import util as _util
+  File "C:\Users\Windows\.conda\envs\ai0511\Lib\site-packages\sqlalchemy\util\__init__.py", line 14, in <module>
+    from ._collections import coerce_generator_arg as coerce_generator_arg
+  File "C:\Users\Windows\.conda\envs\ai0511\Lib\site-packages\sqlalchemy\util\_collections.py", line 39, in <module>
+    from ._has_cy import HAS_CYEXTENSION
+  File "C:\Users\Windows\.conda\envs\ai0511\Lib\site-packages\sqlalchemy\util\_has_cy.py", line 32, in <module>
+    _import_cy_extensions()
+  File "C:\Users\Windows\.conda\envs\ai0511\Lib\site-packages\sqlalchemy\util\_has_cy.py", line 20, in _import_cy_extensions
+    from ..cyextension import util
+  File "lib/sqlalchemy/cyextension/util.pyx", line 9, in init sqlalchemy.cyextension.util
+  File "C:\Users\Windows\.conda\envs\ai0511\Lib\site-packages\sqlalchemy\exc.py", line 27, in <module>
+    from .util import compat
+  File "C:\Users\Windows\.conda\envs\ai0511\Lib\site-packages\sqlalchemy\util\compat.py", line 50, in <module>
+    arm = "aarch" in platform.machine().lower()
+                     ^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Windows\.conda\envs\ai0511\Lib\platform.py", line 963, in machine
+    return uname().machine
+           ^^^^^^^
+  File "C:\Users\Windows\.conda\envs\ai0511\Lib\platform.py", line 861, in uname
+    release, version, csd, ptype = win32_ver()
+                                   ^^^^^^^^^^^
+  File "C:\Users\Windows\.conda\envs\ai0511\Lib\platform.py", line 371, in win32_ver
+    major, minor, build = map(int, _syscmd_ver()[2].split('.'))
+                                   ^^^^^^^^^^^^^
+  File "C:\Users\Windows\.conda\envs\ai0511\Lib\platform.py", line 284, in _syscmd_ver
+    info = subprocess.check_output(cmd,
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Windows\.conda\envs\ai0511\Lib\subprocess.py", line 466, in check_output
+    return run(*popenargs, stdout=PIPE, timeout=timeout, check=True,
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Windows\.conda\envs\ai0511\Lib\subprocess.py", line 550, in run
+    stdout, stderr = process.communicate(input, timeout=timeout)
+                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Windows\.conda\envs\ai0511\Lib\subprocess.py", line 1196, in communicate
+    stdout = self.stdout.read()
+             ^^^^^^^^^^^^^^^^^^
+KeyboardInterrupt
+SECURITY: Using default database password '123456'! Set DB_PASSWORD in .env or environment variable.
+2026-07-12 12:18:48 | INFO  | agent | Config loaded: host=192.168.48.121, db=dify_pro
+2026-07-12 12:18:49 | INFO  | agent | Routes registered: /api/agent/* (27 modules)
+2026-07-12 12:18:49 | INFO  | agent | Routes registered: /api/agent/* (27 modules)
+INFO:     Started server process [26424]
+INFO:     Waiting for application startup.
+2026-07-12 12:18:49 | INFO  | agent | Database OK: 192.168.48.121:3306/dify_pro
+2026-07-12 12:18:49 | INFO  | agent | DB status: connected
+2026-07-12 12:18:49 | INFO  | enterprise_agent.scheduler | 待办推送调度器已启动，扫描间隔: 300s
+2026-07-12 12:18:49 | INFO  | agent | 待办推送调度器已启动
+INFO:     Application startup complete.
+2026-07-12 12:18:49 | INFO  | enterprise_agent.scheduler | 待办扫描: 发现 4 类待办，共 27 条
+2026-07-12 12:18:49 | INFO  | enterprise_agent.scheduler |   - 待审批请假: 6 条
+2026-07-12 12:18:49 | INFO  | enterprise_agent.scheduler |   - 待处理投诉: 1 条
+2026-07-12 12:18:49 | INFO  | enterprise_agent.scheduler |   - 待跟进客户: 17 条
+2026-07-12 12:18:49 | INFO  | enterprise_agent.scheduler |   - 处理中的投诉: 3 条
+2026-07-12 12:18:54 | INFO  | watchfiles.main | 5 changes detected
+WARNING:  WatchFiles detected changes in 'student_agent\services\leave_service.py'. Reloading...
+ 

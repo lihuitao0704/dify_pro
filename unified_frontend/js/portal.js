@@ -36,48 +36,38 @@ function initLoginTabs() {
 }
 
 function initLoginForms() {
-  // Student login
+  const STUDENT_LOGIN_API = 'http://localhost:8000/auth/login';
+
+  // Student login — 统一账户密码，查 account 表
   document.getElementById('studentLoginForm').addEventListener('submit', async e => {
     e.preventDefault();
-    const id = document.getElementById('studentId').value.trim();
-    const name = document.getElementById('studentName').value.trim();
+    const user = document.getElementById('studentUser').value.trim();
+    const pass = document.getElementById('studentPass').value;
     try {
-      const r = await api('/agent/student/auth/login', {
+      const resp = await fetch(STUDENT_LOGIN_API, {
         method: 'POST',
-        body: JSON.stringify({ student_id: parseInt(id), name }),
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ username: user, password: pass }),
       });
+      const r = await resp.json();
       if (r.success) {
-        localStorage.setItem('user_role', 'student');
-        localStorage.setItem('user_id', id);
-        localStorage.setItem('user_name', name);
+        const s = r.student;
+        Auth.set({
+          role: 'student',
+          user_id: s.id,
+          user_name: s.name,
+          student: s,
+          user_type: s.user_type || '',
+          token: 'token-' + Date.now(),
+          exp: Date.now()/1000 + 86400,
+        });
         toast('登录成功！正在进入学生助手...', 'success');
-        setTimeout(() => {
-          window.open('/portal/student-dashboard', '_self');
-        }, 600);
+        setTimeout(() => window.open('/portal/student-dashboard', '_self'), 600);
       } else {
-        toast(r.message || '学号或姓名不正确', 'error');
+        toast(r.message || '用户名或密码不正确', 'error');
       }
     } catch (err) {
-      // Fallback: 直接调 student_agent 本地接口
-      try {
-        const resp = await fetch('http://localhost:8000/auth/login', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ student_id: parseInt(id), name }),
-        });
-        const r2 = await resp.json();
-        if (r2.success) {
-          localStorage.setItem('user_role', 'student');
-          localStorage.setItem('user_id', id);
-          localStorage.setItem('user_name', name);
-          toast('登录成功！正在进入学生助手...', 'success');
-          setTimeout(() => window.open('/portal/student-dashboard', '_self'), 600);
-        } else {
-          toast('学号或姓名不正确', 'error');
-        }
-      } catch (e2) {
-        toast('无法连接学生服务：' + e2.message, 'error');
-      }
+      toast('无法连接学生服务：' + err.message, 'error');
     }
   });
 
