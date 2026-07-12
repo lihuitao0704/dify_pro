@@ -32,6 +32,28 @@ class Config:
     )
 
     # ============================================
+    # MySQL 数据库配置 (合并 study_abroad_agent + Event&Lecture)
+    # ============================================
+    MYSQL_HOST = os.getenv("MYSQL_HOST", "127.0.0.1")
+    MYSQL_PORT = int(os.getenv("MYSQL_PORT", "3306"))
+    MYSQL_USER = os.getenv("MYSQL_USER", "offer")
+    MYSQL_PASSWORD = os.getenv("MYSQL_PASSWORD", "123456")
+    MYSQL_DATABASE = os.getenv("MYSQL_DATABASE", "dify_pro")
+    MYSQL_TIMEOUT = int(os.getenv("MYSQL_TIMEOUT", "10"))  # 连接/读写超时秒
+
+    # ============================================
+    # NL2SQL 安全配置
+    # ============================================
+    # 允许 NL2SQL 操作的表（白名单）
+    NL2SQL_ALLOWED_TABLES = [
+        "user_profiles", "courses", "consultations",
+        "lectures", "activities",
+        "lecture_registrations", "activity_registrations",
+    ]
+    NL2SQL_MAX_ROWS = 200          # 单条查询最大返回行数
+    NL2SQL_ALLOW_WRITE = True      # 是否允许 NL2SQL 写操作 (INSERT)
+
+    # ============================================
     # LLM（LongCat-2.0，OpenAI 兼容协议）
     # ============================================
     LLM_API_KEY = os.getenv("LONGCAT_API_KEY", "")

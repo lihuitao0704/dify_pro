@@ -5,7 +5,8 @@ dify_pro — 粤教留学 AI 智能助手平台
 
 启动方式: python start_all.py [服务名]
   - 无参数: 启动所有服务
-  - 参数可以是: customer, student, enterprise, assessment, report, study_abroad, event
+  - 参数可以是: customer, student, enterprise, assessment, report
+     (customer 已包含课程推荐 + 活动讲座报名, 不再作为独立服务启动)
   - --frontend-only: 仅启动统一前端 (customer_agent:9000)
 """
 
@@ -19,13 +20,6 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parent
 
 SERVICES = {
-    "study_abroad": {
-        "name": "课程推荐引擎",
-        "module": "study_abroad_agent.app",
-        "port": 5000,
-        "dir": "study_abroad_agent",
-        "cmd": ["python", "-m", "study_abroad_agent.app"],
-    },
     "student": {
         "name": "学生智能助手",
         "module": "student_agent.main_jb",
@@ -53,13 +47,6 @@ SERVICES = {
         "port": 8003,
         "dir": ".",
         "cmd": ["python", "-m", "summary_report.main"],
-    },
-    "event": {
-        "name": "活动讲座报名",
-        "module": "Event & Lecture Registration.Event_Lecture_api",
-        "port": 8011,
-        "dir": "Event & Lecture Registration",
-        "cmd": ["python", "Event_Lecture_api.py"],
     },
     "customer": {
         "name": "客服Agent + 统一前端",
@@ -115,7 +102,7 @@ def start_service(key, svc):
 
 def main():
     parser = argparse.ArgumentParser(description="粤教留学 AI 平台启动器")
-    parser.add_argument("services", nargs="*", help="要启动的服务名 (customer, student, enterprise, assessment, report, study_abroad, event)")
+    parser.add_argument("services", nargs="*", help="要启动的服务名 (customer, student, enterprise, assessment, report)")
     parser.add_argument("--frontend-only", action="store_true", help="仅启动前端")
     args = parser.parse_args()
 

@@ -299,6 +299,72 @@ class KnowledgeBase:
                 best_answer = answer
         return best_answer
 
+    # ── 检索：按意图过滤的 RAG ─────────────────────────────
+    def search_by_intent(self, query: str, intent: str,
+                         top_k: int = None) -> list:
+        """
+        按意图类别过滤后再 RAG。
+        intent 可取: company_info / company_service / study_policy / faq
+        意图 → 文档标题关键词，只从相关文档中检索。
+        """
+        if top_k is None:
+            top_k = config.KB_TOP_K
+
+        # 意图 → 标题关键词映射（对齐顶层 TOPIC_TITLE_MAP 的子集）
+        INTENT_TITLE_MAP = {
+            "company_info":    ["公司信息", "品牌", "历程", "成功案例", "校区", "简介"],
+            "company_service": ["公司业务", "留学项目", "课程", "服务", "项目"],
+            "study_policy":    ["留学政策", "签证", "移民", "德国", "新加坡", "申请条件"],
+            "faq":             ["高频问题", "FAQ", "咨询接口"],
+        }
+        title_kws = INTENT_TITLE_MAP.get(intent, [])
+
+        if not self.chunks:
+            return []
+
+        q_kws = _extract_keywords(query)
+
+        scored = []
+        for chunk in self.chunks:
+            # 意图过滤：只考虑标题命中意图关键词的 chunk（非 faq 意图时）
+            title_lower = chunk["title"].lower()
+            text_lower = chunk["text"].lower()
+
+            # 标题相关性（意图过滤）
+            title_match = False
+            for tk in title_kws:
+                if tk.lower() in title_lower:
+                    title_match = True
+                    break
+            # faq 意图特殊：允许命中 faq 文档和公司信息文档里的 Q&A
+            if intent == "faq":
+                title_match = title_match or any(
+                    k in title_lower for k in ["公司信息", "问答"]
+                )
+
+            # 无标题关键词命中时仍参与排序但权重降低
+            score = 0.0
+            if title_match:
+                score += 15
+            # 关键词重合
+            overlap = len(q_kws & chunk["keywords"])
+            score += overlap * 2
+            # 子串匹配（兼容短词）
+            for qw in q_kws:
+                if qw in text_lower:
+                    score += 3
+                if qw in title_lower:
+                    score += 5
+            if score > 0:
+                scored.append((score, chunk))
+
+        scored.sort(key=lambda x: x[0], reverse=True)
+        result = [c["text"] for _, c in scored[:top_k]]
+        # 兜底：意图过滤结果为空时回退到通用搜索
+        if not result:
+            return self.search(query, top_k)
+        return result
+
     def is_loaded(self) -> bool:
         return self._loaded
 

@@ -27,28 +27,55 @@ from dataclasses import dataclass, field
 class CourseRecommendationState:
     """课程推荐的多轮参数收集状态"""
     education: str = ""            # 学历（必须）
-    major: str = ""                # 意向专业（必须）
+    target_major: str = ""                # 意向专业（必须）
     language_score: str = ""       # 语言成绩（必须）
     country: str = ""              # 意向国家（可选）
     gpa: str = ""                  # GPA（可选）
     budget: str = ""               # 预算（可选）
     intake: str = ""               # 入学时间（可选）
     work_experience: str = ""      # 工作经验（可选）
-    asked_fields: list = field(default_factory=list)  # 已问过的字段
+    asked_fields: list = field(default_factory=list)  # 已追问过的可选字段
+    # 🆕 推荐流程阶段：required → enrichment → contact → done
+    phase: str = "required"
+    enrichment_asked: list = field(default_factory=list)  # 已追问的可选字段
+    name: str = ""                 # 收集姓名（推荐后转化用）
+    phone: str = ""                # 收集手机号
 
     def is_ready(self) -> bool:
         """三个核心参数是否齐全"""
-        return bool(self.education and self.major and self.language_score)
+        return bool(self.education and self.target_major and self.language_score)
 
     def next_missing_field(self) -> Optional[str]:
         """返回下一个需要追问的字段（按优先级：必填 → 可选）"""
         # 必填三件套优先
-        for f in ["education", "major", "language_score"]:
+        for f in ["education", "target_major", "language_score"]:
             if not getattr(self, f):
                 if f not in self.asked_fields:
                     self.asked_fields.append(f)
                 return f
         return None
+
+    # ── 新增：可选字段追问（enrichment 阶段）──────────────────────
+    _ENRICHMENT_FIELDS = ["country", "gpa", "budget", "intake", "work_experience"]
+
+    def next_enrichment_field(self) -> Optional[str]:
+        """返回下一个要追问的可选字段，全部问完返回 None"""
+        for f in self._ENRICHMENT_FIELDS:
+            if f not in self.enrichment_asked:
+                self.enrichment_asked.append(f)
+                return f
+        return None
+
+    def get_enrichment_question(self, field: str) -> str:
+        """enrichment 阶段的追问话术"""
+        questions = {
+            "country":        "您有倾向的留学国家吗？我们主要做德国和新加坡～",
+            "gpa":            "方便说一下您的GPA或均分吗？（例如 3.2/4.0 或 82/100）",
+            "budget":         "您的留学预算大概在什么范围？（例如 15 万/年、总预算 30 万）",
+            "intake":         "计划什么时间入学呢？（如 2027 秋季）",
+            "work_experience": "有没有相关的工作或实习经验？",
+        }
+        return questions.get(field, f"请补充一下：{field}")
 
     def fill_from_message(self, msg: str):
         """从用户消息提取推荐参数到自身（正则 + 关键词）"""
@@ -94,16 +121,16 @@ class CourseRecommendationState:
                 self.language_score = "暂无"
 
         # 专业/方向
-        if not self.major:
+        if not self.target_major:
             m = re.search(r"(?:想读|申请|专业|方向)[是为]?[：:\s]*([一-龥A-Za-z&]{2,20})", msg)
             if m:
-                self.major = m.group(1)
-        if not self.major:
+                self.target_major = m.group(1)
+        if not self.target_major:
             for kw in ["计算机", "商科", "机械", "电子", "医学", "法学", "艺术",
                        "金融", "会计", "管理", "工程", "生物", "化学", "物理",
                        "数学", "传媒", "教育", "心理"]:
                 if kw in msg:
-                    self.major = kw
+                    self.target_major = kw
                     break
 
         # 预算
@@ -129,7 +156,7 @@ class CourseRecommendationState:
         只返回"之前为空、现在非空"的字段。 router.py 据此判断是否有新信息写库。
         例：用户说"我的专业是计算机" → {"major": "计算机"}
         """
-        _FIELDS = ["education", "major", "language_score", "country",
+        _FIELDS = ["education", "target_major", "language_score", "country",
                    "gpa", "budget", "intake", "work_experience"]
         before = {f: getattr(self, f) for f in _FIELDS}
         self.fill_from_message(msg)
@@ -144,7 +171,7 @@ class CourseRecommendationState:
         """获取对应字段的追问话术"""
         questions = {
             "education":      "请问您目前是什么学历呢？（高中/本科/硕士/博士）",
-            "major":          "请问您希望申请什么专业方向呢？（如计算机、商科、机械等）",
+            "target_major":          "请问您希望申请什么专业方向呢？（如计算机、商科、机械等）",
             "language_score": "目前有雅思、托福或德语成绩吗？大概多少分呢？",
             "country":        "您有倾向的留学国家吗？我们主要做德国和新加坡～",
             "gpa":            "方便说一下您的GPA或均分吗？",
@@ -329,6 +356,11 @@ class SessionState:
     # 🆕 报名场景路由标记："activity" | "lecture" | None（由 _enter_activity_register_* 注入）
     register_kind: Optional[str] = None
 
+    # 🆕 会话级画像累加器（跨流程存活，unlock不清空）
+    # 收集用户整轮对话中透露的所有个人信息，统一增量写库
+    profile_slots: dict = field(default_factory=dict)
+    _dirty_profile_fields: set = field(default_factory=set)  # 本轮待写入的字段
+
     created_at: str = field(default_factory=lambda: datetime.now().isoformat())
 
     def __post_init__(self):
@@ -369,7 +401,7 @@ class SessionState:
         self.activity_register_state = None
         self.register_kind = None
         self.followup_rounds = 0
-        # 注意：不清空 last_activity_results，避免跨流程误用；下次查询会覆盖
+        # 注意：不清空 last_activity_results / profile_slots，避免跨流程误用
 
     def saved_profile_summary(self) -> str:
         """拼出"已记住"反馈文案。无已记住字段返回空串。"""
@@ -401,6 +433,113 @@ class SessionState:
             if v:
                 return v
         return ""
+
+    # ── 会话级画像提取 & 写库 ──────────────────────────────────
+    # user_profiles 列名 → 正则/提取器
+    _PROFILE_EXTRACTORS = {
+        "name": [
+            (re.compile(r"(?:我叫|姓名|名字|叫|名为)[：:\s]*([一-龥]{2,4})"), 1),
+        ],
+        "phone": [
+            (re.compile(r"(1[3-9]\d{9})"), 1),
+        ],
+        "target_country": [
+            ("德国", "德国"),
+            ("新加坡", "新加坡"),
+        ],
+        "education": [
+            ("高中", "高中"), ("职高", "高中"), ("中专", "高中"),
+            ("本科", "本科"), ("大学", "本科"), ("大专", "大专"),
+            ("硕士", "硕士"), ("研究生", "硕士"),
+            ("博士", "博士"),
+        ],
+        "target_major": [
+            ("计算机", "计算机"), ("商科", "商科"), ("金融", "金融"),
+            ("会计", "会计"), ("管理", "管理"), ("机械", "机械"),
+            ("电子", "电子"), ("土木", "土木"), ("医学", "医学"),
+            ("法学", "法学"), ("艺术", "艺术"), ("生物", "生物"),
+            ("传媒", "传媒"), ("教育", "教育"), ("心理", "心理"),
+            ("人工智能", "人工智能"), ("数据", "数据"),
+        ],
+        "language_score": [
+            (re.compile(r"(?:ielts|雅思)[^\d]*(\d+(?:\.\d+)?)", re.I),
+             lambda m: f"IELTS {m.group(1)}"),
+            (re.compile(r"(?:toefl|托福)[^\d]*(\d+)", re.I),
+             lambda m: f"TOEFL {m.group(1)}"),
+        ],
+    }
+
+    def extract_profile(self, message: str):
+        """
+        从单条用户消息提取个人信息 → 合并进 self.profile_slots。
+        只填写"之前为空"的字段（不覆盖已有值），并记录 _dirty_profile_fields。
+
+        提取规则说明（profile_upsert 过滤后保留的列）:
+          name, phone, education, target_major, language_score, target_country,
+          gpa, budget
+        未列出的列（age/major/wechat/email/consultation_status 等）暂不在此提取。
+        """
+        for field, rules in self._PROFILE_EXTRACTORS.items():
+            if self.profile_slots.get(field):
+                continue  # 已有值不覆盖
+            for rule in rules:
+                if not (isinstance(rule, tuple) and len(rule) == 2):
+                    continue
+                pat, val = rule
+                if isinstance(pat, re.Pattern):
+                    m = pat.search(message)
+                    if m:
+                        # int → regex group 下标；callable → 处理函数；str → 字面量
+                        if isinstance(val, int):
+                            self.profile_slots[field] = m.group(val)
+                        elif callable(val):
+                            self.profile_slots[field] = val(m)
+                        else:
+                            self.profile_slots[field] = val
+                        self._dirty_profile_fields.add(field)
+                        break
+                else:
+                    # 关键词匹配（字面量）
+                    if pat in message:
+                        self.profile_slots[field] = val
+                        self._dirty_profile_fields.add(field)
+                        break
+
+        # GPA / budget（定向提取，字段名直接对应）
+        if not self.profile_slots.get("gpa"):
+            m = re.search(r"(?:gpa|绩点|均分)[^\d]*(\d+(?:\.\d+)?)", message, re.I)
+            if m:
+                self.profile_slots["gpa"] = float(m.group(1))
+                self._dirty_profile_fields.add("gpa")
+        if not self.profile_slots.get("budget"):
+            m = re.search(r"(\d+)万", message)
+            if m:
+                self.profile_slots["budget"] = int(m.group(1)) * 10000
+                self._dirty_profile_fields.add("budget")
+
+    def sync_profile_to_db(self):
+        """
+        把本轮 dirty 字段增量写入 user_profiles。
+        返回写入的字段集合（空表示无需写入）。
+        """
+        if not self._dirty_profile_fields:
+            return set()
+        from customer_agent.persist import profile_upsert
+        fields = {k: v for k, v in self.profile_slots.items()
+                  if k in self._dirty_profile_fields and v not in (None, "")}
+        if not fields:
+            self._dirty_profile_fields.clear()
+            return set()
+        try:
+            profile_upsert(self.conversation_id, fields)
+        except Exception as e:
+            print(f"[Profile] 写库失败（降级内存模式）: {e}")
+            self._dirty_profile_fields.clear()
+            return set()
+        written = set(fields.keys())
+        self._saved_profile_fields.update(written)
+        self._dirty_profile_fields.clear()
+        return written
 
     def add_turn(self, role: str, content: str):
         """记录一轮对话"""

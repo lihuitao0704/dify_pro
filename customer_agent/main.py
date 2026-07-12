@@ -18,9 +18,18 @@ from fastapi.middleware.cors import CORSMiddleware
 from starlette.middleware.base import BaseHTTPMiddleware
 from fastapi.staticfiles import StaticFiles
 
-from customer_agent.api import chat as chat_api, admin as admin_api
+from customer_agent.api import (
+    chat as chat_api,
+    admin as admin_api,
+    courses as courses_api,
+    profiles as profiles_api,
+    consultations as consultations_api,
+    nl2sql as nl2sql_api,
+    events as events_api,
+)
 from customer_agent.knowledge import get_kb
 from customer_agent.config import config
+from customer_agent.services.nl2sql import ensure_unique_constraints
 
 
 # ============================================================
@@ -57,12 +66,16 @@ async def lifespan(app: FastAPI):
     # 初始化知识库
     kb = get_kb()
 
+    # 确保活动 / 讲座相关唯一约束 (合并自 Event_Lecture)
+    ensure_unique_constraints()
+
     print(f"  知识库: {len(kb.chunks)} chunks, {len(kb.faq_map)} FAQ")
     print(f"  文档: http://localhost:{config.AGENT_PORT}/docs")
     print(f"  知识库状态: http://localhost:{config.AGENT_PORT}/admin/kb-status")
     print(f"  LLM模型: {config.LLM_MODEL}")
-    print(f"  桥接 study_abroad_agent: {config.STUDY_ABROAD_URL}")
-    print(f"  桥接 Event&Lecture: {config.EVENT_LECTURE_URL}")
+    print(f"  数据库: {config.MYSQL_HOST}:{config.MYSQL_PORT}/{config.MYSQL_DATABASE}")
+    print(f"  NL2SQL 表白名单: {config.NL2SQL_ALLOWED_TABLES}")
+    print(f"  桥接 Assessment: {config.ASSESSMENT_URL}")
     print("=" * 55)
 
     yield
@@ -101,6 +114,13 @@ app.add_middleware(
 # 路由
 app.include_router(chat_api.router)
 app.include_router(admin_api.router)
+
+# 合并自 study_abroad_agent + Event&Lecture 的 CRUD 路由 (前缀 /api/v1)
+app.include_router(courses_api.router, prefix="/api/v1")
+app.include_router(profiles_api.router, prefix="/api/v1")
+app.include_router(consultations_api.router, prefix="/api/v1")
+app.include_router(nl2sql_api.router, prefix="/api/v1")
+app.include_router(events_api.router, prefix="/api/v1")
 
 # 静态文件服务（前端页面）
 _static_dir = str(Path(__file__).resolve().parent / "static")

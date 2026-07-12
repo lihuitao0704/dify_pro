@@ -548,6 +548,19 @@ body {
 .stat-delta.up { color: var(--success); }
 
 /* ============================================================
+   ACT2026 进度条
+   ============================================================ */
+.milestone { display:flex; flex-direction:column; gap:4px; }
+.milestone-head { display:flex; justify-content:space-between; font-size:13px; }
+.milestone-name { color:var(--text-primary); }
+.milestone-pct { color:var(--text-secondary); font-variant-numeric:tabular-nums; }
+.milestone-bar { background:var(--bg-tertiary); border-radius:6px; height:6px; overflow:hidden; }
+.milestone-bar > div { height:100%; border-radius:6px; transition:width .5s; }
+.milestone-bar > div.done  { background:var(--success); }
+.milestone-bar > div.doing { background:linear-gradient(90deg,var(--accent),#8b5cf6); }
+.milestone-bar > div.todo  { background:var(--bg-tertiary); }
+
+/* ============================================================
    Toast
    ============================================================ */
 #toastContainer {

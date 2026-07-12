@@ -1,12 +1,13 @@
 """
 customer_agent MySQL 直连封装
 
-提供最小化的同步 MySQL 访问能力，供 persist.py 调用。
+提供最小化的同步 MySQL 访问能力，供 persist.py 和 services/ 调用。
 - Database 类：PyMySQL + DictCursor
 - 懒加载单例：首次 get_db() 时创建连接（uvicorn 每个 worker 各一份）
 - 连接失败不阻塞主流程：调用方捕获异常后降级为纯内存模式
 
-复用 study_abroad_agent/database.py 的模式，但连接参数独立读取自 config.py。
+合并自 study_abroad_agent/database.py 的线程安全模式 + 参数统一走 config.py。
+表结构定义已迁移至 customer_agent/schemas.py (TABLE_SCHEMAS)。
 """
 
 import logging
@@ -90,3 +91,7 @@ def close_db():
     if db is not None:
         db.close()
         _local.db = None
+
+
+# 向后兼容：模块级单供快速导入；新建代码请用 get_db()
+from customer_agent.schemas import TABLE_SCHEMAS, get_table_schemas  # noqa: E402,F401

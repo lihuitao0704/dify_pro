@@ -11,9 +11,41 @@
  4. INTENT_HANDLERS 增加 activity_register 条目（供 _continue_flow 调用）。
 """
 
+import re
+
 from customer_agent import llm
 from customer_agent.knowledge import get_kb
-from customer_agent.bridge import (
+
+# user_profiles 表实际存在的、画像流程可写的列（对齐 DB schema）
+_USER_PROFILE_COLS = {
+    "name", "phone", "education", "target_major", "language_score",
+    "target_country", "gpa", "budget", "age", "major", "wechat", "email",
+    "consultation_status", "assess", "development", "abilities",
+    "is_Closed-loop",
+}
+
+
+def _coerce_profile_value(field, val):
+    """
+    把 CourseRecommendationState 里字符串形式的值转成 DB 列类型。
+    gpa → float, budget（"30万"）→ int(元)，其余保持字符串。
+    返回 None 表示"无效值、应跳过"。
+    """
+    if val is None or val == "":
+        return None
+    if field == "gpa":
+        try:
+            return float(val)
+        except (ValueError, TypeError):
+            return None
+    if field == "budget":
+        m = re.search(r"(\d+(?:\.\d+)?)", str(val))
+        if not m:
+            return None
+        num = float(m.group(1))
+        return int(num * 10000) if "万" in str(val) else int(num)
+    return val
+from customer_agent.services import (
     sa_recommend, sa_get_courses, sa_save_profile,
     event_query, event_register,
 )
@@ -143,9 +175,10 @@ def handle_course_recommendation(message: str, params: dict, context: list,
 
     # 🆕 每提取一个新字段，立即写入画像（失败则降级为纯内存）
     # 字段名映射：state 内部名 → user_profiles 列名
+    # 注意：state.py 中该字段已改名为 target_major（对齐 DB 列名），此处直接透传
     _FIELD_MAP = {
         "education": "education",
-        "major": "target_major",      # 课程推荐的"专业"对应画像的"意向专业"
+        "target_major": "target_major",
         "language_score": "language_score",
         "country": "target_country",
         "gpa": "gpa",
@@ -155,19 +188,25 @@ def handle_course_recommendation(message: str, params: dict, context: list,
     }
     if new_fields:
         mapped = {_FIELD_MAP.get(k, k): v for k, v in new_fields.items()}
-        try:
-            persist.profile_upsert(conv_id, mapped)
-            sess._saved_profile_fields.update(mapped.keys())
-        except Exception as e:
-            print(f"[Router] profile_upsert 失败（降级内存模式）: {e}")
+        for k, v in mapped.items():
+            # DB 列类型对齐：gpa → float, budget → int（元）
+            v = _coerce_profile_value(k, v)
+            if v is None:
+                continue
+            # 跳过 DB 中不存在的列（intake / work_experience 不在 user_profiles）
+            if k not in _USER_PROFILE_COLS:
+                continue
+            if k not in sess.profile_slots:
+                sess.profile_slots[k] = v
+                sess._dirty_profile_fields.add(k)
+                sess._saved_profile_fields.add(k)
 
-    # 检查核心参数是否齐全
+    # ── Phase 1: 收集必填三件套 ────────────────────────────────
     if not rec.is_ready():
-        # 锁定意图，下一轮不重新分类
+        rec.phase = "required"
         sess.lock_intent("course_recommendation")
         missing = rec.next_missing_field()
         if missing:
-            # 顶部追加"已记住"反馈
             feedback = sess.saved_profile_summary()
             question = rec.get_question(missing)
             head = (
@@ -178,27 +217,42 @@ def handle_course_recommendation(message: str, params: dict, context: list,
             return ((feedback + "\n\n" if feedback else "")
                     + head + question + tail)
 
-    # 参数齐全 → 调用推荐 API，同时解锁意图
+    # ── 必填齐 → 直接调推荐 API（诉求 1）──────────────────────
+    rec.phase = "recommend"
     sess.unlock_intent()
 
-    # 再次把完整参数同步到画像（防重启后 state 重填但库没丢的边界）
-    try:
-        persist.profile_upsert(conv_id, {
-            "education": rec.education,
-            "target_major": rec.major,        # 映射：state.major → 画像 target_major
-            "language_score": rec.language_score,
-            "target_country": rec.country,     # 映射：state.country → 画像 target_country
-            "gpa": rec.gpa,
-            "budget": rec.budget,
-        })
-    except Exception as e:
-        print(f"[Router] 最终画像同步失败: {e}")
+    # 最终把完整参数同步到会话级 profile_slots（统一由 agent.py sync 写库）
+    # 注意：rec.gpa/rec.budget 是字符串形式，需转成 DB 列类型（gpa=decimal, budget=int元）
+    _gpa = None
+    if rec.gpa:
+        try:
+            _gpa = float(rec.gpa)
+        except (ValueError, TypeError):
+            _gpa = None
+    _budget = None
+    if rec.budget:
+        m = re.search(r"(\d+(?:\.\d+)?)", rec.budget)
+        if m:
+            _budget = int(float(m.group(1)) * 10000) if "万" in rec.budget else int(float(m.group(1)))
+    _final_map = {
+        "education": rec.education,
+        "target_major": rec.target_major,
+        "language_score": rec.language_score,
+        "target_country": rec.country,
+        "gpa": _gpa,
+        "budget": _budget,
+    }
+    for k, v in _final_map.items():
+        if v is not None and k not in sess.profile_slots:
+            sess.profile_slots[k] = v
+            sess._dirty_profile_fields.add(k)
+    sess._saved_profile_fields.update(k for k, v in _final_map.items() if v is not None)
 
-    # 兜底：也走 bridge 旧接口（兼容 study_abroad_agent 行为）
+    # 兜底：同步画像到本地 study abroad 画像服务
     sa_save_profile({
         "conversation_id": conv_id,
         "education": rec.education,
-        "target_major": rec.major,
+        "target_major": rec.target_major,
         "language_score": rec.language_score,
         "target_country": rec.country,
         "gpa": rec.gpa,
@@ -238,7 +292,41 @@ def handle_course_recommendation(message: str, params: dict, context: list,
             lines.append(f"   匹配原因: {'、'.join(r['reasons'])}")
         lines.append("")
 
-    lines.append("感兴趣的可以继续详细了解，或者预约留学顾问一对一深度咨询 🎓")
+    # ── 推荐课程多时 → 主动追问细化 OR 收集联系方式（诉求 2）──
+    if len(recs) >= 3:
+        # 从当前消息里尝试提取姓名/手机
+        if not rec.name:
+            m = re.search(r"(?:我叫|姓名|名字|叫|名为)[：:\s]*([一-龥]{2,4})", message)
+            if m:
+                rec.name = m.group(1)
+                sess.profile_slots["name"] = rec.name
+                sess._dirty_profile_fields.add("name")
+        if not rec.phone:
+            m = re.search(r"(1[3-9]\d{9})", message)
+            if m:
+                rec.phone = m.group(0)
+                sess.profile_slots["phone"] = rec.phone
+                sess._dirty_profile_fields.add("phone")
+
+        if rec.name or rec.phone:
+            # 已拿到联系方式 → 提示专人服务
+            tip = "\n📞 稍后我们会有专属顾问根据您的背景为您定制方案"
+            if rec.phone:
+                tip += f"并回电 {rec.phone}"
+            tip += "，请保持手机畅通～"
+            lines.append(tip)
+        else:
+            # 没联系方式 → 引导留信息
+            lines.append(
+                "\n项目比较多，为了给您精准推荐，可以补充一下：\n"
+                "• GPA 或均分是多少？\n"
+                "• 留学预算大概多少？\n"
+                "或者直接告诉我「姓名 手机号」，稍后专属顾问为您定制方案并回电 📞"
+            )
+    else:
+        # 少量课程时的普通转化尾巴
+        lines.append("\n感兴趣的可以继续详细了解，或者预约留学顾问一对一深度咨询 🎓")
+
     return "\n".join(lines)
 
 
