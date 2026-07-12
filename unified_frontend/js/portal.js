@@ -37,72 +37,47 @@ function initLoginTabs() {
 }
 
 function initLoginForms() {
-  // Student login
-  document.getElementById('studentLoginForm').addEventListener('submit', async e => {
-    e.preventDefault();
-    const id = document.getElementById('studentId').value.trim();
-    const name = document.getElementById('studentName').value.trim();
-    try {
-      const r = await api('/agent/student/auth/login', {
-        method: 'POST',
-        body: JSON.stringify({ student_id: parseInt(id), name }),
-      });
-      if (r.success) {
-        localStorage.setItem('user_role', 'student');
-        localStorage.setItem('user_id', id);
-        localStorage.setItem('user_name', name);
-        toast('登录成功！正在进入学生助手...', 'success');
-        setTimeout(() => {
-          window.open('/portal/student-dashboard', '_self');
-        }, 600);
-      } else {
-        toast(r.message || '学号或姓名不正确', 'error');
-      }
-    } catch (err) {
-      // Fallback: 直接调 student_agent 本地接口
-      try {
-        const resp = await fetch('http://localhost:8000/auth/login', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ student_id: parseInt(id), name }),
-        });
-        const r2 = await resp.json();
-        if (r2.success) {
-          localStorage.setItem('user_role', 'student');
-          localStorage.setItem('user_id', id);
-          localStorage.setItem('user_name', name);
-          toast('登录成功！正在进入学生助手...', 'success');
-          setTimeout(() => window.open('/portal/student-dashboard', '_self'), 600);
-        } else {
-          toast('学号或姓名不正确', 'error');
-        }
-      } catch (e2) {
-        toast('无法连接学生服务：' + e2.message, 'error');
-      }
-    }
-  });
+  const LOGIN_API = 'http://localhost:8000/auth/login';
 
-  // Employee login
-  document.getElementById('employeeLoginForm').addEventListener('submit', async e => {
-    e.preventDefault();
-    const user = document.getElementById('employeeUser').value.trim();
-    const pass = document.getElementById('employeePass').value;
+  async function doLogin(role) {
+    const userEl = document.getElementById(role === 'student' ? 'studentUser' : 'employeeUser');
+    const passEl = document.getElementById(role === 'student' ? 'studentPass' : 'employeePass');
+    const user = userEl.value.trim();
+    const pass = passEl.value;
+    if (!user || !pass) { toast('请输入用户名和密码', 'error'); return; }
     try {
-      // TODO: 等 enterprise_agent 暴露 /auth/login 后替换
-      // 演示用硬编码 admin/admin123
-      if (user === 'admin' && pass === 'admin123') {
-        localStorage.setItem('user_role', 'employee');
-        localStorage.setItem('user_name', user);
-        localStorage.setItem('employee_token', 'demo-token');
-        toast('登录成功！正在进入企业工作台...', 'success');
-        setTimeout(() => window.open('/portal/employee-dashboard', '_self'), 600);
+      const resp = await fetch(LOGIN_API, {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ username: user, password: pass }),
+      });
+      const r = await resp.json();
+      if (r.success) {
+        var s = r.student;
+        Auth.set({ role: role, user_id: s.user_id, user_name: s.name,
+                   user_type: s.user_type || (role === 'student' ? '学员' : '员工'),
+                   token: 'token-' + Date.now(), exp: Date.now()/1000 + 86400 });
+        location.href = role === 'student' ? '/portal/student-dashboard' : '/portal/employee-dashboard';
       } else {
-        toast('用户名或密码错误', 'error');
+        toast(r.message || '用户名或密码不正确', 'error');
       }
     } catch (err) {
-      toast('登录失败：' + err.message, 'error');
+      toast('无法连接服务，请检查网络后重试', 'error');
     }
-  });
+  }
+
+  // 用表单submit事件
+  var sf = document.getElementById('studentLoginForm');
+  var ef = document.getElementById('employeeLoginForm');
+  if (sf) sf.addEventListener('submit', function(e) { e.preventDefault(); doLogin('student'); });
+  if (ef) ef.addEventListener('submit', function(e) { e.preventDefault(); doLogin('employee'); });
+  // 兜底：按钮点击
+  var sb = document.querySelector('#studentLoginForm button[type=\"submit\"]');
+  var eb = document.querySelector('#employeeLoginForm button[type=\"submit\"]');
+  if (sb) sb.addEventListener('click', function(e) { e.preventDefault(); doLogin('student'); });
+  if (eb) eb.addEventListener('click', function(e) { e.preventDefault(); doLogin('employee'); });
+  // 回车键
+  document.getElementById('studentPass').addEventListener('keydown', function(e) { if(e.key==='Enter') doLogin('student'); });
+  document.getElementById('employeePass').addEventListener('keydown', function(e) { if(e.key==='Enter') doLogin('employee'); });
 }
 
 // ============================================================
