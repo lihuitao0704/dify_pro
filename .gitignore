@@ -23,7 +23,13 @@ env/
 
 # IDE / 编辑器
 .vscode/
-.idea/
+.idea/*
+!.idea/codeStyles/
+!.idea/runConfigurations/
+.idea/workspace.xml
+.idea/tasks.xml
+.idea/usage.statistics.xml
+.idea/shelf/
 *.swp
 *.swo
 *~
