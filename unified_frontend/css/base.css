@@ -507,6 +507,12 @@ input::placeholder { color: var(--text-tertiary); }
   text-align: center; font-size: 12px;
   color: var(--text-tertiary); margin-top: 16px;
 }
+.login-error {
+  text-align: center; font-size: 13px;
+  color: var(--danger); margin: 10px 0 0;
+  padding: 8px 12px; border-radius: 6px;
+  background: rgba(220,53,69,0.08);
+}
 
 /* Footer */
 .portal-footer {
@@ -531,4 +537,209 @@ input::placeholder { color: var(--text-tertiary); }
   .feature-grid { grid-template-columns: repeat(2, 1fr); }
   .agent-cards { grid-template-columns: 1fr; }
   .hero-stats { gap: 20px; }
+  .fit-modal { width: 96vw !important; padding: 24px 18px 20px !important; }
+  .fit-form .form-row { grid-template-columns: 1fr; gap: 0; }
+}
+
+/* =========================================================
+   项目契合度分析 (projectFitModal) — 工作台弹窗
+   ========================================================= */
+.fit-modal {
+  width: 680px;
+  max-height: 90vh;
+  overflow-y: auto;
+  padding: 36px 36px 28px;
+}
+.fit-title {
+  text-align: center;
+  color: var(--text-primary);
+  margin-bottom: 4px;
+  font-size: 22px;
+}
+.fit-subtitle {
+  text-align: center;
+  color: var(--text-secondary);
+  font-size: 13px;
+  margin-bottom: 24px;
+}
+
+/* Tabs (复用 diagnose-tabs 视觉，独立 class) */
+.fit-tabs { display: flex; gap: 4px; margin-bottom: 20px; background: var(--hover-bg); padding: 3px; border-radius: 10px; }
+.fit-tab {
+  flex: 1; padding: 8px 12px; border: none; background: transparent;
+  border-radius: 8px; cursor: pointer; font-size: 14px; font-weight: 500;
+  color: var(--text-secondary); transition: all 0.2s; font-family: inherit;
+}
+.fit-tab.active { background: var(--card-solid); color: var(--primary, #4a90d9); box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
+
+/* Form (独立 class, 逻辑与 diagnose-form 一致) */
+.fit-form .form-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  margin-bottom: 0;
+}
+.fit-form .form-group { margin-bottom: 12px; }
+.fit-form label {
+  display: block; font-size: 13px; color: var(--text-primary);
+  margin-bottom: 4px; font-weight: 500;
+}
+.fit-form label .required { color: var(--danger, #e74c3c); }
+.fit-form input,
+.fit-form select,
+.fit-form textarea {
+  width: 100%; padding: 9px 12px;
+  border: 1.5px solid var(--border); border-radius: 8px;
+  font-size: 13px; color: var(--text-primary); background: var(--card-solid);
+  transition: border-color 0.2s; outline: none;
+  font-family: inherit;
+}
+.fit-form input:focus, .fit-form select:focus, .fit-form textarea:focus { border-color: var(--primary, #4a90d9); }
+.fit-form textarea { resize: vertical; min-height: 56px; }
+.fit-form .btn-submit { width: 100%; padding: 12px; margin-top: 8px; }
+
+/* Loading / Error */
+.fit-loading {
+  display: flex; align-items: center; gap: 10px;
+  color: var(--primary, #4a90d9); margin-top: 16px; font-size: 14px;
+}
+.fit-loading .typing-dots { display: flex; gap: 4px; }
+.fit-loading .typing-dots span {
+  width: 8px; height: 8px; border-radius: 50%;
+  background: var(--primary, #4a90d9);
+  animation: typingBounce 1.4s infinite;
+}
+.fit-loading .typing-dots span:nth-child(2) { animation-delay: .2s; }
+.fit-loading .typing-dots span:nth-child(3) { animation-delay: .4s; }
+@keyframes typingBounce {
+  0%, 60%, 100% { transform: translateY(0); opacity: .4; }
+  30% { transform: translateY(-6px); opacity: 1; }
+}
+.fit-error {
+  color: var(--danger, #e74c3c);
+  font-size: 13px;
+  margin-top: 12px; padding: 10px 14px;
+  background: rgba(255, 59, 48, .06);
+  border-radius: 8px;
+}
+
+/* Upload zone (复用 resume-upload-area 视觉) */
+.fit-upload-zone {
+  border: 2px dashed var(--border);
+  border-radius: 12px;
+  padding: 36px 20px;
+  text-align: center;
+  cursor: pointer;
+  transition: border-color 0.2s, background 0.2s;
+}
+.fit-upload-zone:hover, .fit-upload-zone.dragover {
+  border-color: var(--primary, #4a90d9);
+  background: rgba(74, 144, 217, 0.04);
+}
+.fit-upload-zone .upload-icon { font-size: 36px; margin-bottom: 8px; }
+.fit-upload-zone .upload-text { font-size: 14px; color: var(--text-primary); margin-bottom: 4px; }
+.fit-upload-zone .upload-link { color: var(--primary, #4a90d9); text-decoration: underline; }
+.fit-upload-zone .upload-hint { font-size: 12px; color: var(--text-secondary); }
+.fit-upload-info {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 10px 14px; background: var(--hover-bg); border-radius: 8px;
+  margin-top: 12px; margin-bottom: 14px;
+}
+.fit-upload-file-name { font-size: 13px; color: var(--text-primary); word-break: break-all; }
+.fit-upload-remove {
+  width: 24px; height: 24px; border-radius: 50%; border: none;
+  background: var(--border); cursor: pointer; font-size: 14px;
+  color: var(--text-secondary); flex-shrink: 0; margin-left: 8px;
+}
+.fit-upload-remove:hover { background: var(--danger, #ff3b30); color: #fff; }
+
+/* ===== 四合一结果渲染 ===== */
+.fit-result {
+  margin-top: 18px;
+  display: none;
+}
+.fit-result.show { display: block; }
+
+/* 契合徽章 */
+.fit-badge {
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 8px 18px; border-radius: 20px;
+  font-size: 15px; font-weight: 600;
+  margin: 0 auto 16px; width: fit-content;
+}
+.fit-badge.pass { background: rgba(52, 199, 89, .12); color: #1a7f37; border: 1px solid rgba(52,199,89,.25); }
+.fit-badge.fail { background: rgba(255, 59, 48, .10); color: #c4211a; border: 1px solid rgba(255,59,48,.20); }
+
+/* 项目卡片 */
+.fit-project {
+  background: var(--hover-bg);
+  border-radius: 12px;
+  padding: 16px 18px;
+  margin-bottom: 16px;
+}
+.fit-project-header {
+  display: flex; justify-content: space-between; align-items: center;
+  margin-bottom: 10px;
+}
+.fit-project-name { font-size: 15px; font-weight: 600; color: var(--text-primary); }
+.fit-score {
+  display: flex; align-items: center; gap: 10px;
+}
+.fit-score-ring {
+  position: relative; width: 56px; height: 56px; flex-shrink: 0;
+}
+.fit-score-ring svg { transform: rotate(-90deg); }
+.fit-score-ring .ring-bg { fill: none; stroke: var(--border); stroke-width: 5; }
+.fit-score-ring .ring-fg { fill: none; stroke: var(--primary, #4a90d9); stroke-width: 5; stroke-linecap: round; transition: stroke-dashoffset .6s ease; }
+.fit-score-ring .ring-fg.pass { stroke: var(--success, #34c759); }
+.fit-score-ring .ring-fg.fail { stroke: var(--danger, #ff3b30); }
+.fit-score-num {
+  position: absolute; inset: 0;
+  display: flex; align-items: center; justify-content: center;
+  flex-direction: column; line-height: 1;
+}
+.fit-score-num .pct { font-size: 14px; font-weight: 700; color: var(--text-primary); }
+.fit-score-num .lbl { font-size: 10px; color: var(--text-secondary); margin-top: 1px; }
+
+/* 维度明细条 */
+.fit-dims { margin-top: 8px; }
+.fit-dim {
+  display: grid; grid-template-columns: 70px 1fr 70px;
+  align-items: center; gap: 8px;
+  margin-bottom: 6px; font-size: 12px;
+}
+.fit-dim-name { color: var(--text-primary); font-weight: 500; }
+.fit-dim-bar {
+  height: 6px; background: var(--border); border-radius: 3px; overflow: hidden;
+}
+.fit-dim-bar-fill {
+  height: 100%; background: var(--primary, #4a90d9);
+  border-radius: 3px; transition: width .5s ease;
+}
+.fit-dim-bar-fill.low { background: var(--danger, #ff3b30); }
+.fit-dim-bar-fill.mid { background: var(--warning, #ff9500); }
+.fit-dim-bar-fill.hi  { background: var(--success, #34c759); }
+.fit-dim-val { color: var(--text-secondary); text-align: right; font-variant-numeric: tabular-nums; }
+
+/* 雷达图容器 */
+.fit-radar {
+  position: relative; width: 100%; max-width: 360px;
+  margin: 14px auto 8px;
+}
+
+/* 段落小结 */
+.fit-summary {
+  margin-top: 14px;
+  background: rgba(74, 144, 217, .05);
+  border-left: 3px solid var(--primary, #4a90d9);
+  border-radius: 6px;
+  padding: 12px 16px;
+  font-size: 13px; line-height: 1.7; color: var(--text-primary);
+  white-space: pre-wrap; word-break: break-word;
+}
+.fit-summary.student { border-left-color: var(--success, #34c759); background: rgba(52, 199, 89, .05); }
+.summary-label {
+  font-size: 11px; font-weight: 600; letter-spacing: 0.5px;
+  text-transform: uppercase; color: var(--text-secondary);
+  margin-bottom: 6px;
 }

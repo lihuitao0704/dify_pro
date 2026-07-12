@@ -32,7 +32,20 @@ function initLoginTabs() {
       const role = tab.dataset.role;
       document.getElementById('studentLoginForm').style.display = role === 'student' ? 'block' : 'none';
       document.getElementById('employeeLoginForm').style.display = role === 'employee' ? 'block' : 'none';
+      clearLoginErrors();
     });
+  });
+}
+
+// 登录错误提示（模块级，供 initLoginTabs 和 initLoginForms 共用）
+function showLoginError(role, msg) {
+  const errEl = document.getElementById(role === 'student' ? 'studentLoginError' : 'employeeLoginError');
+  if (errEl) { errEl.textContent = msg; errEl.style.display = ''; }
+}
+function clearLoginErrors() {
+  ['studentLoginError', 'employeeLoginError'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) { el.textContent = ''; el.style.display = 'none'; }
   });
 }
 
@@ -45,7 +58,8 @@ function initLoginForms() {
     const passEl = document.getElementById(role === 'student' ? 'studentPass' : 'employeePass');
     const user = userEl.value.trim();
     const pass = passEl.value;
-    if (!user || !pass) { toast('请输入用户名和密码', 'error'); return; }
+    clearLoginErrors();
+    if (!user || !pass) { showLoginError(role, '请输入用户名和密码'); return; }
 
     let result;
     try {
@@ -55,14 +69,18 @@ function initLoginForms() {
         result = await Auth.employeeLogin(user, pass);
       }
     } catch (err) {
-      toast('无法连接服务，请检查网络后重试', 'error');
+      var netMsg = '无法连接服务，请检查网络后重试';
+      showLoginError(role, netMsg);
+      toast(netMsg, 'error');
       return;
     }
 
     if (result.success) {
       location.href = role === 'student' ? '/portal/student-dashboard' : '/portal/employee-dashboard';
     } else {
-      toast(result.message || '用户名或密码不正确', 'error');
+      var errMsg = result.message || '用户名或密码不正确';
+      showLoginError(role, errMsg);
+      toast(errMsg, 'error');
     }
   }
 
@@ -82,8 +100,16 @@ function initLoginForms() {
 }
 
 // ============================================================
-// 智能诊断 (Smart Diagnosis Modal)
+// 项目契合度分析 (Smart Diagnosis Modal, portal.js 学生视角)
 // ============================================================
+// 统一渲染入口：fitResult container (id="d_fitResult")
+// LLM 语气：学生视角 (student_view=true → 温暖亲近)
+
+// 评估服务地址
+const P_DIAGNOSE_API = 'http://localhost:8080/api/agent';
+// 门户 学生视角 样本 占位 宽容度
+const P_FIT_CHARTS = new WeakMap();
+let resumeFile = null;
 
 // 标签切换：form / upload
 function switchDiagnoseTab(tab) {
@@ -91,11 +117,11 @@ function switchDiagnoseTab(tab) {
   const uploadPanel = document.getElementById('diagnoseUploadPanel');
   const tabForm = document.getElementById('tabForm');
   const tabUpload = document.getElementById('tabUpload');
-  const resultBox = document.getElementById('d_resultBox');
   const errorMsg = document.getElementById('d_errorMsg');
+  const fitResult = document.getElementById('d_fitResult');
 
   // 隐藏之前的结果
-  resultBox.classList.remove('show', 'success', 'fail');
+  if (fitResult) { fitResult.classList.remove('show'); fitResult.innerHTML = ''; }
   errorMsg.style.display = 'none';
 
   if (tab === 'form') {
@@ -110,9 +136,6 @@ function switchDiagnoseTab(tab) {
     tabForm.classList.remove('active');
   }
 }
-
-// 简历上传相关变量
-let resumeFile = null;
 
 // 初始化文件上传区域事件
 function initResumeUpload() {
@@ -129,16 +152,11 @@ function initResumeUpload() {
   });
 
   // 拖拽事件
-  dropZone.addEventListener('dragover', (e) => {
-    e.preventDefault();
-    dropZone.classList.add('dragover');
-  });
-  dropZone.addEventListener('dragleave', () => {
-    dropZone.classList.remove('dragover');
-  });
-  dropZone.addEventListener('drop', (e) => {
-    e.preventDefault();
-    dropZone.classList.remove('dragover');
+  const dz = dropZone;
+  dz.addEventListener('dragover', (e) => { e.preventDefault(); dz.classList.add('dragover'); });
+  dz.addEventListener('dragleave', () => { dz.classList.remove('dragover'); });
+  dz.addEventListener('drop', (e) => {
+    e.preventDefault(); dz.classList.remove('dragover');
     const file = e.dataTransfer.files[0];
     if (file) handleResumeFile(file);
   });
@@ -148,7 +166,7 @@ function handleResumeFile(file) {
   const allowedExt = ['txt', 'pdf', 'docx'];
   const ext = file.name.split('.').pop().toLowerCase();
   if (!allowedExt.includes(ext)) {
-    showDiagnoseError('不支持的文件格式，仅支持 TXT / PDF / DOCX');
+    showDiagnoseError('不支持的文件格式，仅支持 txt / pdf / docx');
     return;
   }
   if (file.size > 10 * 1024 * 1024) {
@@ -156,10 +174,12 @@ function handleResumeFile(file) {
     return;
   }
   resumeFile = file;
-  document.getElementById('d_fileName').textContent = file.name;
-  document.getElementById('d_fileInfo').style.display = 'flex';
+  const info = document.getElementById('d_fileInfo');
+  info.innerHTML =
+    `<span class="resume-file-name">📄 ${escapeHTML(file.name)} (${(file.size/1024).toFixed(1)} KB)</span>` +
+    `<button class="resume-file-remove" onclick="clearResumeFile()" title="移除">×</button>`;
+  info.style.display = 'flex';
   document.getElementById('d_uploadBtn').disabled = false;
-  // 隐藏错误
   document.getElementById('d_errorMsg').style.display = 'none';
 }
 
@@ -170,51 +190,34 @@ function clearResumeFile() {
   document.getElementById('d_uploadBtn').disabled = true;
 }
 
-function submitResume() {
+// 门户——文件模式：走 evaluation/detail (multipart, 含 file + student_view)
+async function submitResume() {
   if (!resumeFile) return;
-
   const loading = document.getElementById('d_loading');
   const errorMsg = document.getElementById('d_errorMsg');
-  const resultBox = document.getElementById('d_resultBox');
-  const resultTitle = document.getElementById('d_resultTitle');
-  const resultContent = document.getElementById('d_resultContent');
+  const fitResult = document.getElementById('d_fitResult');
   const uploadBtn = document.getElementById('d_uploadBtn');
 
   errorMsg.style.display = 'none';
-  resultBox.classList.remove('show', 'success', 'fail');
+  if (fitResult) { fitResult.classList.remove('show'); fitResult.innerHTML = ''; }
   uploadBtn.disabled = true;
   loading.style.display = 'block';
 
-  // 构建 FormData 上传文件
   const fd = new FormData();
   fd.append('file', resumeFile);
+  fd.append('student_view', 'true');
 
-  fetch('http://localhost:8080/api/agent/resume/upload', {
-    method: 'POST',
-    body: fd,
-  })
-    .then(async (res) => {
-      const data = await res.json();
-      if (data.code !== 0) throw new Error(data.msg || '诊断失败');
-
-      const result = data.data.assessment_result || '诊断完成，无详细结论。';
-      resultContent.innerHTML = result.replace(/\\n/g, '\n').replace(/\n/g, '<br>');
-      if (result.includes('已通过') && !result.includes('已通过 0 人')) {
-        resultBox.classList.add('success');
-        resultTitle.textContent = '研判结论 - 已通过';
-      } else {
-        resultBox.classList.add('fail');
-        resultTitle.textContent = '研判结论 - 暂未达标';
-      }
-      resultBox.classList.add('show');
-    })
-    .catch((err) => {
-      showDiagnoseError(err.message);
-    })
-    .finally(() => {
-      uploadBtn.disabled = false;
-      loading.style.display = 'none';
-    });
+  try {
+    const res = await fetch(`${P_DIAGNOSE_API}/evaluation/detail`, { method: 'POST', body: fd });
+    const data = await res.json();
+    if (data.code !== 0) throw new Error(data.msg || '评估失败');
+    renderFitResult(fitResult, data.data, true);
+  } catch (err) {
+    showDiagnoseError(err.message);
+  } finally {
+    uploadBtn.disabled = false;
+    loading.style.display = 'none';
+  }
 }
 
 function showDiagnoseError(msg) {
@@ -222,10 +225,11 @@ function showDiagnoseError(msg) {
   errorMsg.textContent = '错误：' + msg;
   errorMsg.style.display = 'block';
 }
+
 function openDiagnose() {
   document.getElementById('diagnoseModal').classList.add('active');
-  // 隐藏之前的结果
-  document.getElementById('d_resultBox').classList.remove('show', 'success', 'fail');
+  const fitResult = document.getElementById('d_fitResult');
+  if (fitResult) { fitResult.classList.remove('show'); fitResult.innerHTML = ''; }
   document.getElementById('d_errorMsg').style.display = 'none';
   document.getElementById('d_submitBtn').disabled = false;
 }
@@ -246,66 +250,40 @@ function initSmartDiagnose() {
     const submitBtn = document.getElementById('d_submitBtn');
     const loading = document.getElementById('d_loading');
     const errorMsg = document.getElementById('d_errorMsg');
-    const resultBox = document.getElementById('d_resultBox');
-    const resultTitle = document.getElementById('d_resultTitle');
-    const resultContent = document.getElementById('d_resultContent');
+    const fitResult = document.getElementById('d_fitResult');
 
-    // 隐藏之前的结果
     errorMsg.style.display = 'none';
-    resultBox.classList.remove('show', 'success', 'fail');
+    if (fitResult) { fitResult.classList.remove('show'); fitResult.innerHTML = ''; }
     submitBtn.disabled = true;
     loading.style.display = 'block';
 
-    // 收集表单数据
-    const formData = {
-      name: document.getElementById('d_name').value,
-      age: parseInt(document.getElementById('d_age').value),
-      major: document.getElementById('d_major').value,
-      education: document.getElementById('d_education').value,
-      target_major: document.getElementById('d_target_major').value,
-      language_score: document.getElementById('d_language_score').value,
-      target_country: document.getElementById('d_target_country').value,
-      gpa: parseFloat(document.getElementById('d_gpa').value),
-      budget: parseFloat(document.getElementById('d_budget').value),
-      phone: document.getElementById('d_phone').value,
-      development: document.getElementById('d_development').value,
-      abilities: document.getElementById('d_abilities').value,
-      is_Closed_loop: document.getElementById('d_is_Closed_loop').value,
-      wechat: document.getElementById('d_wechat').value || null,
-      email: document.getElementById('d_email').value || null,
-      conversation_id: null
+    // 收集表单数据（学生端专用字段，与新接口 multipart 对齐）
+    const fd = new URLSearchParams();
+    const fdMap = {
+      name: 'd_name', age: 'd_age', major: 'd_major', education: 'd_education',
+      target_major: 'd_target_major', language_score: 'd_language_score',
+      target_country: 'd_target_country', gpa: 'd_gpa', budget: 'd_budget',
+      phone: 'd_phone', development: 'd_development', abilities: 'd_abilities',
+      is_Closed_loop: 'd_is_Closed_loop', wechat: 'd_wechat', email: 'd_email',
     };
+    for (const [k, id] of Object.entries(fdMap)) {
+      const el = document.getElementById(id);
+      if (el && el.value.trim() !== '') fd.append(k, el.value.trim());
+    }
+    // 学生视角
+    fd.append('student_view', 'true');
 
     try {
-      // 调用 Assessment 研判接口
-      const res = await fetch('http://localhost:8080/api/agent/resume/add', {
+      const res = await fetch(`${P_DIAGNOSE_API}/evaluation/detail`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(formData)
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        body: fd.toString(),
       });
       const data = await res.json();
-
-      if (data.code !== 0) {
-        throw new Error(data.msg || '诊断失败');
-      }
-
-      const result = data.data.assessment_result || '诊断完成，无详细结论。';
-      resultContent.innerHTML = result.replace(/\\n/g, '\n').replace(/\n/g, '<br>');
-
-      // 根据结论判断是"通过"还是"未通过"
-      if (result.includes('已通过') && !result.includes('已通过 0 人')) {
-        resultBox.classList.add('success');
-        resultTitle.textContent = '研判结论 - 已通过';
-      } else {
-        resultBox.classList.add('fail');
-        resultTitle.textContent = '研判结论 - 暂未达标';
-      }
-
-      resultBox.classList.add('show');
-
+      if (data.code !== 0) throw new Error(data.msg || '评估失败');
+      renderFitResult(fitResult, data.data, true);
     } catch (err) {
-      errorMsg.textContent = '错误：' + err.message;
-      errorMsg.style.display = 'block';
+      showDiagnoseError(err.message);
     } finally {
       submitBtn.disabled = false;
       loading.style.display = 'none';
@@ -314,88 +292,224 @@ function initSmartDiagnose() {
 }
 
 // ============================================================
-// Public Customer Agent Chat
+// 四合一渲染器：契合徽章 + 百分制环形 + 维度雷达图 + LLM 文本
 // ============================================================
-let publicSessionId = null;
-function initPublicChat() {
-  const input = document.getElementById('publicInput');
-  const btn = document.getElementById('publicSendBtn');
-  input.addEventListener('keydown', (e) => { if (e.key === 'Enter') publicSend(); });
-  btn.addEventListener('click', publicSend);
+/**
+ * @param {HTMLElement} container  result wrapper
+ * @param {Object} data           { user_id, summary, pass_threshold, results: [...] }
+ * @param {boolean} studentView   学生视角: true → .fit_summary.student (绿色), false → 企业版深蓝
+ */
+function renderFitResult(container, data, studentView) {
+  if (!container) return;
+  if (!data) return;
+  container.innerHTML = '';
+  container.classList.add('show');
 
-  // 彩蛋：输入框聚焦时显示提示
-  input.addEventListener('focus', () => {
-    input.placeholder = '试试：德国留学有什么要求？';
-  });
-  input.addEventListener('blur', () => {
-    input.placeholder = '输入你的留学问题...';
-  });
-}
+  const results = Array.isArray(data.results) ? data.results : [];
+  const summary = data.summary || '';
 
-async function publicSend() {
-  const input = document.getElementById('publicInput');
-  const btn = document.getElementById('publicSendBtn');
-  const text = input.value.trim();
-  if (!text) return;
+  if (results.length === 0 && summary) {
+    const pre = document.createElement('pre');
+    pre.className = 'fit-summary' + (studentView ? ' student' : '');
+    pre.textContent = summary;
+    container.appendChild(pre);
+    return;
+  }
 
-  input.value = '';
-  btn.disabled = true;
-  addPublicMsg(text, 'user');
+  results.forEach((r, idx) => {
+    const percent = r.max_score > 0 ? Math.round(r.total_score / r.max_score * 100) : 0;
+    const passed = !!r.is_pass;
+    const projLabel = results.length > 1 ? `${idx + 1}. ${r.project_name}` : r.project_name;
 
-  // 打字动画
-  const typingEl = document.createElement('div');
-  typingEl.className = 'msg-item bot typing';
-  typingEl.innerHTML = '<span class="avatar">AI</span><div class="bubble">思考中<span class="dots">...</span></div>';
-  const box = document.querySelector('.hero-chat-card .chat-mockup');
-  if (box) box.appendChild(typingEl);
+    // 1) 契合徽章
+    const badge = document.createElement('div');
+    badge.className = 'fit-badge ' + (passed ? 'pass' : 'fail');
+    badge.textContent = passed ? '✓ 契合' : '✗ 未契合';
+    const badgeWrap = document.createElement('div');
+    badgeWrap.style.textAlign = 'center';
+    badgeWrap.appendChild(badge);
+    container.appendChild(badgeWrap);
 
-  try {
-    // 直接调用客服Agent（同域下 /chat 是对 customer_agent 的直接调用）
-    // 在统一门户部署模式下，前端通过代理转发；直连模式直接访问
-    let r;
-    try {
-      r = await fetch('http://localhost:9000/chat', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ message: text, session_id: publicSessionId }),
+    // 2) 项目卡（百分制环形 + 维度条 + 雷达图）
+    const card = document.createElement('div');
+    card.className = 'fit-project';
+    card.innerHTML = `
+      <div class="fit-project-header">
+        <span class="fit-project-name">${escapeHTML(projLabel)}</span>
+        <span style="font-size:12px;color:var(--text-secondary)">总分 ${r.total_score} / ${r.max_score}</span>
+      </div>
+    `;
+
+    const scoreWrap = document.createElement('div');
+    scoreWrap.className = 'fit-score';
+    const r26 = 26;
+    const circ = 2 * Math.PI * r26;
+    const offset = circ * (1 - percent / 100);
+    scoreWrap.innerHTML = `
+      <div class="fit-score-ring">
+        <svg width="56" height="56" viewBox="0 0 56 56">
+          <circle class="ring-bg" cx="28" cy="28" r="${r26}"/>
+          <circle class="ring-fg ${passed ? 'pass' : 'fail'}" cx="28" cy="28" r="${r26}"
+            stroke-dasharray="${circ}" stroke-dashoffset="${offset}"/>
+        </svg>
+        <div class="fit-score-num">
+          <span class="pct">${percent}%</span>
+          <span class="lbl">${passed ? '契合' : '未契合'}</span>
+        </div>
+      </div>
+    `;
+    card.appendChild(scoreWrap);
+
+    // 维度明细条
+    const dims = Array.isArray(r.dimensions) ? r.dimensions : [];
+    if (dims.length > 0) {
+      const dimsWrap = document.createElement('div');
+      dimsWrap.className = 'fit-dims';
+      dims.forEach(d => {
+        const pct = d.max > 0 ? Math.round(d.score / d.max * 100) : 0;
+        const fillClass = pct >= 60 ? 'hi' : (pct >= 30 ? 'mid' : 'low');
+        const row = document.createElement('div');
+        row.className = 'fit-dim';
+        row.innerHTML = `
+          <span class="fit-dim-name">${escapeHTML(d.name || d.key)}</span>
+          <div class="fit-dim-bar"><div class="fit-dim-bar-fill ${fillClass}" style="width:${pct}%"></div></div>
+          <span class="fit-dim-val">${d.score}/${d.max}</span>
+        `;
+        dimsWrap.appendChild(row);
       });
-      r = await r.json();
-    } catch (err) {
-      // fallback: 尝试相对路径
-      r = await api('/chat', {
-        method: 'POST',
-        body: JSON.stringify({ message: text, session_id: publicSessionId }),
-      });
+      card.appendChild(dimsWrap);
+
+      // 雷达图
+      const radar = document.createElement('div');
+      radar.className = 'fit-radar';
+      const canvas = document.createElement('canvas');
+      radar.appendChild(canvas);
+      card.appendChild(radar);
+      requestAnimationFrame(() => renderFitRadar(canvas, dims));
     }
-    publicSessionId = r.session_id;
-    removeTyping();
-    addPublicMsg(r.reply || '(无回复)', 'bot');
-  } catch (err) {
-    removeTyping();
-    addPublicMsg('暂时连接不上 AI 服务，请稍后再试～\n(' + err.message.slice(0, 80) + ')', 'bot');
-  } finally {
-    btn.disabled = false;
+
+    container.appendChild(card);
+  });
+
+  // 4) LLM 文本（统一摘要）
+  if (summary) {
+    const pre = document.createElement('pre');
+    pre.className = 'fit-summary' + (studentView ? ' student' : '');
+    pre.textContent = summary;
+    container.appendChild(pre);
   }
 }
 
-function addPublicMsg(text, who) {
-  const box = document.querySelector('.hero-chat-card .chat-mockup');
-  if (!box) return;
-  // 移除 mock 提示类的内容（前3条是静态 mock），只追加到末尾
-  const div = document.createElement('div');
-  div.className = 'msg-item ' + who;
-  if (who === 'user') {
-    div.innerHTML = `<div class="bubble">${escapeHTML(text)}</div><span class="avatar">你</span>`;
+// ── Chart.js 雷达图（无依赖回退：维度条已表达信息，雷达隐藏） ──
+function renderFitRadar(canvas, dims) {
+  if (typeof Chart === 'undefined') {
+    const wrap = canvas.parentElement;
+    if (wrap) wrap.style.display = 'none';
+    return;
+  }
+  if (P_FIT_CHARTS.has(canvas)) {
+    P_FIT_CHARTS.get(canvas).destroy();
+    P_FIT_CHARTS.delete(canvas);
+  }
+  const labels = dims.map(d => d.name || d.key);
+  const data = dims.map(d => d.max > 0 ? +(d.score / d.max * 100).toFixed(1) : 0);
+  const closedLabels = labels.length >= 3 ? [...labels, labels[0]] : labels;
+  const closedData = dims.length >= 3 ? [...data, data[0]] : data;
+
+  const chart = new Chart(canvas, {
+    type: 'radar',
+    data: {
+      labels: closedLabels,
+      datasets: [{
+        label: '维度得分率 (%)',
+        data: closedData,
+        fill: true,
+        backgroundColor: 'rgba(74, 144, 217, 0.18)',
+        borderColor: 'rgba(74, 144, 217, 0.9)',
+        pointBackgroundColor: '#4a90d9',
+        pointBorderColor: '#fff',
+        pointBorderWidth: 1.5,
+        borderWidth: 2,
+      }],
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: true,
+      aspectRatio: 1,
+      scales: {
+        r: {
+          min: 0, max: 100,
+          ticks: { stepSize: 25, display: false },
+          grid: { color: 'rgba(0,0,0,0.08)' },
+          angleLines: { color: 'rgba(0,0,0,0.08)' },
+          pointLabels: { font: { size: 11 }, color: '#475569' },
+        },
+      },
+      plugins: {
+        legend: { display: false },
+        tooltip: { callbacks: { label: ctx => `${ctx.label}: ${ctx.raw}%` } },
+      },
+    },
+  });
+  P_FIT_CHARTS.set(canvas, chart);
+}
+
+// ============================================================
+// 智能客服弹框（浮动按钮 + 弹出式滚动聊天）
+// ============================================================
+let popupChat = null;
+
+function initPublicChat() {
+  // Hero CTA 按钮 → 打开弹框
+  document.getElementById('heroOpenChatBtn')?.addEventListener('click', () => {
+    toggleChatPopup(true);
+  });
+
+  // 初始化 ChatWidget（绑定到弹框的消息容器 + 输入框）
+  popupChat = new ChatWidget({
+    apiUrl: resolveApiUrl() + '/chat',
+    container: '#chatPopupMessages',
+    input: '#chatPopupInput',
+    sendBtn: '#chatPopupSendBtn',
+    welcome: '嗨同学你好呀 👋 我是粤教留学小助手，有什么留学相关问题尽管问我！',
+  });
+}
+
+function resolveApiUrl() {
+  // 统一门户模式下 /api 代理到 customer_agent(:9000)；直连用 localhost:8000
+  if (location.port === '9000') return '';
+  if (location.port === '8000') return '';
+  return 'http://localhost:9000';
+}
+
+function toggleChatPopup(forceOpen) {
+  const pop = document.getElementById('chatPopup');
+  const fab = document.getElementById('chatFab');
+  const shouldBeOpen = forceOpen === true ? true : !pop.classList.contains('active');
+  if (shouldBeOpen) {
+    pop.classList.add('active');
+    fab?.classList.add('hidden');
+    document.getElementById('chatFabBadge').style.display = 'none';
+    // 聚焦输入框（延迟等动画结束）
+    setTimeout(() => document.getElementById('chatPopupInput')?.focus(), 250);
   } else {
-    div.innerHTML = `<span class="avatar">AI</span><div class="bubble">${escapeHTML(text).replace(/\n/g, '<br/>')}</div>`;
+    pop.classList.remove('active');
+    fab?.classList.remove('hidden');
   }
-  box.appendChild(div);
-  // 滚动到底部（如果模拟框有滚动）
-  box.scrollTop = box.scrollHeight;
 }
 
-function removeTyping() {
-  document.querySelectorAll('.hero-chat-card .typing').forEach(el => el.remove());
+function popupSend() {
+  // 直接转发给 ChatWidget
+  if (popupChat) popupChat.send();
+}
+
+function quickAsk(text) {
+  toggleChatPopup(true);
+  setTimeout(() => {
+    const input = document.getElementById('chatPopupInput');
+    if (input) input.value = text;
+    if (popupChat) popupChat.send();
+  }, 300);
 }
 
 // 平滑滚动

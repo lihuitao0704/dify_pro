@@ -29,7 +29,7 @@
         <a href="#agents">智能体</a>
       </nav>
       <div class="header-actions">
-        <button class="btn btn-primary btn-sm" id="smartDiagnoseBtn">智能诊断</button>
+        <button class="btn btn-primary btn-sm" id="smartDiagnoseBtn">🎯 项目契合度分析</button>
         <button class="btn btn-secondary btn-sm" id="loginBtn">登录</button>
       </div>
     </div>
@@ -47,26 +47,21 @@
             粤教留学 AI 智能助手，用数据与经验为你绘制专属航线。选校、文书、申请、签证 — 每一步都有灯塔指引。
           </p>
 
-          <!-- 嵌入式客服聊天框 -->
+          <!-- CTA: 唤起客服弹框 -->
           <div class="hero-chat-card">
-            <div class="chat-mockup">
-              <div class="msg-item bot">
-                <span class="avatar">AI</span>
-                <div class="bubble">嗨同学你好呀 👋 我是粤教留学小助手，有什么想了解的尽管问我！</div>
+            <div class="hero-chat-cta">
+              <div class="cta-icon">💬</div>
+              <div class="cta-text">
+                <strong>有留学问题？</strong>
+                <small>7×24 在线 · 平均 3 秒响应</small>
               </div>
-              <div class="msg-item user">
-                <div class="bubble">德国留学有什么要求？</div>
-                <span class="avatar">你</span>
-              </div>
-              <div class="msg-item bot">
-                <span class="avatar">AI</span>
-                <div class="bubble">德国留学主要看三个方面 👇<br/>1. APS 学历审核<br/>2. 语言成绩 (德语/英语)<br/>3. 学术背景匹配度<br/><br/>想详细了解哪个方面呢？</div>
-              </div>
+              <button class="btn btn-primary" id="heroOpenChatBtn">立即咨询</button>
             </div>
-
-            <div class="hero-chat-input" id="publicChatBox">
-              <input id="publicInput" placeholder="输入你的留学问题..." onkeydown="if(event.key==='Enter')publicSend()"/>
-              <button class="btn btn-primary" id="publicSendBtn" onclick="publicSend()">提问</button>
+            <div class="hero-quick-q" id="heroQuickQ">
+              <span onclick="quickAsk('德国留学有什么要求？')">德国留学要求</span>
+              <span onclick="quickAsk('推荐适合我的留学项目')">项目推荐</span>
+              <span onclick="quickAsk('最近有什么讲座活动？')">近期活动</span>
+              <span onclick="quickAsk('申请流程和费用')">申请流程</span>
             </div>
           </div>
 
@@ -170,11 +165,11 @@
 
   </main>
 
-  <!-- ============ 智能诊断 Modal ============ -->
+  <!-- ============ 项目契合度分析 Modal ============ -->
   <div class="modal-overlay" id="diagnoseModal">
     <div class="modal diagnose-modal">
       <button class="modal-close" onclick="closeDiagnose()">×</button>
-      <h2 class="diagnose-title">🎯 智能诊断</h2>
+      <h2 class="diagnose-title">🎯 项目契合度分析</h2>
       <p class="diagnose-subtitle">AI 助手为你评估最适合的留学项目</p>
 
       <!-- 标签切换 -->
@@ -217,8 +212,8 @@
 
         <div class="form-row">
           <div class="form-group">
-            <label>目标申请专业 <span class="required">*</span></label>
-            <input type="text" id="d_target_major" placeholder="如：人工智能" required>
+            <label>目标申请专业 <span class="optional">选填</span></label>
+            <input type="text" id="d_target_major" placeholder="如：人工智能">
           </div>
           <div class="form-group">
             <label>语言成绩 <span class="required">*</span></label>
@@ -304,10 +299,7 @@
       <div class="diagnose-loading" id="d_loading">正在分析中，请稍候...</div>
       <div class="diagnose-error" id="d_errorMsg"></div>
 
-      <div class="result-box" id="d_resultBox">
-        <h3 id="d_resultTitle">研判结论</h3>
-        <pre id="d_resultContent"></pre>
-      </div>
+      <div id="d_fitResult" class="fit-result"></div>
     </div>
   </div>
 
@@ -330,22 +322,22 @@
           <label>密码</label>
           <input type="password" id="studentPass" placeholder="请输入密码" required />
         </div>
+        <p class="login-error" id="studentLoginError" style="display:none"></p>
         <button type="submit" class="btn btn-primary" style="width:100%">进入学生助手</button>
-        <p class="login-hint">测试账号：student1 / 123456</p>
       </form>
 
       <!-- Employee -->
       <form class="login-form" id="employeeLoginForm" style="display:none">
         <div class="form-group">
           <label>用户名</label>
-          <input type="text" id="employeeUser" placeholder="admin" required />
+          <input type="text" id="employeeUser" placeholder="请输入员工用户名" required />
         </div>
         <div class="form-group">
           <label>密码</label>
           <input type="password" id="employeePass" placeholder="密码" required />
         </div>
+        <p class="login-error" id="employeeLoginError" style="display:none"></p>
         <button type="submit" class="btn btn-primary" style="width:100%">进入企业工作台</button>
-        <p class="login-hint">测试账号：admin / admin123</p>
       </form>
     </div>
   </div>
@@ -358,8 +350,53 @@
 
   <div id="toastContainer"></div>
 
+  <!-- ============ 智能客服弹框 ============ -->
+  <!-- 浮动触发按钮 -->
+  <button class="chat-fab" id="chatFab" onclick="toggleChatPopup()" title="智能客服">
+    <span class="chat-fab-icon">💬</span>
+    <span class="chat-fab-pulse"></span>
+    <span class="chat-fab-badge" id="chatFabBadge">1</span>
+  </button>
+
+  <!-- 弹框 -->
+  <div class="chat-popup" id="chatPopup">
+    <!-- 头部 -->
+    <div class="chat-popup-header">
+      <div class="chat-popup-title">
+        <div class="chat-popup-avatar">🎓</div>
+        <div>
+          <strong>粤教留学小助手</strong>
+          <span class="chat-popup-status"><i class="dot"></i>在线</span>
+        </div>
+      </div>
+      <div class="chat-popup-actions">
+        <button class="chat-popup-min" id="chatMinBtn" title="最小化" onclick="toggleChatPopup()">—</button>
+        <button class="chat-popup-close" title="关闭" onclick="toggleChatPopup()">×</button>
+      </div>
+    </div>
+
+    <!-- 消息滚动区 -->
+    <div class="chat-popup-messages" id="chatPopupMessages"></div>
+
+    <!-- 快捷问题 -->
+    <div class="chat-popup-quick" id="chatPopupQuick">
+      <span onclick="quickAsk('德国留学有什么要求？')">🇩🇪 德国留学要求</span>
+      <span onclick="quickAsk('推荐适合我的留学项目')">🎯 项目推荐</span>
+      <span onclick="quickAsk('最近有什么讲座？')">📅 近期活动</span>
+      <span onclick="quickAsk('申请流程和费用')">📝 申请流程</span>
+    </div>
+
+    <!-- 输入区 -->
+    <div class="chat-popup-input">
+      <input id="chatPopupInput" placeholder="输入你的留学问题..." onkeydown="if(event.key==='Enter')popupSend()"/>
+      <button class="chat-popup-send" id="chatPopupSendBtn" onclick="popupSend()">➤</button>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
   <script src="/portal/js/utils.js"></script>
   <script src="/portal/js/auth.js"></script>
+  <script src="/portal/js/chat.js"></script>
   <script src="/portal/js/portal.js"></script>
 </body>
 </html>

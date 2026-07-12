@@ -72,12 +72,45 @@ def chat(messages: list[dict], system_prompt: str = "", temperature: float = 0.7
         raise LLMOfflineError(f"LLM 调用失败: {e}") from e
 
 
+def chat_stream(messages: list[dict], system_prompt: str = "", temperature: float = 0.7):
+    """流式对话生成器，逐个 yield token 字符串"""
+    full_messages = []
+    if system_prompt:
+        full_messages.append({"role": "system", "content": system_prompt})
+    full_messages.extend(messages)
+
+    try:
+        client = get_client()
+        stream = client.chat.completions.create(
+            model=LLM_CONFIG["model"],
+            messages=full_messages,
+            temperature=temperature,
+            stream=True,
+        )
+        for chunk in stream:
+            delta = chunk.choices[0].delta
+            if delta.content:
+                yield delta.content
+    except LLMError:
+        raise
+    except Exception as e:
+        logger.error("LLM 流式调用失败: %s", e)
+        raise LLMOfflineError(f"LLM 流式调用失败: {e}") from e
+
+
 def chat_json(messages: list[dict], system_prompt: str = "", temperature: float = 0.3) -> dict | list:
     """对话并要求返回 JSON。LLM 不可用时抛出 LLMOfflineError"""
     raw = chat(messages, system_prompt, temperature)
     raw = raw.strip()
-    raw = re.sub(r"^```(?:json)?\s*", "", raw)
-    raw = re.sub(r"\s*```$", "", raw)
+    # 提取第一个 JSON 代码块（可能前面有解释文字）
+    m = re.search(r"```(?:json)?\s*([\s\S]*?)```", raw)
+    if m:
+        raw = m.group(1).strip()
+    else:
+        # 没有代码块标记：尝试提取最外层 { } 或 [ ]
+        brack_match = re.search(r"(\{[\s\S]*\}|\[[\s\S]*\])", raw)
+        if brack_match:
+            raw = brack_match.group(1).strip()
     try:
         return json.loads(raw)
     except json.JSONDecodeError as e:
@@ -164,32 +197,86 @@ def _keyword_intent(user_msg: str) -> list[dict]:
 #  情绪分析
 # ============================================================
 
-EMOTION_PROMPT = """你是学生心理状态评估专家。分析学生消息中的情绪信号，评估心理健康风险。
+EMOTION_PROMPT = """你是留学生心理健康评估专家。基于学生消息和情绪历史，进行多维度心理状态评估。
 
-情绪标签（选一个）：正常、焦虑、低落、孤独、适应困难、积极、愤怒、自我否定
+## 评估对象背景
+中国留学生，在海外求学。常见压力源：学业难度、语言障碍、文化冲击、社交孤立、经济压力、家庭期望、签证焦虑、身份认同困惑。
 
-风险评分规则（0-100）：
-- 0-20: 正常/积极，无负面信号
-- 21-40: 轻度不适，短暂负面情绪
-- 41-60: 中度困扰，持续负面情绪，影响日常生活
-- 61-80: 高度风险，表达强烈痛苦/绝望/自我否定
-- 81-100: 危急，有自伤/伤人倾向
+## 一、情绪标签（选一个最准确的）
+正常 / 焦虑 / 低落 / 孤独 / 适应困难 / 积极 / 愤怒 / 自我否定 / 思乡 / 疲惫 / 迷茫
 
-风险等级：low(0-30) / medium(31-60) / high(61-80) / critical(81-100)
+## 二、五维度评分（每项 0-100，分数越高问题越严重）
 
-返回 JSON：
+| 维度 | 0-20 正常 | 21-40 轻度 | 41-60 中度 | 61-80 重度 | 81-100 极重 |
+|------|----------|-----------|-----------|-----------|------------|
+| **mood** 情绪基调 | 积极愉快 | 偶尔低落 | 持续低落、兴趣减退 | 明显抑郁、快感缺失 | 绝望、情感麻木 |
+| **anxiety** 焦虑水平 | 放松平静 | 偶尔紧张 | 持续担忧、影响专注 | 严重焦虑、躯体化（心慌/手抖） | 恐慌发作、失控感 |
+| **social** 社交连接 | 人际关系良好 | 偶尔感到孤单 | 社交减少、缺乏归属 | 明显孤立、回避社交 | 完全与社会脱节 |
+| **academic** 学业压力 | 游刃有余 | 有一定压力 | 压力明显、担心挂科 | 不堪重负、想退学 | 学业崩溃、已放弃 |
+| **cultural** 文化适应 | 融入当地 | 有些不适应 | 文化冲击明显、思乡 | 严重不适应、想回国 | 完全无法适应、敌视环境 |
+
+评分原则：
+- 基于学生原话推断，不要臆测
+- 没有提到的维度给中间偏低的分数（25-35），不要给 0
+- 有明确证据的维度才给高分
+- 同时考虑情绪历史的演变趋势
+
+## 三、阶段判定
+- `stable` — 情绪平稳，无明显困扰
+- `adapting` — 正在适应新环境，有轻度不适但属于正常范围
+- `fluctuating` — 情绪有起伏，时好时坏，需要关注但整体可控
+- `warning` — 持续恶化趋势，多维度亮红灯，需主动干预
+- `crisis` — 当前处于心理危机状态，需立即介入
+
+判定时请结合历史数据：如果连续多天负面 → 至少 `warning`；如果出现自杀意念 → 直接 `crisis`。
+
+## 四、专项风险信号（true/false，必须谨慎判定）
+- `suicide_risk` — **任何涉及死亡意愿/自杀/不想活的表达**（包括间接表达如"想消失""永远睡过去""不值得活着"）。最重要的一票，一旦触及必须标注 true
+- `self_harm` — 自伤行为描述（割伤/撞墙/不吃饭惩罚自己等）
+- `hopelessness` — 表达绝望/无助/看不到希望/觉得永远好不起来
+- `social_withdrawal` — 明显回避社交/不出门/不回复消息
+- `sleep_issue` — 提到失眠/噩梦/嗜睡/睡眠质量差
+- `panic_attack` — 描述心慌/胸闷/呼吸困难/濒死感等惊恐症状
+- `eating_issue` — 提到吃不下/暴食/体重骤变
+
+## 五、保护因素（true/false，积极信号）
+- `has_support` — 提到有家人/朋友/老师可以依靠
+- `has_coping` — 有自己的应对方式（运动/音乐/写日记/兴趣爱好）
+- `seeking_help` — 主动求助意愿（想找老师聊聊/想寻求帮助）
+- `future_oriented` — 对未来有期待/正在做计划/提到目标
+
+## 六、留学生情境标签（可多选，无则空数组）
+可选：`学业压力` `语言障碍` `文化冲突` `社交孤立` `经济压力` `家庭期望` `签证焦虑` `身份困惑` `歧视经历` `思乡` `职业迷茫`
+
+## 七、综合风险评分
+- `risk_score`（0-100）：综合五维度 + 风险信号得出的整体风险分
+- `risk_level`：low(0-30) / medium(31-60) / high(61-80) / critical(81-100)
+- 有 `suicide_risk` 时 risk_score 至少 85，risk_level 至少 critical
+- 有 `hopelessness` 时 risk_score 至少 60
+
+## 八、预警与引导
+- `needs_alert`：risk_score >= 70 或 suicide_risk == true 或 hopelessness == true 且 risk_score >= 50
+- `alert_reason`：简短说明触发了哪个预警条件
+- `severity_note`：50 字以内的综合判断（如"学业压力是主因，有社交退缩但无自伤风险，保护因素较好"）
+- `response_guide`：给 AI 助手的回复策略建议（如何共情、引导什么话题、应避免什么）
+
+## 输出格式
+严格返回以下 JSON（不要 markdown 代码块标记）：
 {
   "emotion": "焦虑",
-  "risk_score": 45,
+  "risk_score": 55,
   "risk_level": "medium",
-  "keywords": ["失眠", "压力大", "睡不着"],
+  "stage": "fluctuating",
+  "dimensions": {"mood": 40, "anxiety": 70, "social": 50, "academic": 65, "cultural": 55},
+  "flags": {"suicide_risk": false, "self_harm": false, "hopelessness": false, "social_withdrawal": true, "sleep_issue": true, "panic_attack": false, "eating_issue": false},
+  "protective": {"has_support": true, "has_coping": false, "seeking_help": true, "future_oriented": true},
+  "context_tags": ["学业压力"],
+  "keywords": ["失眠", "跟不上", "听不懂"],
+  "severity_note": "焦虑主要来自学业压力，有社交退缩迹象，但主动求助是积极信号",
   "needs_alert": false,
   "alert_reason": "",
-  "response_guide": "给予共情，询问是否需要和老师聊聊"
-}
-
-needs_alert 为 true 当 risk_score >= 70。
-response_guide 是给 Agent 回复时的情绪引导建议。"""
+  "response_guide": "先共情学业困难，肯定主动沟通的勇气，引导使用学校学习中心资源，避免空洞安慰"
+}"""
 
 
 def analyze_emotion(user_msg: str, history_emotions: list = None) -> dict:
@@ -202,11 +289,8 @@ def analyze_emotion(user_msg: str, history_emotions: list = None) -> dict:
     try:
         return chat_json(messages, EMOTION_PROMPT)
     except Exception:
-        return {
-            "emotion": "正常", "risk_score": 0, "risk_level": "low",
-            "keywords": [], "needs_alert": False, "alert_reason": "",
-            "response_guide": "正常回复",
-        }
+        logger.warning("LLM 情绪分析失败，降级至关键词引擎")
+        return {}  # 空 dict → merge_emotion_results 走关键词分支
 
 
 # ============================================================
@@ -273,11 +357,19 @@ def generate_sql(question: str, schema_text: str) -> str:
         raw = re.sub(r"^```(?:sql)?\s*", "", raw)
         raw = re.sub(r"\s*```$", "", raw)
         raw = raw.rstrip(";")
-        # 安全检查
-        dangerous = ["DROP", "DELETE", "ALTER", "TRUNCATE", "UPDATE", "INSERT"]
+        # 安全检查：禁止非 SELECT 操作和多语句注入
+        dangerous = ["DROP", "DELETE", "ALTER", "TRUNCATE", "UPDATE", "INSERT",
+                     "CREATE", "EXEC", "EXECUTE", "GRANT", "REVOKE", "LOAD", "INTO"]
+        upper = raw.upper()
         for word in dangerous:
-            if raw.upper().startswith(word):
+            # 匹配独立单词（不是列名/表名的一部分）
+            if re.search(rf"\b{word}\b", upper):
                 return f"-- 安全限制：不允许 {word} 操作"
+        # 检查多语句注入（分号后面有非空内容）
+        parts = [p.strip() for p in raw.split(";")]
+        non_empty = [p for p in parts if p]
+        if len(non_empty) > 1:
+            return "-- 安全限制：不允许执行多条SQL"
         return raw
     except Exception as e:
         return f"-- SQL生成失败: {e}"
@@ -349,3 +441,12 @@ def agent_chat(user_msg: str, context: list[dict], extra_instruction: str = "") 
         system += f"\n\n本次回复额外要求：{extra_instruction}"
     messages = list(context[-10:]) + [{"role": "user", "content": user_msg}]
     return chat(messages, system, temperature=0.7)
+
+
+def agent_chat_stream(user_msg: str, context: list[dict], extra_instruction: str = ""):
+    """流式 Agent 人格化回复"""
+    system = AGENT_PERSONA
+    if extra_instruction:
+        system += f"\n\n本次回复额外要求：{extra_instruction}"
+    messages = list(context[-10:]) + [{"role": "user", "content": user_msg}]
+    yield from chat_stream(messages, system, temperature=0.7)

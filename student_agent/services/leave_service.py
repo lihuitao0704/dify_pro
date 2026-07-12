@@ -1,5 +1,5 @@
 """
-请假服务 — leave_application 表（与企业端统一）
+请假服务 — leave_request 表（与企业端统一）
 """
 
 import logging
@@ -106,7 +106,7 @@ def collect_leave_params(message: str, context: list) -> dict:
 def query_leave_records(student_id: int) -> list[dict]:
     return db.query(
         """SELECT id, leave_type, start_date, end_date, reason, status, approval_user, create_time
-           FROM leave_application
+           FROM leave_request
            WHERE applicant_id = %s AND applicant_type = '学生'
            ORDER BY create_time DESC""",
         (student_id,)) or []
@@ -179,7 +179,7 @@ def submit_leave(student_id: int, collected: dict) -> str:
 
     # 重复检测
     dup = db.query_one(
-        """SELECT id, status FROM leave_application
+        """SELECT id, status FROM leave_request
            WHERE applicant_id = %s AND applicant_type = '学生'
              AND leave_type = %s AND start_date = %s AND end_date = %s
              AND DATE(create_time) = CURDATE() LIMIT 1""",
@@ -208,7 +208,7 @@ def submit_leave(student_id: int, collected: dict) -> str:
 
     if r is None or r.status_code != 200:
         try:
-            tid = db.insert("leave_application", {
+            tid = db.insert("leave_request", {
                 "applicant_id": student_id, "applicant_type": "学生",
                 "student_name": student_name, "leave_type": leave_type,
                 "start_date": start_date, "end_date": end_date,
@@ -236,4 +236,4 @@ def update_approval_status(leave_id: int, status: int, approval_user: str = None
     update_data = {"status": status, "approval_user": approval_user,
                    "update_time": datetime.now().strftime("%Y-%m-%d %H:%M:%S")}
     update_data = {k: v for k, v in update_data.items() if v is not None}
-    return db.update("leave_application", {"id": leave_id}, update_data) > 0
+    return db.update("leave_request", {"id": leave_id}, update_data) > 0

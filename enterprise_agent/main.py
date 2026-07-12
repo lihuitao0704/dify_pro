@@ -136,6 +136,10 @@ def auth_login(req: LoginRequest):
         if not user:
             return {"success": False, "code": 401, "message": "用户名或密码错误"}
 
+        # 角色校验：员工端拒绝学员账号
+        if user.user_type == "学员":
+            return {"success": False, "code": 403, "message": "该账号为学生账号，请使用学生登录入口"}
+
         # bcrypt 验证（兼容旧版SHA256哈希，返回是否需迁移）
         is_valid, needs_migrate = verify_password_compat(req.password, user.password)
         if not is_valid:

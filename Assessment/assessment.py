@@ -894,12 +894,66 @@ def insert_intention_customer(user: dict, project_id: int, score: int, conn) -> 
 # ────────────────────────────────────────────────────────────
 # 针对特定用户子集的评估（含重复检查）
 # ────────────────────────────────────────────────────────────
-def run_targeted_assessment(sql_filter: str, student_view: bool = False) -> str:
+def _rule_lookup_key(r: dict) -> str:
+    """从 portrait_rule 记录中挑选最友好的雷达维度展示名：rule_subcategory > rule_category > rule_key"""
+    return r.get("rule_subcategory") or r.get("rule_category") or r.get("rule_key") or ""
+
+
+def _build_detail_view(all_results: list[dict], rules_map: dict[int, list[dict]]) -> list[dict]:
+    """
+    从 all_results 构建前端「四合一」所需的结构化分数数据。
+    返回按 (user_id, project_id) 聚合的结果列表：
+      [{ project_id, project_name, user_id, total_score, max_score, pass_threshold,
+         is_pass, dimensions: [{ key, name, score, max }] }]
+    """
+    project_names = _get_project_names(list(rules_map.keys()))
+
+    # 构建 (project_id, rule_key) → 规则元数据 查找表
+    rule_lookup: dict[tuple[int, str], dict] = {}
+    for pid, rules in rules_map.items():
+        for r in rules:
+            rule_lookup[(pid, r["rule_key"])] = r
+
+    # 按 (user_id, project_id) 分组（取最高分的记录）
+    grouped: dict[tuple[int, int], dict] = {}
+    for r in all_results:
+        key = (r["user_id"], r["project_id"])
+        if key not in grouped or r["score"] > grouped[key]["score"]:
+            grouped[key] = r
+
+    results = []
+    for (uid, pid), r in grouped.items():
+        dims = []
+        for rk, actual in (r.get("rule_scores") or {}).items():
+            rl = rule_lookup.get((pid, rk), {})
+            rmax = int(rl.get("score_max") or 0)
+            name = _rule_lookup_key(rl) or rk
+            dims.append({
+                "key": rk,
+                "name": name,
+                "score": int(actual or 0),
+                "max": rmax,
+            })
+        results.append({
+            "project_id": pid,
+            "project_name": project_names.get(pid, "项目 %d" % pid),
+            "user_id": uid,
+            "total_score": int(r["score"] or 0),
+            "max_score": int(r.get("max_score") or 100),
+            "pass_threshold": PASS_SCORE,
+            "is_pass": bool(r["is_pass"]),
+            "dimensions": dims,
+        })
+    return results
+
+
+def run_targeted_assessment(sql_filter: str, student_view: bool = False, detail_view: bool = False):
     """
     对指定的用户子集执行评估。
     :param sql_filter: WHERE 条件片段（空串表示全部）
     :param student_view: True = 学生端（温暖亲切），False = 企业端（专业简练）
-    :return: 自然语言结果
+    :param detail_view: True = 返回结构化 dict（含 scores + summary），False = NL 字符串
+    :return: NL 字符串，或 detail_view=True 时的结构化 dict
     """
     # 1. 获取目标用户（严格精确匹配，禁止模糊 LIKE 兜底）
     #    安全说明：原代码在精确匹配落空时会退回 LIKE '%name%' 模糊匹配，
@@ -1041,9 +1095,10 @@ def run_targeted_assessment(sql_filter: str, student_view: bool = False) -> str:
                 uname = r["user_name"]
                 proj_id = r["project_id"]
                 cur.execute(
-                    "INSERT INTO intention_diagnosis (user_id, user_name, project_id, score, rule_details) "
-                    "VALUES (%s, %s, %s, %s, %s)",
-                    (uid, uname, proj_id, r["score"], json.dumps(r["rule_scores"], ensure_ascii=False))
+                    # 注意：intention_diagnosis 表没有 user_name 列，只写 user_id
+                    "INSERT INTO intention_diagnosis (user_id, project_id, score, rule_details) "
+                    "VALUES (%s, %s, %s, %s)",
+                    (uid, proj_id, r["score"], json.dumps(r["rule_scores"], ensure_ascii=False))
                 )
                 passed_diagnoses.append(r)
 
@@ -1100,11 +1155,22 @@ def run_targeted_assessment(sql_filter: str, student_view: bool = False) -> str:
     # 通过的所有 project 详情（不仅仅是最佳），供_summary展示所有通过的项目
     all_passed = [r for r in all_results if r["is_pass"]]
 
-    return generate_natural_response(
+    summary = generate_natural_response(
         all_passed, len(users),
         failed=failed_diagnoses_unique, rules_map=rules_map,
         student_view=student_view
     )
+
+    if detail_view:
+        # 返回结构化 dict，供前端雷达图 + 百分制使用
+        # user_ids 仅保留"真正被研判的用户"，不把已判别的列入
+        return {
+            "summary": summary,
+            "pass_threshold": PASS_SCORE,
+            "results": _build_detail_view(all_results, rules_map),
+            "user_ids": [u["id"] for u in users],
+        }
+    return summary
 
 
 

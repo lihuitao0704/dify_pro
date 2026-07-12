@@ -169,6 +169,17 @@ body {
 }
 .login-hint a:hover { text-decoration: underline; }
 
+/* 登录错误提示 */
+.login-error {
+  text-align: center;
+  font-size: 13px;
+  color: var(--danger);
+  margin: 8px 0 0;
+  padding: 8px 12px;
+  border-radius: 6px;
+  background: rgba(255, 59, 48, 0.08);
+}
+
 /* Toast */
 #toastContainer {
   position: fixed;
