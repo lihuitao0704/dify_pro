@@ -7,6 +7,7 @@ import os
 import logging
 import traceback
 import uvicorn
+from typing import Optional
 
 try:
     import bcrypt
@@ -104,8 +105,10 @@ class ChatRequest(BaseModel):
     session_id: str = ""
 
 class LoginRequest(BaseModel):
-    username: str
-    password: str
+    username: str = ""
+    password: str = ""
+    student_id: int = 0
+    name: str = ""
 
 class ChatResponse(BaseModel):
     reply: str
@@ -154,49 +157,61 @@ def _hash_password(plain: str) -> str:
 #  登录接口
 # ============================================================
 @app.post("/auth/login")
-def login(req: LoginRequest):
-    """统一账户密码登录，查 account 表，支持 bcrypt + 明文兼容"""
-    user = query_one(
-        """SELECT user_id, username, password, real_name, user_type,
-                  student_id, phone, email
-           FROM account WHERE username = %s AND status = 1""",
-        (req.username,)
-    )
-    if not user:
-        return {"success": False, "message": "用户名或密码不正确"}
-    if not _verify_password(req.password, user["password"]):
-        return {"success": False, "message": "用户名或密码不正确"}
+async def login(request: Request):
+    """统一登录：支持 account 表（用户名+密码）和 student 表（学号+姓名）两种方式"""
+    import json as _json
+    body = await request.json()
+    username = (body.get("username") or "").strip()
+    password = (body.get("password") or "").strip()
+    student_id = body.get("student_id") or 0
+    name = (body.get("name") or "").strip()
 
-    # 旧明文密码自动升级为 bcrypt
-    if not user["password"].startswith("$2b$") and not user["password"].startswith("$2a$"):
-        try:
-            execute(
-                "UPDATE account SET password = %s WHERE user_id = %s",
-                (_hash_password(req.password), user["user_id"]),
-            )
-            logger.info("密码已升级为 bcrypt: user=%s", user["username"])
-        except Exception:
-            logger.warning("bcrypt 升级失败: user=%s", user["username"])
+    # ── 方式1: account 表登录（用户名 + 密码）──
+    if username and password:
+        user = query_one(
+            """SELECT user_id, username, password, real_name, user_type,
+                      student_id, phone, email
+               FROM account WHERE username = %s AND status = 1""",
+            (username,))
+        if not user:
+            return {"success": False, "message": "用户名或密码不正确"}
+        if not _verify_password(password, user["password"]):
+            return {"success": False, "message": "用户名或密码不正确"}
 
-    sid = user.get("student_id") or user["user_id"]
-    display_name = user["real_name"] or user["username"]
-    if user.get("student_id"):
-        stu = query_one("SELECT name, education, major FROM student WHERE id = %s", (user["student_id"],))
-        if stu:
-            display_name = stu["name"]
+        if not user["password"].startswith("$2b$") and not user["password"].startswith("$2a$"):
+            try:
+                execute("UPDATE account SET password = %s WHERE user_id = %s",
+                        (_hash_password(password), user["user_id"]))
+                logger.info("密码已升级为 bcrypt: user=%s", user["username"])
+            except Exception:
+                logger.warning("bcrypt 升级失败: user=%s", user["username"])
 
-    return {
-        "success": True,
-        "student": {
-            "id": sid,
-            "name": display_name,
-            "user_id": user["user_id"],
-            "user_type": user["user_type"],
-            "student_id": user.get("student_id"),
-            "phone": user.get("phone", ""),
-            "email": user.get("email", ""),
-        }
-    }
+        sid = user.get("student_id") or user["user_id"]
+        display_name = user["real_name"] or user["username"]
+        if user.get("student_id"):
+            stu = query_one("SELECT name FROM student WHERE id = %s", (user["student_id"],))
+            if stu:
+                display_name = stu["name"]
+        return {"success": True, "student": {
+            "id": sid, "name": display_name, "user_id": user["user_id"],
+            "user_type": user["user_type"], "student_id": user.get("student_id"),
+            "phone": user.get("phone", ""), "email": user.get("email", ""),
+        }}
+
+    # ── 方式2: student 表登录（学号 + 姓名，兼容同事旧门户）──
+    if student_id and name:
+        student = query_one(
+            "SELECT id, name, education, major, gpa FROM student WHERE id = %s AND name = %s",
+            (student_id, name))
+        if student:
+            return {"success": True, "student": {
+                "id": student["id"], "name": student["name"],
+                "education": student.get("education", ""),
+                "major": student.get("major", ""),
+            }}
+        return {"success": False, "message": "学号或姓名不正确"}
+
+    return {"success": False, "message": "请提供用户名+密码 或 学号+姓名"}
 
 
 # ============================================================
