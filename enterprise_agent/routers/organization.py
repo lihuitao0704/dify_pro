@@ -9,13 +9,14 @@ import logging
 
 from enterprise_agent.database import get_db
 from enterprise_agent.models import Department, Employee, Account
+from enterprise_agent.schemas import ApiResponse
 
 logger = logging.getLogger("enterprise_agent.organization")
 router = APIRouter()
 
 
 # ==================== GET /api/agent/organization/tree ====================
-@router.get("/organization/tree", response_model=dict, summary="组织架构树")
+@router.get("/organization/tree", response_model=ApiResponse, summary="组织架构树")
 def organization_tree(
     current_user_id: Optional[int] = Query(None, description="当前用户ID"),
     current_user_type: Optional[str] = Query(None, description="当前用户类型"),
@@ -34,21 +35,19 @@ def organization_tree(
         ).all()
 
         if not departments:
-            return {"code": 0, "msg": "success", "data": {"tree": []}}
+            return ApiResponse(data={"tree": []})
 
         # 获取所有在职员工
         employees = db.query(Employee).filter(Employee.status == 1).all()
-        emp_map = {e.emp_id: e for e in employees}  # emp_id -> Employee
+        emp_map = {e.emp_id: e for e in employees}
 
         # 构建部门树
         dept_dict = {}
         for dept in departments:
-            # 查找部门负责人
             manager_name = None
             if dept.manager_id and dept.manager_id in emp_map:
                 manager_name = emp_map[dept.manager_id].emp_name
 
-            # 查找该部门员工
             dept_employees = []
             for emp in employees:
                 if emp.dept_id == dept.dept_id:
@@ -78,11 +77,11 @@ def organization_tree(
             if parent_id == 0 or parent_id not in dept_dict:
                 tree.append(dept)
             else:
-                if dept_id != parent_id:  # 防止自循环
+                if dept_id != parent_id:
                     dept_dict[parent_id]["children"].append(dept)
 
-        return {"code": 0, "msg": "success", "data": {"tree": tree}}
+        return ApiResponse(data={"tree": tree})
 
     except Exception as e:
-        logger.error(f"查询组织架构失败: {e}", exc_info=True)
-        return {"code": 500, "msg": f"查询失败: {str(e)}", "data": None}
+        logger.error("组织架构查询失败: %s", e, exc_info=True)
+        return ApiResponse(code=500, msg=f"查询失败: {str(e)}")

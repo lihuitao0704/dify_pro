@@ -2,6 +2,7 @@
 企业智能助手 - SQLAlchemy ORM 模型
 映射数据库中所有相关表
 """
+import sqlalchemy
 from sqlalchemy import (
     Column, BigInteger, Integer, String, Text, Date, DateTime,
     DECIMAL, SmallInteger, Index, func
@@ -225,7 +226,9 @@ class Employee(Base):
 
 
 class Student(Base):
-    """学生表（独立的student表，与student_info分开）"""
+    """学生表（独立的student表，与student_info分开）
+    已扩展：新增留学相关的结构化字段
+    """
     __tablename__ = "student"
 
     id = Column(Integer, primary_key=True, autoincrement=True)
@@ -235,13 +238,164 @@ class Student(Base):
     education = Column(String(20))
     major = Column(String(100))
     school = Column(String(100))
-    gpa = Column(String(10))
-    language_score = Column(String(50))
+    gpa = Column(String(10), comment="GPA绩点（如 3.5/4.0）")
+    language_exam_type = Column(String(20), comment="语言考试类型：IELTS/TOEFL/PTE/其他")
+    language_overall = Column(String(50), comment="语言考试总分（如 7.5）")
+    language_listening = Column(String(50), comment="听力成绩")
+    language_reading = Column(String(50), comment="阅读成绩")
+    language_writing = Column(String(50), comment="写作成绩")
+    language_speaking = Column(String(50), comment="口语成绩")
+    gre_score = Column(Integer, comment="GRE总分")
+    gmat_score = Column(Integer, comment="GMAT总分")
     target_country = Column(String(100))
     target_degree = Column(String(20))
     target_major = Column(String(100))
+    target_schools = Column(Text, comment="目标院校列表（JSON数组）")
     assigned_teacher_id = Column(Integer)
     contract_status = Column(String(20))
     enrollment_date = Column(Date)
     created_at = Column(DateTime, server_default=func.current_timestamp())
     updated_at = Column(DateTime, server_default=func.current_timestamp(), onupdate=func.current_timestamp())
+
+
+class ApplicationRecord(Base):
+    """留学申请记录表 - 核心业务流程追踪"""
+    __tablename__ = "application_record"
+
+    id = Column(BigInteger, primary_key=True, autoincrement=True)
+    student_id = Column(BigInteger, nullable=False, comment="学生ID")
+    university = Column(String(128), nullable=False, comment="目标大学")
+    program_name = Column(String(128), nullable=False, comment="申请项目名称")
+    program_type = Column(String(32), comment="学位类型：本科/硕士/博士/交换")
+    intake = Column(String(16), comment="入学季：2026Fall/2027Spring")
+    application_status = Column(
+        String(20), nullable=False, default="draft",
+        comment="状态：draft/ submitted/ under_review/ interview/ offer/ rejected/ withdrawn/ enrolled"
+    )
+    current_step = Column(String(64), comment="当前进行到的步骤")
+    submitted_date = Column(Date, comment="提交日期")
+    decision_date = Column(Date, comment="录取/拒绝通知日期")
+    is_offer_accepted = Column(String(8), comment="是否接受offer：yes/no/待定")
+    deposit_paid = Column(String(8), comment="押金支付：yes/no")
+    personnel_id = Column(BigInteger, comment="负责文案/顾问ID")
+    notes = Column(Text, comment="备注")
+    created_at = Column(DateTime, server_default=func.current_timestamp())
+    updated_at = Column(DateTime, server_default=func.current_timestamp(), onupdate=func.current_timestamp())
+
+    __table_args__ = (
+        Index("idx_app_student", "student_id"),
+        Index("idx_app_status", "application_status"),
+    )
+
+
+class DocumentChecklist(Base):
+    """申请材料清单表"""
+    __tablename__ = "document_checklist"
+
+    id = Column(BigInteger, primary_key=True, autoincrement=True)
+    application_id = Column(BigInteger, nullable=False, comment="关联申请记录ID")
+    doc_name = Column(String(128), nullable=False, comment="材料名称")
+    doc_type = Column(String(32), comment="材料类型：transcript/ps/cv/recommendation/certificate/other")
+    status = Column(String(16), nullable=False, default="pending", comment="状态：pending/ collected/ submitted/ approved")
+    deadline = Column(Date, comment="材料截止日期")
+    collected_at = Column(DateTime, comment="收集完成时间")
+    file_url = Column(String(256), comment="文件存储路径")
+    notes = Column(Text, comment="备注")
+    created_at = Column(DateTime, server_default=func.current_timestamp())
+    updated_at = Column(DateTime, server_default=func.current_timestamp(), onupdate=func.current_timestamp())
+
+    __table_args__ = (
+        Index("idx_doc_application", "application_id"),
+    )
+
+
+class Appointment(Base):
+    """咨询/面谈预约记录表"""
+    __tablename__ = "appointment"
+
+    id = Column(BigInteger, primary_key=True, autoincrement=True)
+    student_id = Column(BigInteger, nullable=False, comment="学生ID")
+    consultant_id = Column(BigInteger, comment="顾问ID")
+    appointment_type = Column(String(32), comment="预约类型：咨询/选校/文书/签证/行前")
+    appointment_date = Column(DateTime, comment="预约时间")
+    duration_minutes = Column(Integer, default=60, comment="时长（分钟）")
+    status = Column(String(16), nullable=False, default="scheduled",
+                    comment="状态：scheduled/ completed/ cancelled/ noshow")
+    notes = Column(Text, comment="沟通记录/纪要")
+    follow_up_required = Column(String(8), comment="是否需要跟进：yes/no")
+    created_at = Column(DateTime, server_default=func.current_timestamp())
+    updated_at = Column(DateTime, server_default=func.current_timestamp(), onupdate=func.current_timestamp())
+
+    __table_args__ = (
+        Index("idx_appt_student", "student_id"),
+        Index("idx_appt_consultant", "consultant_id"),
+        Index("idx_appt_date", "appointment_date"),
+    )
+
+
+class StudentMentalAlert(Base):
+    """学生心理预警表"""
+    __tablename__ = "student_mental_alert"
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    student_id = Column(Integer, nullable=False)
+    student_name = Column(String(50))
+    trigger_reason = Column(Text, nullable=False)
+    risk_level = Column(String(10), nullable=False)
+    alert_content = Column(Text)
+    emotion_label = Column(String(30))
+    risk_score = Column(Integer)
+    follow_up_status = Column(String(20))
+    assigned_teacher_id = Column(Integer)
+    assigned_teacher = Column(String(50))
+    action_taken = Column(Text)
+    resolved_at = Column(DateTime)
+    created_at = Column(DateTime, server_default=func.current_timestamp())
+
+
+class MentalHealthProfile(Base):
+    """学生心理健康档案表"""
+    __tablename__ = "mental_health_profile"
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    student_id = Column(Integer, nullable=False)
+    current_emotion = Column(String(30))
+    risk_score = Column(Integer)
+    risk_level = Column(String(10))
+    emotion_history = Column(sqlalchemy.JSON)
+    negative_keywords_count = Column(Integer)
+    consecutive_negative_days = Column(Integer)
+    last_conversation = Column(Text)
+    last_assessment_at = Column(DateTime)
+    teacher_notified = Column(TINYINT)
+    created_at = Column(DateTime, server_default=func.current_timestamp())
+    updated_at = Column(DateTime, server_default=func.current_timestamp(), onupdate=func.current_timestamp())
+
+
+class StudentPsychRecord(Base):
+    """学生心理记录表"""
+    __tablename__ = "student_psych_record"
+
+    id = Column(BigInteger, primary_key=True, autoincrement=True)
+    student_id = Column(BigInteger, nullable=False)
+    emotion_tag = Column(String(64))
+    emotion_score = Column(Integer)
+    interaction_content = Column(Text)
+    trigger_keywords = Column(sqlalchemy.JSON)
+    record_date = Column(Date, nullable=False)
+    create_time = Column(DateTime, server_default=func.current_timestamp())
+
+
+class StudentPsychProfile(Base):
+    """学生心理画像表"""
+    __tablename__ = "student_psych_profile"
+
+    id = Column(BigInteger, primary_key=True, autoincrement=True)
+    student_id = Column(BigInteger, nullable=False)
+    latest_emotion_tag = Column(String(64))
+    emotion_score = Column(Integer)
+    last_interaction_time = Column(DateTime)
+    risk_level = Column(String(16))
+    weekly_summary = Column(sqlalchemy.JSON)
+    create_time = Column(DateTime, server_default=func.current_timestamp())
+    update_time = Column(DateTime, server_default=func.current_timestamp(), onupdate=func.current_timestamp())
