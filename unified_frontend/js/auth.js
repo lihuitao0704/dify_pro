@@ -103,6 +103,8 @@ const Auth = {
   },
 
   // ── 员工登录 ──
+  // 后端 /auth/login 统一返回 { success, student: { id, name, user_id, user_type, ... } }
+  // 学生和员工共用同一接口，通过账号表 user_type 区分
   async employeeLogin(username, password) {
     const urls = [
       `/auth/login`,
@@ -115,18 +117,19 @@ const Auth = {
           body: JSON.stringify({ username, password }),
         });
         const data = await r.json();
-        if (data.success || data.code === 0) {
+        if (data.success && data.student) {
+          const s = data.student;
           this.set({
             role: 'employee',
-            user_id: data.user_id || data.data?.user_id || 0,
-            user_name: username,
+            user_id: s.user_id || s.id || 0,
+            user_name: s.name || username,
             token: data.token || '',
-            user_type: data.user_type || data.data?.user_type || '员工',
+            user_type: s.user_type || '员工',
             exp: data.exp || (Date.now()/1000 + 86400),
           });
           return { success: true };
         }
-        // Fallback: demo login
+        // Fallback: demo login（接口不可用时使用）
         if (username === 'admin' && password === 'admin123') {
           this.set({
             role: 'employee',
@@ -140,7 +143,7 @@ const Auth = {
         }
         return { success: false, message: data.msg || data.message || '用户名或密码错误' };
       } catch (e) {
-        // fallback
+        // 网络异常时的 fallback
         if (username === 'admin' && password === 'admin123') {
           this.set({
             role: 'employee',

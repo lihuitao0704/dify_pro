@@ -37,31 +37,32 @@ function initLoginTabs() {
 }
 
 function initLoginForms() {
-  const LOGIN_API = '/auth/login';
 
+  // 复用 auth.js 中的登录方法（Auth.studentLogin / Auth.employeeLogin）
+  // 这些方法已内置员工 demo 账号 fallback，前后端逻辑保持一致
   async function doLogin(role) {
     const userEl = document.getElementById(role === 'student' ? 'studentUser' : 'employeeUser');
     const passEl = document.getElementById(role === 'student' ? 'studentPass' : 'employeePass');
     const user = userEl.value.trim();
     const pass = passEl.value;
     if (!user || !pass) { toast('请输入用户名和密码', 'error'); return; }
+
+    let result;
     try {
-      const resp = await fetch(LOGIN_API, {
-        method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ username: user, password: pass }),
-      });
-      const r = await resp.json();
-      if (r.success) {
-        var s = r.student;
-        Auth.set({ role: role, user_id: s.user_id, user_name: s.name,
-                   user_type: s.user_type || (role === 'student' ? '学员' : '员工'),
-                   token: 'token-' + Date.now(), exp: Date.now()/1000 + 86400 });
-        location.href = role === 'student' ? '/portal/student-dashboard' : '/portal/employee-dashboard';
+      if (role === 'student') {
+        result = await Auth.studentLogin(user, pass);
       } else {
-        toast(r.message || '用户名或密码不正确', 'error');
+        result = await Auth.employeeLogin(user, pass);
       }
     } catch (err) {
       toast('无法连接服务，请检查网络后重试', 'error');
+      return;
+    }
+
+    if (result.success) {
+      location.href = role === 'student' ? '/portal/student-dashboard' : '/portal/employee-dashboard';
+    } else {
+      toast(result.message || '用户名或密码不正确', 'error');
     }
   }
 
@@ -71,8 +72,8 @@ function initLoginForms() {
   if (sf) sf.addEventListener('submit', function(e) { e.preventDefault(); doLogin('student'); });
   if (ef) ef.addEventListener('submit', function(e) { e.preventDefault(); doLogin('employee'); });
   // 兜底：按钮点击
-  var sb = document.querySelector('#studentLoginForm button[type=\"submit\"]');
-  var eb = document.querySelector('#employeeLoginForm button[type=\"submit\"]');
+  var sb = document.querySelector('#studentLoginForm button[type="submit"]');
+  var eb = document.querySelector('#employeeLoginForm button[type="submit"]');
   if (sb) sb.addEventListener('click', function(e) { e.preventDefault(); doLogin('student'); });
   if (eb) eb.addEventListener('click', function(e) { e.preventDefault(); doLogin('employee'); });
   // 回车键
