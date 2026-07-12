@@ -1,24 +1,24 @@
-Traceback (most recent call last):
-  File "D:\dify_pro\Assessment\main_ass.py", line 8, in <module>
-    import uvicorn
-ModuleNotFoundError: No module named 'uvicorn'
-Traceback (most recent call last):
-  File "D:\dify_pro\Assessment\main_ass.py", line 15, in <module>
-    from Assessment.router import router as assessment_router
-ModuleNotFoundError: No module named 'Assessment'
-Traceback (most recent call last):
-  File "C:\Users\Windows\PycharmProjects\PythonProject10\dify_pro\Assessment\main_ass.py", line 15, in <module>
-    from Assessment.router import router as assessment_router
-ModuleNotFoundError: No module named 'Assessment'
-Traceback (most recent call last):
-  File "C:\Users\Windows\PycharmProjects\PythonProject10\dify_pro\Assessment\main_ass.py", line 15, in <module>
-    from Assessment.router import router as assessment_router
-ModuleNotFoundError: No module named 'Assessment'
-Traceback (most recent call last):
-  File "C:\Users\Windows\PycharmProjects\PythonProject10\dify_pro\Assessment\main_ass.py", line 15, in <module>
-    from Assessment.router import router as assessment_router
-ModuleNotFoundError: No module named 'Assessment'
-Traceback (most recent call last):
-  File "C:\Users\Windows\PycharmProjects\PythonProject10\dify_pro\Assessment\main_ass.py", line 15, in <module>
-    from Assessment.router import router as assessment_router
-ModuleNotFoundError: No module named 'Assessment'
+INFO:     Started server process [10716]
+INFO:     Waiting for application startup.
+INFO:     Application startup complete.
+INFO:     Uvicorn running on http://0.0.0.0:8002 (Press CTRL+C to quit)
+INFO:     Started server process [40144]
+INFO:     Waiting for application startup.
+INFO:     Application startup complete.
+INFO:     Uvicorn running on http://0.0.0.0:8002 (Press CTRL+C to quit)
+INFO:     Started server process [12732]
+INFO:     Waiting for application startup.
+INFO:     Application startup complete.
+INFO:     Uvicorn running on http://0.0.0.0:8002 (Press CTRL+C to quit)
+INFO:     Started server process [3928]
+INFO:     Waiting for application startup.
+INFO:     Application startup complete.
+INFO:     Uvicorn running on http://0.0.0.0:8002 (Press CTRL+C to quit)
+INFO:     Started server process [2444]
+INFO:     Waiting for application startup.
+INFO:     Application startup complete.
+INFO:     Uvicorn running on http://0.0.0.0:8002 (Press CTRL+C to quit)
+INFO:     Started server process [19368]
+INFO:     Waiting for application startup.
+INFO:     Application startup complete.
+INFO:     Uvicorn running on http://0.0.0.0:8002 (Press CTRL+C to quit)
