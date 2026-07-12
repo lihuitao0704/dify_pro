@@ -30,10 +30,10 @@ INFO:     127.0.0.1:59969 - "GET /portal/css/portal.css HTTP/1.1" 200 OK
 INFO:     127.0.0.1:59968 - "GET /portal/js/utils.js HTTP/1.1" 200 OK
 INFO:     127.0.0.1:59969 - "GET /portal/js/portal.js HTTP/1.1" 200 OK
 INFO:     127.0.0.1:59969 - "GET /favicon.ico HTTP/1.1" 404 Not Found
-INFO:     Will watch for changes in these directories: ['C:\\Users\\Windows\\PycharmProjects\\PythonProject10\\dify_pro']
+INFO:     Will watch for changes in these directories: ['C:\\Users\\Windows\\Desktop\\dify_pro']
 INFO:     Uvicorn running on http://0.0.0.0:9000 (Press CTRL+C to quit)
-INFO:     Started reloader process [38804] using WatchFiles
-INFO:     Started server process [36348]
+INFO:     Started reloader process [2788] using WatchFiles
+INFO:     Started server process [4640]
 INFO:     Waiting for application startup.
 =======================================================
   客服Agent 启动中... 端口: 9000
@@ -50,269 +50,10 @@ INFO:     Waiting for application startup.
   桥接 Event&Lecture: http://127.0.0.1:8011
 =======================================================
 INFO:     Application startup complete.
-INFO:     127.0.0.1:59220 - "GET /portal HTTP/1.1" 200 OK
-INFO:     127.0.0.1:59220 - "GET /portal/css/base.css HTTP/1.1" 200 OK
-INFO:     127.0.0.1:59222 - "GET /portal/js/utils.js HTTP/1.1" 200 OK
-INFO:     127.0.0.1:59221 - "GET /portal/css/portal.css HTTP/1.1" 200 OK
-INFO:     127.0.0.1:59220 - "GET /portal/js/portal.js HTTP/1.1" 200 OK
-INFO:     127.0.0.1:59220 - "GET /favicon.ico HTTP/1.1" 404 Not Found
-INFO:     127.0.0.1:50329 - "POST /agent/student/auth/login HTTP/1.1" 404 Not Found
-INFO:     127.0.0.1:50329 - "GET /portal/student-dashboard HTTP/1.1" 200 OK
-INFO:     127.0.0.1:50329 - "GET /portal/css/base.css HTTP/1.1" 200 OK
-INFO:     127.0.0.1:50329 - "GET /portal/css/dashboard.css HTTP/1.1" 200 OK
-INFO:     127.0.0.1:50334 - "GET /portal/js/auth.js HTTP/1.1" 200 OK
-INFO:     127.0.0.1:50329 - "GET /portal/js/utils.js HTTP/1.1" 200 OK
-INFO:     127.0.0.1:50334 - "GET /portal/js/chat.js HTTP/1.1" 200 OK
-INFO:     127.0.0.1:50329 - "GET /portal/js/student-dashboard.js HTTP/1.1" 200 OK
-INFO:     127.0.0.1:50329 - "GET /portal HTTP/1.1" 200 OK
-INFO:     127.0.0.1:50329 - "GET /portal/css/portal.css HTTP/1.1" 200 OK
-INFO:     127.0.0.1:50334 - "GET /portal/js/portal.js HTTP/1.1" 200 OK
-INFO:     127.0.0.1:50350 - "POST /agent/student/auth/login HTTP/1.1" 404 Not Found
-INFO:     127.0.0.1:50351 - "POST /agent/student/auth/login HTTP/1.1" 404 Not Found
-INFO:     127.0.0.1:50687 - "POST /agent/student/auth/login HTTP/1.1" 404 Not Found
-INFO:     127.0.0.1:50687 - "GET /portal/student-dashboard HTTP/1.1" 200 OK
-INFO:     127.0.0.1:50687 - "GET /portal/css/base.css HTTP/1.1" 200 OK
-INFO:     127.0.0.1:50687 - "GET /portal/css/dashboard.css HTTP/1.1" 200 OK
-INFO:     127.0.0.1:50689 - "GET /portal/js/utils.js HTTP/1.1" 200 OK
-INFO:     127.0.0.1:50687 - "GET /portal/js/auth.js HTTP/1.1" 200 OK
-INFO:     127.0.0.1:50689 - "GET /portal/js/chat.js HTTP/1.1" 200 OK
-INFO:     127.0.0.1:50689 - "GET /portal/js/student-dashboard.js HTTP/1.1" 200 OK
-INFO:     127.0.0.1:50689 - "GET /portal HTTP/1.1" 200 OK
-INFO:     127.0.0.1:50689 - "GET /portal/css/portal.css HTTP/1.1" 200 OK
-INFO:     127.0.0.1:50687 - "GET /portal/js/portal.js HTTP/1.1" 200 OK
-INFO:     127.0.0.1:50701 - "POST /agent/student/auth/login HTTP/1.1" 404 Not Found
-INFO:     127.0.0.1:50702 - "POST /agent/student/auth/login HTTP/1.1" 404 Not Found
-INFO:     127.0.0.1:50703 - "POST /agent/student/auth/login HTTP/1.1" 404 Not Found
-INFO:     127.0.0.1:50982 - "POST /agent/student/auth/login HTTP/1.1" 404 Not Found
-INFO:     127.0.0.1:50982 - "GET /portal/student-dashboard HTTP/1.1" 200 OK
-INFO:     127.0.0.1:50982 - "GET /portal/css/base.css HTTP/1.1" 200 OK
-INFO:     127.0.0.1:50984 - "GET /portal/js/utils.js HTTP/1.1" 200 OK
-INFO:     127.0.0.1:50982 - "GET /portal/css/dashboard.css HTTP/1.1" 200 OK
-INFO:     127.0.0.1:50982 - "GET /portal/js/chat.js HTTP/1.1" 200 OK
-INFO:     127.0.0.1:50984 - "GET /portal/js/auth.js HTTP/1.1" 200 OK
-INFO:     127.0.0.1:50984 - "GET /portal/js/student-dashboard.js HTTP/1.1" 200 OK
-INFO:     127.0.0.1:50984 - "GET /portal HTTP/1.1" 200 OK
-INFO:     127.0.0.1:50984 - "GET /portal/css/portal.css HTTP/1.1" 200 OK
-INFO:     127.0.0.1:50982 - "GET /portal/js/portal.js HTTP/1.1" 200 OK
-INFO:     127.0.0.1:51000 - "GET / HTTP/1.1" 200 OK
-INFO:     127.0.0.1:51000 - "GET /css/login.css HTTP/1.1" 404 Not Found
-INFO:     127.0.0.1:51001 - "GET /js/utils.js HTTP/1.1" 404 Not Found
-INFO:     127.0.0.1:51002 - "GET /css/login.css HTTP/1.1" 404 Not Found
-INFO:     127.0.0.1:51002 - "GET /js/utils.js HTTP/1.1" 404 Not Found
-INFO:     127.0.0.1:56790 - "POST /agent/student/auth/login HTTP/1.1" 404 Not Found
-INFO:     127.0.0.1:56790 - "GET /portal/student-dashboard HTTP/1.1" 200 OK
-INFO:     127.0.0.1:56790 - "GET /portal/css/base.css HTTP/1.1" 200 OK
-INFO:     127.0.0.1:58732 - "GET /portal/css/dashboard.css HTTP/1.1" 200 OK
-INFO:     127.0.0.1:56790 - "GET /portal/js/utils.js HTTP/1.1" 200 OK
-INFO:     127.0.0.1:58732 - "GET /portal/js/auth.js HTTP/1.1" 200 OK
-INFO:     127.0.0.1:56790 - "GET /portal/js/chat.js HTTP/1.1" 200 OK
-INFO:     127.0.0.1:58732 - "GET /portal/js/student-dashboard.js HTTP/1.1" 200 OK
-INFO:     127.0.0.1:58732 - "GET /portal HTTP/1.1" 200 OK
-INFO:     127.0.0.1:58732 - "GET /portal/css/portal.css HTTP/1.1" 200 OK
-INFO:     127.0.0.1:56790 - "GET /portal/js/portal.js HTTP/1.1" 200 OK
-INFO:     127.0.0.1:58757 - "POST /agent/student/auth/login HTTP/1.1" 404 Not Found
-INFO:     127.0.0.1:50660 - "GET /portal/employee-dashboard HTTP/1.1" 200 OK
-INFO:     127.0.0.1:63177 - "GET /portal/employee-dashboard HTTP/1.1" 200 OK
-INFO:     127.0.0.1:60711 - "GET /portal/employee-dashboard HTTP/1.1" 200 OK
-INFO:     127.0.0.1:60711 - "GET /portal/css/base.css HTTP/1.1" 200 OK
-INFO:     127.0.0.1:60712 - "GET /portal/css/dashboard.css HTTP/1.1" 200 OK
-INFO:     127.0.0.1:60711 - "GET /portal/js/utils.js HTTP/1.1" 200 OK
-INFO:     127.0.0.1:60712 - "GET /portal/js/auth.js HTTP/1.1" 200 OK
-INFO:     127.0.0.1:60711 - "GET /portal/js/employee-dashboard.js HTTP/1.1" 200 OK
-INFO:     127.0.0.1:60712 - "GET /portal/js/chat.js HTTP/1.1" 200 OK
-INFO:     127.0.0.1:60712 - "GET /portal HTTP/1.1" 200 OK
-INFO:     127.0.0.1:60712 - "GET /portal/css/portal.css HTTP/1.1" 200 OK
-INFO:     127.0.0.1:60712 - "GET /portal/js/portal.js HTTP/1.1" 200 OK
-INFO:     127.0.0.1:63029 - "GET /portal HTTP/1.1" 200 OK
-INFO:     127.0.0.1:63029 - "GET /portal/css/base.css HTTP/1.1" 200 OK
-INFO:     127.0.0.1:63030 - "GET /portal/css/portal.css HTTP/1.1" 200 OK
-INFO:     127.0.0.1:63029 - "GET /portal/js/utils.js HTTP/1.1" 200 OK
-INFO:     127.0.0.1:63030 - "GET /portal/js/portal.js HTTP/1.1" 200 OK
-INFO:     127.0.0.1:63496 - "POST /agent/student/auth/login HTTP/1.1" 404 Not Found
-INFO:     127.0.0.1:63496 - "GET /portal/student-dashboard HTTP/1.1" 200 OK
-INFO:     127.0.0.1:63496 - "GET /portal/css/dashboard.css HTTP/1.1" 200 OK
-INFO:     127.0.0.1:63496 - "GET /portal/js/auth.js HTTP/1.1" 200 OK
-INFO:     127.0.0.1:63498 - "GET /portal/js/chat.js HTTP/1.1" 200 OK
-INFO:     127.0.0.1:63496 - "GET /portal/js/student-dashboard.js HTTP/1.1" 200 OK
-INFO:     127.0.0.1:64841 - "POST /agent/student/auth/login HTTP/1.1" 404 Not Found
-INFO:     127.0.0.1:64841 - "GET /portal/css/dashboard.css HTTP/1.1" 200 OK
-INFO:     127.0.0.1:50078 - "GET /portal HTTP/1.1" 200 OK
-INFO:     127.0.0.1:50078 - "GET /portal/css/base.css HTTP/1.1" 200 OK
-INFO:     127.0.0.1:50079 - "GET /portal/css/portal.css HTTP/1.1" 200 OK
-INFO:     127.0.0.1:50078 - "GET /portal/js/utils.js HTTP/1.1" 200 OK
-INFO:     127.0.0.1:50079 - "GET /portal/js/portal.js HTTP/1.1" 200 OK
-INFO:     127.0.0.1:50083 - "GET /portal/employee-dashboard HTTP/1.1" 200 OK
-INFO:     127.0.0.1:50083 - "GET /portal/css/base.css HTTP/1.1" 200 OK
-INFO:     127.0.0.1:50085 - "GET /portal/js/auth.js HTTP/1.1" 200 OK
-INFO:     127.0.0.1:50083 - "GET /portal/js/chat.js HTTP/1.1" 200 OK
-INFO:     127.0.0.1:50085 - "GET /portal/js/employee-dashboard.js HTTP/1.1" 200 OK
-INFO:     127.0.0.1:50085 - "GET /portal HTTP/1.1" 200 OK
-INFO:     127.0.0.1:50085 - "GET /portal/js/portal.js HTTP/1.1" 200 OK
-INFO:     127.0.0.1:51611 - "GET /portal HTTP/1.1" 200 OK
-INFO:     127.0.0.1:51611 - "GET /portal/css/base.css HTTP/1.1" 200 OK
-INFO:     127.0.0.1:51612 - "GET /portal/js/portal.js HTTP/1.1" 200 OK
-INFO:     127.0.0.1:52003 - "POST /agent/student/auth/login HTTP/1.1" 404 Not Found
-INFO:     127.0.0.1:52003 - "GET /portal/student-dashboard HTTP/1.1" 200 OK
-INFO:     127.0.0.1:52003 - "GET /portal/css/base.css HTTP/1.1" 200 OK
-INFO:     127.0.0.1:52007 - "GET /portal/js/student-dashboard.js HTTP/1.1" 200 OK
-INFO:     127.0.0.1:52007 - "GET /portal HTTP/1.1" 200 OK
-INFO:     127.0.0.1:52007 - "GET /portal/js/portal.js HTTP/1.1" 200 OK
-===============
-INFO:     Application startup complete.
-WARNING:  WatchFiles detected changes in 'summary_report\services\nl2sql_service.py'. Reloading...
- INFO:     Shutting down
-INFO:     Waiting for application shutdown.
-INFO:     Application shutdown complete.
-INFO:     Finished server process [31104]
-WARNING:  WatchFiles detected changes in 'summary_report\services\nl2sql_service.py', 'summary_report\services\employee_report_service.py', 'summary_report\services\mental_report_service.py', 'summary_report\services\customer_report_service.py', 'summary_report\services\complaint_report_service.py', 'summary_report\api\routes\_helpers.py'. Reloading...
- C:\Users\Windows\miniconda3\Lib\site-packages\uvicorn\_subprocess.py:84: RuntimeWarning: coroutine 'Server.serve' was never awaited
-  pass
-RuntimeWarning: Enable tracemalloc to get the object allocation traceback
-INFO:     Started server process [9904]
-INFO:     Waiting for application startup.
-=======================================================
-  客服Agent 启动中... 端口: 9000
-=======================================================
-[KB] 开始加载知识库...
-[KB] 公司信息解析问答对: 46 (公司所有信息的问答对.txt)
-[KB] 公司信息解析问答对: 40 (高频问题_FAQ_.txt)
-[KB] 就绪: 112 chunks, 86 FAQ, 19 docs
-  知识库: 112 chunks, 86 FAQ
-  文档: http://localhost:9000/docs
-  知识库状态: http://localhost:9000/admin/kb-status
-  LLM模型: LongCat-2.0
-  桥接 study_abroad_agent: http://127.0.0.1:5000
-  桥接 Event&Lecture: http://127.0.0.1:8011
-=======================================================
-INFO:     Application startup complete.
-WARNING:  WatchFiles detected changes in 'summary_report\api\routes\_helpers.py'. Reloading...
- INFO:     Shutting down
-INFO:     Waiting for application shutdown.
-INFO:     Application shutdown complete.
-INFO:     Finished server process [9904]
-WARNING:  WatchFiles detected changes in 'summary_report\api\routes\_helpers.py'. Reloading...
- INFO:     Started server process [29692]
-INFO:     Waiting for application startup.
-=======================================================
-  客服Agent 启动中... 端口: 9000
-=======================================================
-[KB] 开始加载知识库...
-[KB] 公司信息解析问答对: 46 (公司所有信息的问答对.txt)
-[KB] 公司信息解析问答对: 40 (高频问题_FAQ_.txt)
-[KB] 就绪: 112 chunks, 86 FAQ, 19 docs
-  知识库: 112 chunks, 86 FAQ
-  文档: http://localhost:9000/docs
-  知识库状态: http://localhost:9000/admin/kb-status
-  LLM模型: LongCat-2.0
-  桥接 study_abroad_agent: http://127.0.0.1:5000
-  桥接 Event&Lecture: http://127.0.0.1:8011
-=======================================================
-INFO:     Application startup complete.
-WARNING:  WatchFiles detected changes in 'summary_report\api\routes\_helpers.py'. Reloading...
- INFO:     Shutting down
-INFO:     Waiting for application shutdown.
-INFO:     Application shutdown complete.
-INFO:     Finished server process [29692]
-WARNING:  WatchFiles detected changes in 'summary_report\api\routes\_helpers.py', 'summary_report\services\nl2sql_service.py'. Reloading...
- INFO:     Started server process [37832]
-INFO:     Waiting for application startup.
-=======================================================
-  客服Agent 启动中... 端口: 9000
-=======================================================
-[KB] 开始加载知识库...
-[KB] 公司信息解析问答对: 46 (公司所有信息的问答对.txt)
-[KB] 公司信息解析问答对: 40 (高频问题_FAQ_.txt)
-[KB] 就绪: 112 chunks, 86 FAQ, 19 docs
-  知识库: 112 chunks, 86 FAQ
-  文档: http://localhost:9000/docs
-  知识库状态: http://localhost:9000/admin/kb-status
-  LLM模型: LongCat-2.0
-  桥接 study_abroad_agent: http://127.0.0.1:5000
-  桥接 Event&Lecture: http://127.0.0.1:8011
-=======================================================
-INFO:     Application startup complete.
-WARNING:  WatchFiles detected changes in 'summary_report\services\nl2sql_service.py'. Reloading...
- INFO:     Shutting down
-INFO:     Waiting for application shutdown.
-INFO:     Application shutdown complete.
-INFO:     Finished server process [37832]
-WARNING:  WatchFiles detected changes in 'summary_report\api\routes\_helpers.py', 'summary_report\services\nl2sql_service.py'. Reloading...
- INFO:     Started server process [10244]
-INFO:     Waiting for application startup.
-=======================================================
-  客服Agent 启动中... 端口: 9000
-=======================================================
-[KB] 开始加载知识库...
-[KB] 公司信息解析问答对: 46 (公司所有信息的问答对.txt)
-[KB] 公司信息解析问答对: 40 (高频问题_FAQ_.txt)
-[KB] 就绪: 112 chunks, 86 FAQ, 19 docs
-  知识库: 112 chunks, 86 FAQ
-  文档: http://localhost:9000/docs
-  知识库状态: http://localhost:9000/admin/kb-status
-  LLM模型: LongCat-2.0
-  桥接 study_abroad_agent: http://127.0.0.1:5000
-  桥接 Event&Lecture: http://127.0.0.1:8011
-=======================================================
-INFO:     Application startup complete.
-Task was destroyed but it is pending!
-task: <Task pending name='Task-1' coro=<Server.serve() done, defined at C:\Users\Windows\miniconda3\Lib\site-packages\uvicorn\server.py:77> wait_for=<Future pending cb=[Task.task_wakeup()]>>
-Task was destroyed but it is pending!
-task: <Task pending name='Task-3' coro=<LifespanOn.main() running at C:\Users\Windows\miniconda3\Lib\site-packages\uvicorn\lifespan\on.py:86> wait_for=<Future pending cb=[Task.task_wakeup()]>>
---- Logging error ---
-Traceback (most recent call last):
-  File "C:\Users\Windows\miniconda3\Lib\asyncio\queues.py", line 186, in get
-GeneratorExit
-
-During handling of the above exception, another exception occurred:
-
-Traceback (most recent call last):
-  File "C:\Users\Windows\miniconda3\Lib\site-packages\starlette\routing.py", line 645, in lifespan
-  File "C:\Users\Windows\miniconda3\Lib\site-packages\uvicorn\lifespan\on.py", line 137, in receive
-  File "C:\Users\Windows\miniconda3\Lib\asyncio\queues.py", line 188, in get
-  File "C:\Users\Windows\miniconda3\Lib\asyncio\base_events.py", line 833, in call_soon
-  File "C:\Users\Windows\miniconda3\Lib\asyncio\base_events.py", line 556, in _check_closed
-RuntimeError: Event loop is closed
-
-During handling of the above exception, another exception occurred:
-
-Traceback (most recent call last):
-  File "C:\Users\Windows\miniconda3\Lib\logging\__init__.py", line 1151, in emit
-  File "C:\Users\Windows\miniconda3\Lib\logging\__init__.py", line 999, in format
-  File "C:\Users\Windows\miniconda3\Lib\logging\__init__.py", line 715, in format
-  File "C:\Users\Windows\miniconda3\Lib\site-packages\uvicorn\logging.py", line 56, in formatMessage
-  File "C:\Users\Windows\miniconda3\Lib\copy.py", line 88, in copy
-ImportError: sys.meta_path is None, Python is likely shutting down
-Call stack:
-  File "C:\Users\Windows\miniconda3\Lib\site-packages\starlette\routing.py", line 649, in lifespan
-  File "C:\Users\Windows\miniconda3\Lib\site-packages\uvicorn\lifespan\on.py", line 134, in send
-Message: 'Traceback (most recent call last):\n  File "C:\\Users\\Windows\\miniconda3\\Lib\\asyncio\\queues.py", line 186, in get\nGeneratorExit\n\nDuring handling of the above exception, another exception occurred:\n\nTraceback (most recent call last):\n  File "C:\\Users\\Windows\\miniconda3\\Lib\\site-packages\\starlette\\routing.py", line 645, in lifespan\n  File "C:\\Users\\Windows\\miniconda3\\Lib\\site-packages\\uvicorn\\lifespan\\on.py", line 137, in receive\n  File "C:\\Users\\Windows\\miniconda3\\Lib\\asyncio\\queues.py", line 188, in get\n  File "C:\\Users\\Windows\\miniconda3\\Lib\\asyncio\\base_events.py", line 833, in call_soon\n  File "C:\\Users\\Windows\\miniconda3\\Lib\\asyncio\\base_events.py", line 556, in _check_closed\nRuntimeError: Event loop is closed\n'
-Arguments: ()
-INFO:     Started server process [7156]
-INFO:     Waiting for application startup.
-=======================================================
-  客服Agent 启动中... 端口: 9000
-=======================================================
-[KB] 开始加载知识库...
-[KB] 公司信息解析问答对: 46 (公司所有信息的问答对.txt)
-[KB] 公司信息解析问答对: 40 (高频问题_FAQ_.txt)
-[KB] 就绪: 112 chunks, 86 FAQ, 19 docs
-  知识库: 112 chunks, 86 FAQ
-  文档: http://localhost:9000/docs
-  知识库状态: http://localhost:9000/admin/kb-status
-  LLM模型: LongCat-2.0
-  桥接 study_abroad_agent: http://127.0.0.1:5000
-  桥接 Event&Lecture: http://127.0.0.1:8011
-=======================================================
-INFO:     Application startup complete.
-WARNING:  WatchFiles detected changes in 'summary_report\services\nl2sql_service.py'. Reloading...
- INFO:     Shutting down
-INFO:     Waiting for application shutdown.
-INFO:     Application shutdown complete.
-INFO:     Finished server process [7156]
-INFO:     Will watch for changes in these directories: ['C:\\Users\\Windows\\PycharmProjects\\PythonProject10\\dify_pro']
+INFO:     Will watch for changes in these directories: ['C:\\Users\\Windows\\Desktop\\整体项目合并后-副本']
 INFO:     Uvicorn running on http://0.0.0.0:9000 (Press CTRL+C to quit)
-INFO:     Started reloader process [39752] using WatchFiles
-INFO:     Started server process [40148]
+INFO:     Started reloader process [21844] using WatchFiles
+INFO:     Started server process [17948]
 INFO:     Waiting for application startup.
 =======================================================
   客服Agent 启动中... 端口: 9000
@@ -329,15 +70,134 @@ INFO:     Waiting for application startup.
   桥接 Event&Lecture: http://127.0.0.1:8011
 =======================================================
 INFO:     Application startup complete.
-WARNING:  WatchFiles detected changes in 'summary_report\main.py'. Reloading...
+WARNING:  WatchFiles detected changes in 'Assessment\assessment.py'. Reloading...
+ INFO:     Will watch for changes in these directories: ['C:\\Users\\Windows\\Desktop\\整体项目合并后-副本']
+INFO:     Uvicorn running on http://0.0.0.0:9000 (Press CTRL+C to quit)
+INFO:     Started reloader process [21012] using WatchFiles
+INFO:     Started server process [24868]
+INFO:     Waiting for application startup.
+=======================================================
+  客服Agent 启动中... 端口: 9000
+=======================================================
+[KB] 开始加载知识库...
+[KB] 公司信息解析问答对: 46 (公司所有信息的问答对.txt)
+[KB] 公司信息解析问答对: 40 (高频问题_FAQ_.txt)
+[KB] 就绪: 112 chunks, 86 FAQ, 19 docs
+  知识库: 112 chunks, 86 FAQ
+  文档: http://localhost:9000/docs
+  知识库状态: http://localhost:9000/admin/kb-status
+  LLM模型: LongCat-2.0
+  桥接 study_abroad_agent: http://127.0.0.1:5000
+  桥接 Event&Lecture: http://127.0.0.1:8011
+=======================================================
+INFO:     Application startup complete.
+INFO:     Will watch for changes in these directories: ['C:\\Users\\Windows\\Desktop\\整体项目合并后-副本']
+INFO:     Uvicorn running on http://0.0.0.0:9000 (Press CTRL+C to quit)
+INFO:     Started reloader process [6600] using WatchFiles
+INFO:     Started server process [26032]
+INFO:     Waiting for application startup.
+=======================================================
+  客服Agent 启动中... 端口: 9000
+=======================================================
+[KB] 开始加载知识库...
+[KB] 公司信息解析问答对: 46 (公司所有信息的问答对.txt)
+[KB] 公司信息解析问答对: 40 (高频问题_FAQ_.txt)
+[KB] 就绪: 112 chunks, 86 FAQ, 19 docs
+  知识库: 112 chunks, 86 FAQ
+  文档: http://localhost:9000/docs
+  知识库状态: http://localhost:9000/admin/kb-status
+  LLM模型: LongCat-2.0
+  桥接 study_abroad_agent: http://127.0.0.1:5000
+  桥接 Event&Lecture: http://127.0.0.1:8011
+=======================================================
+INFO:     Application startup complete.
+INFO:     Will watch for changes in these directories: ['C:\\Users\\Windows\\Desktop\\整体项目合并后-副本']
+INFO:     Uvicorn running on http://0.0.0.0:9000 (Press CTRL+C to quit)
+INFO:     Started reloader process [17988] using WatchFiles
+INFO:     Started server process [23536]
+INFO:     Waiting for application startup.
+=======================================================
+  客服Agent 启动中... 端口: 9000
+=======================================================
+[KB] 开始加载知识库...
+[KB] 公司信息解析问答对: 46 (公司所有信息的问答对.txt)
+[KB] 公司信息解析问答对: 40 (高频问题_FAQ_.txt)
+[KB] 就绪: 112 chunks, 86 FAQ, 19 docs
+  知识库: 112 chunks, 86 FAQ
+  文档: http://localhost:9000/docs
+  知识库状态: http://localhost:9000/admin/kb-status
+  LLM模型: LongCat-2.0
+  桥接 study_abroad_agent: http://127.0.0.1:5000
+  桥接 Event&Lecture: http://127.0.0.1:8011
+=======================================================
+INFO:     Application startup complete.
+INFO:     Will watch for changes in these directories: ['C:\\Users\\Windows\\Desktop\\������Ŀ�ϲ���-����']
+INFO:     Uvicorn running on http://0.0.0.0:9000 (Press CTRL+C to quit)
+INFO:     Started reloader process [14156] using WatchFiles
+INFO:     Started server process [26332]
+INFO:     Waiting for application startup.
+INFO:     Application startup complete.
+=======================================================
+  �ͷ�Agent ������... �˿�: 9000
+=======================================================
+[KB] ��ʼ����֪ʶ��...
+[KB] ��˾��Ϣ�����ʴ��: 46 (��˾������Ϣ���ʴ��.txt)
+[KB] ��˾��Ϣ�����ʴ��: 40 (��Ƶ����_FAQ_.txt)
+[KB] ����: 112 chunks, 86 FAQ, 19 docs
+  ֪ʶ��: 112 chunks, 86 FAQ
+  �ĵ�: http://localhost:9000/docs
+  ֪ʶ��״̬: http://localhost:9000/admin/kb-status
+  LLMģ��: LongCat-2.0
+  �Ž� study_abroad_agent: http://127.0.0.1:5000
+  �Ž� Event&Lecture: http://127.0.0.1:8011
+=======================================================
+INFO:     127.0.0.1:54801 - "GET /portal HTTP/1.1" 200 OK
+INFO:     127.0.0.1:54849 - "GET /portal?v=2 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:54868 - "GET /portal HTTP/1.1" 200 OK
+INFO:     127.0.0.1:54923 - "GET /portal HTTP/1.1" 200 OK
+INFO:     127.0.0.1:54923 - "GET /portal/css/base.css HTTP/1.1" 200 OK
+INFO:     127.0.0.1:54923 - "GET /portal/css/portal.css HTTP/1.1" 200 OK
+INFO:     127.0.0.1:54923 - "GET /portal/js/utils.js HTTP/1.1" 200 OK
+INFO:     127.0.0.1:54923 - "GET /portal/js/portal.js HTTP/1.1" 200 OK
+INFO:     127.0.0.1:54926 - "GET /portal/student-dashboard HTTP/1.1" 200 OK
+INFO:     127.0.0.1:54926 - "GET /portal/css/dashboard.css HTTP/1.1" 200 OK
+INFO:     127.0.0.1:54927 - "GET /portal/js/auth.js HTTP/1.1" 200 OK
+INFO:     127.0.0.1:54928 - "GET /portal/js/chat.js HTTP/1.1" 200 OK
+INFO:     127.0.0.1:54929 - "GET /portal/js/student-dashboard.js HTTP/1.1" 200 OK
+INFO:     127.0.0.1:55011 - "GET /portal/student-dashboard HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56087 - "GET /portal HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56087 - "GET /portal/css/base.css HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56088 - "GET /portal/css/portal.css HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56087 - "GET /portal/js/utils.js HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56088 - "GET /portal/js/portal.js HTTP/1.1" 200 OK
+WARNING:  WatchFiles detected changes in 'student_agent\main_jb.py'. Reloading...
+ \\整体项目合并后-副本']
+INFO:     Uvicorn running on http://0.0.0.0:9000 (Press CTRL+C to quit)
+INFO:     Started reloader process [16008] using WatchFiles
+INFO:     Started server process [3148]
+INFO:     Waiting for application startup.
+=======================================================
+  客服Agent 启动中... 端口: 9000
+=======================================================
+[KB] 开始加载知识库...
+[KB] 公司信息解析问答对: 46 (公司所有信息的问答对.txt)
+[KB] 公司信息解析问答对: 40 (高频问题_FAQ_.txt)
+[KB] 就绪: 112 chunks, 86 FAQ, 19 docs
+  知识库: 112 chunks, 86 FAQ
+  文档: http://localhost:9000/docs
+  知识库状态: http://localhost:9000/admin/kb-status
+  LLM模型: LongCat-2.0
+  桥接 study_abroad_agent: http://127.0.0.1:5000
+  桥接 Event&Lecture: http://127.0.0.1:8011
+=======================================================
+INFO:     Application startup complete.
+WARNING:  WatchFiles detected changes in 'student_agent\main_jb.py'. Reloading...
  INFO:     Shutting down
 INFO:     Waiting for application shutdown.
 INFO:     Application shutdown complete.
-INFO:     Finished server process [40148]
-INFO:     Will watch for changes in these directories: ['C:\\Users\\Windows\\PycharmProjects\\PythonProject10\\dify_pro']
-INFO:     Uvicorn running on http://0.0.0.0:9000 (Press CTRL+C to quit)
-INFO:     Started reloader process [29776] using WatchFiles
-INFO:     Started server process [15048]
+INFO:     Finished server process [3148]
+WARNING:  WatchFiles detected changes in 'student_agent\main_jb.py', 'student_agent\agent.py', 'student_agent\reminder.py'. Reloading...
+ INFO:     Started server process [1196]
 INFO:     Waiting for application startup.
 =======================================================
   客服Agent 启动中... 端口: 9000
@@ -354,15 +214,244 @@ INFO:     Waiting for application startup.
   桥接 Event&Lecture: http://127.0.0.1:8011
 =======================================================
 INFO:     Application startup complete.
-WARNING:  WatchFiles detected changes in 'summary_report\main.py'. Reloading...
+WARNING:  WatchFiles detected changes in 'student_agent\agent.py'. Reloading...
+ INFO:     Will watch for changes in these directories: ['C:\\Users\\Windows\\Desktop\\整体项目合并后-副本']
+INFO:     Uvicorn running on http://0.0.0.0:9000 (Press CTRL+C to quit)
+INFO:     Started reloader process [9788] using WatchFiles
+INFO:     Started server process [16928]
+INFO:     Waiting for application startup.
+=======================================================
+  客服Agent 启动中... 端口: 9000
+=======================================================
+[KB] 开始加载知识库...
+[KB] 公司信息解析问答对: 46 (公司所有信息的问答对.txt)
+[KB] 公司信息解析问答对: 40 (高频问题_FAQ_.txt)
+[KB] 就绪: 112 chunks, 86 FAQ, 19 docs
+  知识库: 112 chunks, 86 FAQ
+  文档: http://localhost:9000/docs
+  知识库状态: http://localhost:9000/admin/kb-status
+  LLM模型: LongCat-2.0
+  桥接 study_abroad_agent: http://127.0.0.1:5000
+  桥接 Event&Lecture: http://127.0.0.1:8011
+=======================================================
+INFO:     Application startup complete.
+INFO:     127.0.0.1:58592 - "GET /portal HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58592 - "GET /portal/css/base.css HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58592 - "GET /portal/css/portal.css HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58592 - "GET /portal/js/utils.js HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58592 - "GET /portal/js/auth.js HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58592 - "GET /portal/js/portal.js HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58758 - "GET /portal HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58763 - "GET /portal/student-dashboard HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58800 - "GET /portal/js/portal.js HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58802 - "GET /portal/js/auth.js HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58807 - "GET /portal/js/portal.js HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58847 - "GET /portal?v=3 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58856 - "GET /portal HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58945 - "GET /portal HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58946 - "GET /portal/student-dashboard HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58947 - "GET /portal/js/chat.js HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58946 - "GET /portal/css/dashboard.css HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58947 - "GET /portal/js/student-dashboard.js HTTP/1.1" 200 OK
+WARNING:  WatchFiles detected changes in 'student_agent\services\leave_service.py'. Reloading...
+ INFO:     127.0.0.1:59324 - "GET /portal/student-dashboard HTTP/1.1" 200 OK
+INFO:     127.0.0.1:59324 - "GET /portal/js/auth.js HTTP/1.1" 200 OK
+INFO:     Will watch for changes in these directories: ['C:\\Users\\Windows\\Desktop\\������Ŀ�ϲ���-����']
+INFO:     Uvicorn running on http://0.0.0.0:9000 (Press CTRL+C to quit)
+INFO:     Started reloader process [2912] using WatchFiles
+INFO:     Started server process [23760]
+INFO:     Waiting for application startup.
+INFO:     Application startup complete.
+=======================================================
+  �ͷ�Agent ������... �˿�: 9000
+=======================================================
+[KB] ��ʼ����֪ʶ��...
+[KB] ��˾��Ϣ�����ʴ��: 46 (��˾������Ϣ���ʴ��.txt)
+[KB] ��˾��Ϣ�����ʴ��: 40 (��Ƶ����_FAQ_.txt)
+[KB] ����: 112 chunks, 86 FAQ, 19 docs
+  ֪ʶ��: 112 chunks, 86 FAQ
+  �ĵ�: http://localhost:9000/docs
+  ֪ʶ��״̬: http://localhost:9000/admin/kb-status
+  LLMģ��: LongCat-2.0
+  �Ž� study_abroad_agent: http://127.0.0.1:5000
+  �Ž� Event&Lecture: http://127.0.0.1:8011
+=======================================================
+INFO:     127.0.0.1:59490 - "GET /portal HTTP/1.1" 200 OK
+INFO:     127.0.0.1:59606 - "GET /portal HTTP/1.1" 200 OK
+INFO:     127.0.0.1:59606 - "GET /portal/js/portal.js HTTP/1.1" 200 OK
+WARNING:  WatchFiles detected changes in 'student_agent\services\leave_service.py'. Reloading...
+ INFO:     Will watch for changes in these directories: ['C:\\Users\\Windows\\Desktop\\������Ŀ�ϲ���-����']
+INFO:     Uvicorn running on http://0.0.0.0:9000 (Press CTRL+C to quit)
+INFO:     Started reloader process [7580] using WatchFiles
+INFO:     Started server process [16276]
+INFO:     Waiting for application startup.
+INFO:     Application startup complete.
+=======================================================
+  �ͷ�Agent ������... �˿�: 9000
+=======================================================
+[KB] ��ʼ����֪ʶ��...
+[KB] ��˾��Ϣ�����ʴ��: 46 (��˾������Ϣ���ʴ��.txt)
+[KB] ��˾��Ϣ�����ʴ��: 40 (��Ƶ����_FAQ_.txt)
+[KB] ����: 112 chunks, 86 FAQ, 19 docs
+  ֪ʶ��: 112 chunks, 86 FAQ
+  �ĵ�: http://localhost:9000/docs
+  ֪ʶ��״̬: http://localhost:9000/admin/kb-status
+  LLMģ��: LongCat-2.0
+  �Ž� study_abroad_agent: http://127.0.0.1:5000
+  �Ž� Event&Lecture: http://127.0.0.1:8011
+=======================================================
+INFO:     127.0.0.1:59812 - "GET /portal HTTP/1.1" 200 OK
+INFO:     127.0.0.1:59953 - "GET /portal/student-dashboard HTTP/1.1" 200 OK
+INFO:     127.0.0.1:59953 - "GET /portal/css/base.css HTTP/1.1" 200 OK
+INFO:     127.0.0.1:59954 - "GET /portal/css/dashboard.css HTTP/1.1" 200 OK
+INFO:     127.0.0.1:59954 - "GET /portal/js/auth.js HTTP/1.1" 200 OK
+INFO:     127.0.0.1:59953 - "GET /portal/js/utils.js HTTP/1.1" 200 OK
+INFO:     127.0.0.1:59954 - "GET /portal/js/chat.js HTTP/1.1" 200 OK
+INFO:     127.0.0.1:59953 - "GET /portal/js/student-dashboard.js HTTP/1.1" 200 OK
+INFO:     127.0.0.1:59960 - "GET /portal HTTP/1.1" 200 OK
+INFO:     127.0.0.1:59960 - "GET /portal/css/portal.css HTTP/1.1" 200 OK
+WARNING:  WatchFiles detected changes in 'student_agent\main_jb.py'. Reloading...
+  process [25508] using WatchFiles
+INFO:     Started server process [24568]
+INFO:     Waiting for application startup.
+=======================================================
+  客服Agent 启动中... 端口: 9000
+=======================================================
+[KB] 开始加载知识库...
+[KB] 公司信息解析问答对: 46 (公司所有信息的问答对.txt)
+[KB] 公司信息解析问答对: 40 (高频问题_FAQ_.txt)
+[KB] 就绪: 112 chunks, 86 FAQ, 19 docs
+  知识库: 112 chunks, 86 FAQ
+  文档: http://localhost:9000/docs
+  知识库状态: http://localhost:9000/admin/kb-status
+  LLM模型: LongCat-2.0
+  桥接 study_abroad_agent: http://127.0.0.1:5000
+  桥接 Event&Lecture: http://127.0.0.1:8011
+=======================================================
+INFO:     Application startup complete.
+WARNING:  WatchFiles detected changes in 'student_agent\main_jb.py'. Reloading...
+ INFO:     Will watch for changes in these directories: ['C:\\Users\\Windows\\Desktop\\������Ŀ�ϲ���-����']
+INFO:     Uvicorn running on http://0.0.0.0:9000 (Press CTRL+C to quit)
+INFO:     Started reloader process [16924] using WatchFiles
+INFO:     Started server process [24452]
+INFO:     Waiting for application startup.
+INFO:     Application startup complete.
+=======================================================
+  �ͷ�Agent ������... �˿�: 9000
+=======================================================
+[KB] ��ʼ����֪ʶ��...
+[KB] ��˾��Ϣ�����ʴ��: 46 (��˾������Ϣ���ʴ��.txt)
+[KB] ��˾��Ϣ�����ʴ��: 40 (��Ƶ����_FAQ_.txt)
+[KB] ����: 112 chunks, 86 FAQ, 19 docs
+  ֪ʶ��: 112 chunks, 86 FAQ
+  �ĵ�: http://localhost:9000/docs
+  ֪ʶ��״̬: http://localhost:9000/admin/kb-status
+  LLMģ��: LongCat-2.0
+  �Ž� study_abroad_agent: http://127.0.0.1:5000
+  �Ž� Event&Lecture: http://127.0.0.1:8011
+=======================================================
+INFO:     127.0.0.1:60196 - "GET /portal HTTP/1.1" 200 OK
+WARNING:  WatchFiles detected changes in 'student_agent\agent.py'. Reloading...
+ INFO:     Will watch for changes in these directories: ['C:\\Users\\Windows\\Desktop\\������Ŀ�ϲ���-����']
+INFO:     Uvicorn running on http://0.0.0.0:9000 (Press CTRL+C to quit)
+INFO:     Started reloader process [23956] using WatchFiles
+INFO:     Started server process [18240]
+INFO:     Waiting for application startup.
+INFO:     Application startup complete.
+=======================================================
+  �ͷ�Agent ������... �˿�: 9000
+=======================================================
+[KB] ��ʼ����֪ʶ��...
+[KB] ��˾��Ϣ�����ʴ��: 46 (��˾������Ϣ���ʴ��.txt)
+[KB] ��˾��Ϣ�����ʴ��: 40 (��Ƶ����_FAQ_.txt)
+[KB] ����: 112 chunks, 86 FAQ, 19 docs
+  ֪ʶ��: 112 chunks, 86 FAQ
+  �ĵ�: http://localhost:9000/docs
+  ֪ʶ��״̬: http://localhost:9000/admin/kb-status
+  LLMģ��: LongCat-2.0
+  �Ž� study_abroad_agent: http://127.0.0.1:5000
+  �Ž� Event&Lecture: http://127.0.0.1:8011
+=======================================================
+INFO:     127.0.0.1:60463 - "GET /portal HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60666 - "GET /portal HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60666 - "GET /portal/js/auth.js HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60666 - "GET /portal/js/portal.js HTTP/1.1" 200 OK
+WARNING:  WatchFiles detected changes in 'student_agent\services\leave_service.py'. Reloading...
+    Waiting for application startup.
+=======================================================
+  客服Agent 启动中... 端口: 9000
+=======================================================
+[KB] 开始加载知识库...
+[KB] 公司信息解析问答对: 46 (公司所有信息的问答对.txt)
+[KB] 公司信息解析问答对: 40 (高频问题_FAQ_.txt)
+[KB] 就绪: 112 chunks, 86 FAQ, 19 docs
+  知识库: 112 chunks, 86 FAQ
+  文档: http://localhost:9000/docs
+  知识库状态: http://localhost:9000/admin/kb-status
+  LLM模型: LongCat-2.0
+  桥接 study_abroad_agent: http://127.0.0.1:5000
+  桥接 Event&Lecture: http://127.0.0.1:8011
+=======================================================
+INFO:     Application startup complete.
+WARNING:  WatchFiles detected changes in 'student_agent\services\leave_service.py'. Reloading...
+ INFO:     Will watch for changes in these directories: ['C:\\Users\\Windows\\Desktop\\整体项目合并后-副本']
+INFO:     Uvicorn running on http://0.0.0.0:9000 (Press CTRL+C to quit)
+INFO:     Started reloader process [4860] using WatchFiles
+INFO:     Started server process [12248]
+INFO:     Waiting for application startup.
+=======================================================
+  客服Agent 启动中... 端口: 9000
+=======================================================
+[KB] 开始加载知识库...
+[KB] 公司信息解析问答对: 46 (公司所有信息的问答对.txt)
+[KB] 公司信息解析问答对: 40 (高频问题_FAQ_.txt)
+[KB] 就绪: 112 chunks, 86 FAQ, 19 docs
+  知识库: 112 chunks, 86 FAQ
+  文档: http://localhost:9000/docs
+  知识库状态: http://localhost:9000/admin/kb-status
+  LLM模型: LongCat-2.0
+  桥接 study_abroad_agent: http://127.0.0.1:5000
+  桥接 Event&Lecture: http://127.0.0.1:8011
+=======================================================
+INFO:     Application startup complete.
+INFO:     127.0.0.1:61155 - "GET /portal/css/base.css HTTP/1.1" 200 OK
+INFO:     127.0.0.1:61155 - "GET /portal/css/portal.css HTTP/1.1" 200 OK
+INFO:     127.0.0.1:61155 - "GET /portal/js/utils.js HTTP/1.1" 200 OK
+INFO:     127.0.0.1:61146 - "GET /portal/student-dashboard HTTP/1.1" 200 OK
+INFO:     127.0.0.1:61146 - "GET /portal/css/dashboard.css HTTP/1.1" 200 OK
+INFO:     127.0.0.1:61149 - "GET /portal/js/chat.js HTTP/1.1" 200 OK
+INFO:     127.0.0.1:61150 - "GET /portal/js/student-dashboard.js HTTP/1.1" 200 OK
+WARNING:  WatchFiles detected changes in 'student_agent\services\leave_service.py'. Reloading...
+ INFO:     Will watch for changes in these directories: ['C:\\Users\\Windows\\Desktop\\整体项目合并后-副本']
+INFO:     Uvicorn running on http://0.0.0.0:9000 (Press CTRL+C to quit)
+INFO:     Started reloader process [10356] using WatchFiles
+INFO:     Started server process [19112]
+INFO:     Waiting for application startup.
+=======================================================
+  客服Agent 启动中... 端口: 9000
+=======================================================
+[KB] 开始加载知识库...
+[KB] 公司信息解析问答对: 46 (公司所有信息的问答对.txt)
+[KB] 公司信息解析问答对: 40 (高频问题_FAQ_.txt)
+[KB] 就绪: 112 chunks, 86 FAQ, 19 docs
+  知识库: 112 chunks, 86 FAQ
+  文档: http://localhost:9000/docs
+  知识库状态: http://localhost:9000/admin/kb-status
+  LLM模型: LongCat-2.0
+  桥接 study_abroad_agent: http://127.0.0.1:5000
+  桥接 Event&Lecture: http://127.0.0.1:8011
+=======================================================
+INFO:     Application startup complete.
+INFO:     127.0.0.1:61580 - "GET /portal/student-dashboard HTTP/1.1" 200 OK
+INFO:     127.0.0.1:61580 - "GET /portal/js/auth.js HTTP/1.1" 200 OK
+WARNING:  WatchFiles detected changes in 'student_agent\services\leave_service.py'. Reloading...
  INFO:     Shutting down
 INFO:     Waiting for application shutdown.
 INFO:     Application shutdown complete.
-INFO:     Finished server process [15048]
-INFO:     Will watch for changes in these directories: ['C:\\Users\\Windows\\PycharmProjects\\PythonProject10\\dify_pro']
-INFO:     Uvicorn running on http://0.0.0.0:9000 (Press CTRL+C to quit)
-INFO:     Started reloader process [9448] using WatchFiles
-INFO:     Started server process [17824]
+INFO:     Finished server process [19112]
+WARNING:  WatchFiles detected changes in 'student_agent\services\leave_service.py'. Reloading...
+ WARNING:  WatchFiles detected changes in 'student_agent\services\leave_service.py'. Reloading...
+ INFO:     Started server process [8492]
 INFO:     Waiting for application startup.
 =======================================================
   客服Agent 启动中... 端口: 9000
@@ -379,68 +468,56 @@ INFO:     Waiting for application startup.
   桥接 Event&Lecture: http://127.0.0.1:8011
 =======================================================
 INFO:     Application startup complete.
-INFO:     Will watch for changes in these directories: ['C:\\Users\\Windows\\PycharmProjects\\PythonProject10\\dify_pro']
+WARNING:  WatchFiles detected changes in 'student_agent\services\leave_service.py'. Reloading...
+ INFO:     Will watch for changes in these directories: ['C:\\Users\\Windows\\Desktop\\������Ŀ�ϲ���-����']
 INFO:     Uvicorn running on http://0.0.0.0:9000 (Press CTRL+C to quit)
-INFO:     Started reloader process [41316] using WatchFiles
-INFO:     Started server process [4000]
+INFO:     Started reloader process [25212] using WatchFiles
+INFO:     Started server process [20340]
 INFO:     Waiting for application startup.
-=======================================================
-  客服Agent 启动中... 端口: 9000
-=======================================================
-[KB] 开始加载知识库...
-[KB] 公司信息解析问答对: 46 (公司所有信息的问答对.txt)
-[KB] 公司信息解析问答对: 40 (高频问题_FAQ_.txt)
-[KB] 就绪: 112 chunks, 86 FAQ, 19 docs
-  知识库: 112 chunks, 86 FAQ
-  文档: http://localhost:9000/docs
-  知识库状态: http://localhost:9000/admin/kb-status
-  LLM模型: LongCat-2.0
-  桥接 study_abroad_agent: http://127.0.0.1:5000
-  桥接 Event&Lecture: http://127.0.0.1:8011
-=======================================================
 INFO:     Application startup complete.
-WARNING:  WatchFiles detected changes in 'Assessment\resume_api.py', 'Assessment\resume.py', 'Assessment\assessment.py', 'Assessment\__init__.py'. Reloading...
- INFO:     Shutting down
-INFO:     Waiting for application shutdown.
-INFO:     Application shutdown complete.
-INFO:     Finished server process [4000]
-INFO:     Will watch for changes in these directories: ['C:\\Users\\Windows\\PycharmProjects\\PythonProject10\\dify_pro']
+=======================================================
+  �ͷ�Agent ������... �˿�: 9000
+=======================================================
+[KB] ��ʼ����֪ʶ��...
+[KB] ��˾��Ϣ�����ʴ��: 46 (��˾������Ϣ���ʴ��.txt)
+[KB] ��˾��Ϣ�����ʴ��: 40 (��Ƶ����_FAQ_.txt)
+[KB] ����: 112 chunks, 86 FAQ, 19 docs
+  ֪ʶ��: 112 chunks, 86 FAQ
+  �ĵ�: http://localhost:9000/docs
+  ֪ʶ��״̬: http://localhost:9000/admin/kb-status
+  LLMģ��: LongCat-2.0
+  �Ž� study_abroad_agent: http://127.0.0.1:5000
+  �Ž� Event&Lecture: http://127.0.0.1:8011
+=======================================================
+INFO:     127.0.0.1:62789 - "GET /portal HTTP/1.1" 200 OK
+WARNING:  WatchFiles detected changes in 'student_agent\llm.py'. Reloading...
+ INFO:     Will watch for changes in these directories: ['C:\\Users\\Windows\\Desktop\\������Ŀ�ϲ���-����']
 INFO:     Uvicorn running on http://0.0.0.0:9000 (Press CTRL+C to quit)
-INFO:     Started reloader process [40052] using WatchFiles
-INFO:     Started server process [41352]
+INFO:     Started reloader process [21492] using WatchFiles
+INFO:     Started server process [24476]
 INFO:     Waiting for application startup.
-=======================================================
-  客服Agent 启动中... 端口: 9000
-=======================================================
-[KB] 开始加载知识库...
-[KB] 公司信息解析问答对: 46 (公司所有信息的问答对.txt)
-[KB] 公司信息解析问答对: 40 (高频问题_FAQ_.txt)
-[KB] 就绪: 112 chunks, 86 FAQ, 19 docs
-  知识库: 112 chunks, 86 FAQ
-  文档: http://localhost:9000/docs
-  知识库状态: http://localhost:9000/admin/kb-status
-  LLM模型: LongCat-2.0
-  桥接 study_abroad_agent: http://127.0.0.1:5000
-  桥接 Event&Lecture: http://127.0.0.1:8011
-=======================================================
 INFO:     Application startup complete.
-INFO:     Will watch for changes in these directories: ['C:\\Users\\Windows\\PycharmProjects\\PythonProject10\\dify_pro']
+=======================================================
+  �ͷ�Agent ������... �˿�: 9000
+=======================================================
+[KB] ��ʼ����֪ʶ��...
+[KB] ��˾��Ϣ�����ʴ��: 46 (��˾������Ϣ���ʴ��.txt)
+[KB] ��˾��Ϣ�����ʴ��: 40 (��Ƶ����_FAQ_.txt)
+[KB] ����: 112 chunks, 86 FAQ, 19 docs
+  ֪ʶ��: 112 chunks, 86 FAQ
+  �ĵ�: http://localhost:9000/docs
+  ֪ʶ��״̬: http://localhost:9000/admin/kb-status
+  LLMģ��: LongCat-2.0
+  �Ž� study_abroad_agent: http://127.0.0.1:5000
+  �Ž� Event&Lecture: http://127.0.0.1:8011
+=======================================================
+INFO:     127.0.0.1:63390 - "GET /portal HTTP/1.1" 200 OK
+WARNING:  WatchFiles detected changes in 'student_agent\main_jb.py'. Reloading...
+ INFO:     Will watch for changes in these directories: ['C:\\Users\\Windows\\Desktop\\������Ŀ�ϲ���-����']
 INFO:     Uvicorn running on http://0.0.0.0:9000 (Press CTRL+C to quit)
-INFO:     Started reloader process [41748] using WatchFiles
-INFO:     Started server process [31040]
+INFO:     Started reloader process [2720] using WatchFiles
+INFO:     Started server process [19520]
 INFO:     Waiting for application startup.
-=======================================================
-  客服Agent 启动中... 端口: 9000
-=======================================================
-[KB] 开始加载知识库...
-[KB] 公司信息解析问答对: 46 (公司所有信息的问答对.txt)
-[KB] 公司信息解析问答对: 40 (高频问题_FAQ_.txt)
-[KB] 就绪: 112 chunks, 86 FAQ, 19 docs
-  知识库: 112 chunks, 86 FAQ
-  文档: http://localhost:9000/docs
-  知识库状态: http://localhost:9000/admin/kb-status
-  LLM模型: LongCat-2.0
-  桥接 study_abroad_agent: http://127.0.0.1:5000
-  桥接 Event&Lecture: http://127.0.0.1:8011
-=======================================================
 INFO:     Application startup complete.
+WARNING:  WatchFiles detected changes in 'student_agent\agent.py', 'student_agent\conversation.py', 'student_agent\services\leave_service.py', 'student_agent\db.py', 'student_agent\main_jb.py', 'student_agent\reminder.py'. Reloading...
+ 

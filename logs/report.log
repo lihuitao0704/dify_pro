@@ -20,238 +20,80 @@ Traceback (most recent call last):
   File "D:\dify_pro\summary_report\core\db.py", line 16, in <module>
     import pymysql
 ModuleNotFoundError: No module named 'pymysql'
-2026-07-12 09:56:01 [INFO] __main__: 启动 智能报告API v2.0.0 @ 0.0.0.0:8001
-INFO:     Started server process [39144]
+2026-07-12 09:32:59 [INFO] __main__: 启动 智能报告API v2.0.0 @ 0.0.0.0:8001
+INFO:     Started server process [17212]
 INFO:     Waiting for application startup.
 INFO:     Application startup complete.
-ERROR:    [Errno 10048] error while attempting to bind on address ('0.0.0.0', 8001): [winerror 10048] 通常每个套接字地址(协议/网络地址/端口)只允许使用一次。
+ERROR:    [Errno 10048] error while attempting to bind on address ('0.0.0.0', 8001): 通常每个套接字地址(协议/网络地址/端口)只允许使用一次。
 INFO:     Waiting for application shutdown.
 INFO:     Application shutdown complete.
-2026-07-12 10:25:01 [INFO] __main__: 启动 智能报告API v2.0.0 @ 0.0.0.0:8003
-INFO:     Started server process [39748]
+2026-07-12 09:34:56 [INFO] __main__: 启动 智能报告API v2.0.0 @ 0.0.0.0:8001
+INFO:     Started server process [26296]
 INFO:     Waiting for application startup.
 INFO:     Application startup complete.
-INFO:     Uvicorn running on http://0.0.0.0:8003 (Press CTRL+C to quit)
-2026-07-12 10:25:02 [INFO] __main__: [DIAG] <- GET / {} (from 127.0.0.1)
-2026-07-12 10:25:02 [INFO] __main__: [DIAG] -> GET / => HTTP 200
-INFO:     127.0.0.1:54808 - "GET / HTTP/1.1" 200 OK
-2026-07-12 10:25:02 [INFO] __main__: [DIAG] <- GET /favicon.ico {} (from 127.0.0.1)
-2026-07-12 10:25:02 [INFO] __main__: [DIAG] -> GET /favicon.ico => HTTP 404
-INFO:     127.0.0.1:54808 - "GET /favicon.ico HTTP/1.1" 404 Not Found
-2026-07-12 10:25:13 [INFO] __main__: [DIAG] <- GET /docs {} (from 127.0.0.1)
-2026-07-12 10:25:13 [INFO] __main__: [DIAG] -> GET /docs => HTTP 200
-INFO:     127.0.0.1:54809 - "GET /docs HTTP/1.1" 200 OK
-2026-07-12 10:25:14 [INFO] __main__: [DIAG] <- GET /openapi.json {} (from 127.0.0.1)
-2026-07-12 10:25:14 [INFO] __main__: [DIAG] -> GET /openapi.json => HTTP 200
-INFO:     127.0.0.1:54809 - "GET /openapi.json HTTP/1.1" 200 OK
-2026-07-12 10:27:56 [INFO] __main__: [DIAG] <- GET /openapi.json {} (from 127.0.0.1)
-2026-07-12 10:27:56 [INFO] __main__: [DIAG] -> GET /openapi.json => HTTP 200
-INFO:     127.0.0.1:55182 - "GET /openapi.json HTTP/1.1" 200 OK
-2026-07-12 10:28:24 [INFO] __main__: [DIAG] <- POST /report/nl2sql {} (from 127.0.0.1)
-2026-07-12 10:28:24 [INFO] summary_report.api.routes._helpers: 📝 [通用查询] 用户问题: ²éÑ¯Êý¾Ý¿âÖÐÃ¿ÕÅÒµÎñ±íµÄ¼ÇÂ¼×ÜÊý£¬°´±íÃûÅÅÐò
-2026-07-12 10:28:24 [INFO] summary_report.services.nl2sql_service: [NL2SQL] 用户问题: ²éÑ¯Êý¾Ý¿âÖÐÃ¿ÕÅÒµÎñ±íµÄ¼ÇÂ¼×ÜÊý£¬°´±íÃûÅÅÐò
-2026-07-12 10:28:25 [INFO] summary_report.services.nl2sql_service: [NL2SQL] 加载真实库结构: 41 张表
-2026-07-12 10:28:29 [INFO] httpx: HTTP Request: POST https://ws-ypbgci9xxhkaw467.cn-beijing.maas.aliyuncs.com/compatible-mode/v1/chat/completions "HTTP/1.1 200 OK"
-2026-07-12 10:28:29 [INFO] summary_report.services.nl2sql_service: [NL2SQL] 生成 1 条SQL
-2026-07-12 10:28:29 [WARNING] summary_report.core.sql_semantics: [SEMANTIC] SQL 引用了不存在的表 {'information_schema'}: SELECT TABLE_NAME AS table_name, TABLE_ROWS AS record_count FROM information_schema.TABLES WHERE TABLE_SCHEMA = DATABASE
-2026-07-12 10:28:29 [WARNING] summary_report.services.nl2sql_service: [NL2SQL] 语义校验失败(第1/2): SQL 引用了数据库中不存在的表: ['information_schema']，可用表: ['academic_deadline', 'academic_schedule', 'account', 
-2026-07-12 10:28:44 [INFO] httpx: HTTP Request: POST https://ws-ypbgci9xxhkaw467.cn-beijing.maas.aliyuncs.com/compatible-mode/v1/chat/completions "HTTP/1.1 200 OK"
-2026-07-12 10:28:44 [WARNING] summary_report.core.sql_semantics: [AUTO-FIX] 含聚合但缺 GROUP BY 且 auto_fix 未修改，将进入 LLM 重试: SELECT 'academic_deadline' AS table_name, COUNT(*) AS record_count FROM academic_deadline
-2026-07-12 10:28:44 [WARNING] summary_report.core.sql_semantics: [AUTO-FIX] 含聚合但缺 GROUP BY 且 auto_fix 未修改，将进入 LLM 重试: SELECT 'academic_schedule' AS table_name, COUNT(*) AS record_count FROM academic_schedule
-2026-07-12 10:28:44 [WARNING] summary_report.core.sql_semantics: [AUTO-FIX] 含聚合但缺 GROUP BY 且 auto_fix 未修改，将进入 LLM 重试: SELECT 'account' AS table_name, COUNT(*) AS record_count FROM account
-2026-07-12 10:28:44 [WARNING] summary_report.core.sql_semantics: [AUTO-FIX] 含聚合但缺 GROUP BY 且 auto_fix 未修改，将进入 LLM 重试: SELECT 'activities' AS table_name, COUNT(*) AS record_count FROM activities
-2026-07-12 10:28:44 [WARNING] summary_report.core.sql_semantics: [AUTO-FIX] 含聚合但缺 GROUP BY 且 auto_fix 未修改，将进入 LLM 重试: SELECT 'activity_registrations' AS table_name, COUNT(*) AS record_count FROM activity_registrations
-2026-07-12 10:28:44 [WARNING] summary_report.core.sql_semantics: [AUTO-FIX] 含聚合但缺 GROUP BY 且 auto_fix 未修改，将进入 LLM 重试: SELECT 'application_progress' AS table_name, COUNT(*) AS record_count FROM application_progress
-2026-07-12 10:28:44 [WARNING] summary_report.core.sql_semantics: [AUTO-FIX] 含聚合但缺 GROUP BY 且 auto_fix 未修改，将进入 LLM 重试: SELECT 'consultations' AS table_name, COUNT(*) AS record_count FROM consultations
-2026-07-12 10:28:44 [WARNING] summary_report.core.sql_semantics: [AUTO-FIX] 含聚合但缺 GROUP BY 且 auto_fix 未修改，将进入 LLM 重试: SELECT 'conversation_log' AS table_name, COUNT(*) AS record_count FROM conversation_log
-2026-07-12 10:28:44 [WARNING] summary_report.core.sql_semantics: [AUTO-FIX] 含聚合但缺 GROUP BY 且 auto_fix 未修改，将进入 LLM 重试: SELECT 'conversation_message' AS table_name, COUNT(*) AS record_count FROM conversation_message
-2026-07-12 10:28:44 [WARNING] summary_report.core.sql_semantics: [AUTO-FIX] 含聚合但缺 GROUP BY 且 auto_fix 未修改，将进入 LLM 重试: SELECT 'conversation_session' AS table_name, COUNT(*) AS record_count FROM conversation_session
-2026-07-12 10:28:44 [WARNING] summary_report.core.sql_semantics: [AUTO-FIX] 含聚合但缺 GROUP BY 且 auto_fix 未修改，将进入 LLM 重试: SELECT 'courses' AS table_name, COUNT(*) AS record_count FROM courses
-2026-07-12 10:28:44 [WARNING] summary_report.core.sql_semantics: [AUTO-FIX] 含聚合但缺 GROUP BY 且 auto_fix 未修改，将进入 LLM 重试: SELECT 'department' AS table_name, COUNT(*) AS record_count FROM department
-2026-07-12 10:28:44 [WARNING] summary_report.core.sql_semantics: [AUTO-FIX] 含聚合但缺 GROUP BY 且 auto_fix 未修改，将进入 LLM 重试: SELECT 'employee' AS table_name, COUNT(*) AS record_count FROM employee
-2026-07-12 10:28:44 [WARNING] summary_report.core.sql_semantics: [AUTO-FIX] 含聚合但缺 GROUP BY 且 auto_fix 未修改，将进入 LLM 重试: SELECT 'employee_daily_report' AS table_name, COUNT(*) AS record_count FROM employee_daily_report
-2026-07-12 10:28:44 [WARNING] summary_report.core.sql_semantics: [AUTO-FIX] 含聚合但缺 GROUP BY 且 auto_fix 未修改，将进入 LLM 重试: SELECT 'feedback_ticket' AS table_name, COUNT(*) AS record_count FROM feedback_ticket
-2026-07-12 10:28:44 [WARNING] summary_report.core.sql_semantics: [AUTO-FIX] 含聚合但缺 GROUP BY 且 auto_fix 未修改，将进入 LLM 重试: SELECT 'intention_customer' AS table_name, COUNT(*) AS record_count FROM intention_customer
-2026-07-12 10:28:44 [WARNING] summary_report.core.sql_semantics: [AUTO-FIX] 含聚合但缺 GROUP BY 且 auto_fix 未修改，将进入 LLM 重试: SELECT 'intention_diagnosis' AS table_name, COUNT(*) AS record_count FROM intention_diagnosis
-2026-07-12 10:28:44 [WARNING] summary_report.core.sql_semantics: [AUTO-FIX] 含聚合但缺 GROUP BY 且 auto_fix 未修改，将进入 LLM 重试: SELECT 'leave_application' AS table_name, COUNT(*) AS record_count FROM leave_application
-2026-07-12 10:28:44 [WARNING] summary_report.core.sql_semantics: [AUTO-FIX] 含聚合但缺 GROUP BY 且 auto_fix 未修改，将进入 LLM 重试: SELECT 'leave_request' AS table_name, COUNT(*) AS record_count FROM leave_request
-2026-07-12 10:28:44 [WARNING] summary_report.core.sql_semantics: [AUTO-FIX] 含聚合但缺 GROUP BY 且 auto_fix 未修改，将进入 LLM 重试: SELECT 'lecture_registrations' AS table_name, COUNT(*) AS record_count FROM lecture_registrations
-2026-07-12 10:28:44 [WARNING] summary_report.core.sql_semantics: [AUTO-FIX] 含聚合但缺 GROUP BY 且 auto_fix 未修改，将进入 LLM 重试: SELECT 'lectures' AS table_name, COUNT(*) AS record_count FROM lectures
-2026-07-12 10:28:44 [WARNING] summary_report.core.sql_semantics: [AUTO-FIX] 含聚合但缺 GROUP BY 且 auto_fix 未修改，将进入 LLM 重试: SELECT 'mental_health_alert' AS table_name, COUNT(*) AS record_count FROM mental_health_alert
-2026-07-12 10:28:44 [WARNING] summary_report.core.sql_semantics: [AUTO-FIX] 含聚合但缺 GROUP BY 且 auto_fix 未修改，将进入 LLM 重试: SELECT 'mental_health_profile' AS table_name, COUNT(*) AS record_count FROM mental_health_profile
-2026-07-12 10:28:44 [WARNING] summary_report.core.sql_semantics: [AUTO-FIX] 含聚合但缺 GROUP BY 且 auto_fix 未修改，将进入 LLM 重试: SELECT 'portrait_rule' AS table_name, COUNT(*) AS record_count FROM portrait_rule
-2026-07-12 10:28:44 [WARNING] summary_report.core.sql_semantics: [AUTO-FIX] 含聚合但缺 GROUP BY 且 auto_fix 未修改，将进入 LLM 重试: SELECT 'reminder_log' AS table_name, COUNT(*) AS record_count FROM reminder_log
-2026-07-12 10:28:44 [WARNING] summary_report.core.sql_semantics: [AUTO-FIX] 含聚合但缺 GROUP BY 且 auto_fix 未修改，将进入 LLM 重试: SELECT 'student' AS table_name, COUNT(*) AS record_count FROM student
-2026-07-12 10:28:44 [WARNING] summary_report.core.sql_semantics: [AUTO-FIX] 含聚合但缺 GROUP BY 且 auto_fix 未修改，将进入 LLM 重试: SELECT 'student_admin_service' AS table_name, COUNT(*) AS record_count FROM student_admin_service
-2026-07-12 10:28:44 [WARNING] summary_report.core.sql_semantics: [AUTO-FIX] 含聚合但缺 GROUP BY 且 auto_fix 未修改，将进入 LLM 重试: SELECT 'student_complaint' AS table_name, COUNT(*) AS record_count FROM student_complaint
-2026-07-12 10:28:44 [WARNING] summary_report.core.sql_semantics: [AUTO-FIX] 含聚合但缺 GROUP BY 且 auto_fix 未修改，将进入 LLM 重试: SELECT 'student_feedback_ticket' AS table_name, COUNT(*) AS record_count FROM student_feedback_ticket
-2026-07-12 10:28:44 [WARNING] summary_report.core.sql_semantics: [AUTO-FIX] 含聚合但缺 GROUP BY 且 auto_fix 未修改，将进入 LLM 重试: SELECT 'student_info' AS table_name, COUNT(*) AS record_count FROM student_info
-2026-07-12 10:28:44 [WARNING] summary_report.core.sql_semantics: [AUTO-FIX] 含聚合但缺 GROUP BY 且 auto_fix 未修改，将进入 LLM 重试: SELECT 'student_mental_alert' AS table_name, COUNT(*) AS record_count FROM student_mental_alert
-2026-07-12 10:28:44 [WARNING] summary_report.core.sql_semantics: [AUTO-FIX] 含聚合但缺 GROUP BY 且 auto_fix 未修改，将进入 LLM 重试: SELECT 'student_mental_profile' AS table_name, COUNT(*) AS record_count FROM student_mental_profile
-2026-07-12 10:28:44 [WARNING] summary_report.core.sql_semantics: [AUTO-FIX] 含聚合但缺 GROUP BY 且 auto_fix 未修改，将进入 LLM 重试: SELECT 'student_psych_alert' AS table_name, COUNT(*) AS record_count FROM student_psych_alert
-2026-07-12 10:28:44 [WARNING] summary_report.core.sql_semantics: [AUTO-FIX] 含聚合但缺 GROUP BY 且 auto_fix 未修改，将进入 LLM 重试: SELECT 'student_psych_profile' AS table_name, COUNT(*) AS record_count FROM student_psych_profile
-2026-07-12 10:28:44 [WARNING] summary_report.core.sql_semantics: [AUTO-FIX] 含聚合但缺 GROUP BY 且 auto_fix 未修改，将进入 LLM 重试: SELECT 'student_psych_record' AS table_name, COUNT(*) AS record_count FROM student_psych_record
-2026-07-12 10:28:44 [WARNING] summary_report.core.sql_semantics: [AUTO-FIX] 含聚合但缺 GROUP BY 且 auto_fix 未修改，将进入 LLM 重试: SELECT 'student_score' AS table_name, COUNT(*) AS record_count FROM student_score
-2026-07-12 10:28:44 [WARNING] summary_report.core.sql_semantics: [AUTO-FIX] 含聚合但缺 GROUP BY 且 auto_fix 未修改，将进入 LLM 重试: SELECT 'study_project' AS table_name, COUNT(*) AS record_count FROM study_project
-2026-07-12 10:28:44 [WARNING] summary_report.core.sql_semantics: [AUTO-FIX] 含聚合但缺 GROUP BY 且 auto_fix 未修改，将进入 LLM 重试: SELECT 'tables_name' AS table_name, COUNT(*) AS record_count FROM tables_name
-2026-07-12 10:28:44 [WARNING] summary_report.core.sql_semantics: [AUTO-FIX] 含聚合但缺 GROUP BY 且 auto_fix 未修改，将进入 LLM 重试: SELECT 'teacher' AS table_name, COUNT(*) AS record_count FROM teacher
-2026-07-12 10:28:44 [WARNING] summary_report.core.sql_semantics: [AUTO-FIX] 含聚合但缺 GROUP BY 且 auto_fix 未修改，将进入 LLM 重试: SELECT 'upgrade_interest' AS table_name, COUNT(*) AS record_count FROM upgrade_interest
-2026-07-12 10:28:44 [WARNING] summary_report.core.sql_semantics: [AUTO-FIX] 含聚合但缺 GROUP BY 且 auto_fix 未修改，将进入 LLM 重试: SELECT 'user_profiles' AS table_name, COUNT(*) AS record_count FROM user_profiles
-2026-07-12 10:28:52 [INFO] summary_report.services.nl2sql_service: [NL2SQL] 执行完成, 共 41 组结果
-2026-07-12 10:29:01 [INFO] __main__: [DIAG] <- POST /report/nl2sql {} (from 127.0.0.1)
-2026-07-12 10:29:01 [INFO] summary_report.api.routes._helpers: 📝 [通用查询] 用户问题: ²éÑ¯Êý¾Ý¿âÖÐÃ¿ÕÅÒµÎñ±íµÄ¼ÇÂ¼×ÜÊý£¬°´±íÃûÅÅÐò
-2026-07-12 10:29:01 [INFO] summary_report.services.nl2sql_service: [NL2SQL] 用户问题: ²éÑ¯Êý¾Ý¿âÖÐÃ¿ÕÅÒµÎñ±íµÄ¼ÇÂ¼×ÜÊý£¬°´±íÃûÅÅÐò
-2026-07-12 10:29:03 [INFO] httpx: HTTP Request: POST https://ws-ypbgci9xxhkaw467.cn-beijing.maas.aliyuncs.com/compatible-mode/v1/chat/completions "HTTP/1.1 200 OK"
-2026-07-12 10:29:03 [INFO] summary_report.services.nl2sql_service: [NL2SQL] 生成 1 条SQL
-2026-07-12 10:29:03 [WARNING] summary_report.core.sql_semantics: [SEMANTIC] SQL 引用了不存在的表 {'information_schema'}: SELECT TABLE_NAME AS table_name, TABLE_ROWS AS record_count FROM information_schema.TABLES WHERE TABLE_SCHEMA = DATABASE
-2026-07-12 10:29:03 [WARNING] summary_report.services.nl2sql_service: [NL2SQL] 语义校验失败(第1/2): SQL 引用了数据库中不存在的表: ['information_schema']，可用表: ['academic_deadline', 'academic_schedule', 'account', 
-2026-07-12 10:29:07 [INFO] httpx: HTTP Request: POST https://ws-ypbgci9xxhkaw467.cn-beijing.maas.aliyuncs.com/compatible-mode/v1/chat/completions "HTTP/1.1 200 OK"
-2026-07-12 10:29:07 [INFO] summary_report.services.nl2sql_service: [NL2SQL] 润色完成, 长约 1854 字
-2026-07-12 10:29:07 [INFO] summary_report.api.routes._helpers: 💬 [通用查询] 回答: **Dify_Pro数据库业务表记录量分析报告**  
-*截至当前快照，全库共41张业务表，总记录数为683条*
-
----
-
-**核心结论**  
-数据库整体数据规模处于轻量级运营阶段，业务覆盖较全但...
-2026-07-12 10:29:07 [INFO] __main__: [DIAG] -> POST /report/nl2sql => HTTP 200
-2026-07-12 10:29:16 [INFO] httpx: HTTP Request: POST https://ws-ypbgci9xxhkaw467.cn-beijing.maas.aliyuncs.com/compatible-mode/v1/chat/completions "HTTP/1.1 200 OK"
-2026-07-12 10:29:16 [WARNING] summary_report.core.sql_semantics: [AUTO-FIX] 含聚合但缺 GROUP BY 且 auto_fix 未修改，将进入 LLM 重试: SELECT 'academic_deadline' AS table_name, COUNT(*) AS record_count FROM academic_deadline UNION ALL SELECT 'academic_schedule' AS table_name, COUNT(*) AS record_count FROM academic_schedule UNION ALL 
-2026-07-12 10:29:16 [INFO] summary_report.services.nl2sql_service: [NL2SQL] 执行完成, 共 1 组结果
-2026-07-12 10:29:32 [INFO] httpx: HTTP Request: POST https://ws-ypbgci9xxhkaw467.cn-beijing.maas.aliyuncs.com/compatible-mode/v1/chat/completions "HTTP/1.1 200 OK"
-2026-07-12 10:29:32 [INFO] summary_report.services.nl2sql_service: [NL2SQL] 润色完成, 长约 2243 字
-2026-07-12 10:29:32 [INFO] summary_report.api.routes._helpers: 💬 [通用查询] 回答: **Dify Pro 数据库业务表记录量分析报告**
-
-**核心结论**  
-当前数据库共41张业务表，总记录数为682条；数据分布高度不均衡，近半数表（19张）记录数≤7条，而“conversati...
-2026-07-12 10:29:32 [INFO] __main__: [DIAG] -> POST /report/nl2sql => HTTP 200
-INFO:     127.0.0.1:55303 - "POST /report/nl2sql HTTP/1.1" 200 OK
-2026-07-12 10:47:23 [INFO] __main__: [DIAG] <- GET /health {} (from 127.0.0.1)
-2026-07-12 10:47:23 [INFO] __main__: [DIAG] -> GET /health => HTTP 200
-INFO:     127.0.0.1:50656 - "GET /health HTTP/1.1" 200 OK
-2026-07-12 10:47:38 [INFO] __main__: [DIAG] <- POST /report/customer_operation {} (from 127.0.0.1)
-2026-07-12 10:47:38 [INFO] summary_report.api.routes._helpers: 📝 [客户经营] 用户问题: ¸÷ÇþµÀ¿Í»§ÊýÁ¿ºÍÇ©Ô¼ÂÊ
-2026-07-12 10:47:38 [INFO] summary_report.services.nl2sql_service: [NL2SQL] 用户问题: ¸÷ÇþµÀ¿Í»§ÊýÁ¿ºÍÇ©Ô¼ÂÊ
-2026-07-12 10:47:39 [INFO] openai._base_client: Retrying request to /chat/completions in 0.455546 seconds
-2026-07-12 10:47:48 [INFO] httpx: HTTP Request: POST https://ws-ypbgci9xxhkaw467.cn-beijing.maas.aliyuncs.com/compatible-mode/v1/chat/completions "HTTP/1.1 200 OK"
-2026-07-12 10:47:48 [INFO] summary_report.services.nl2sql_service: [NL2SQL] 生成 6 条SQL
-2026-07-12 10:47:49 [INFO] summary_report.services.nl2sql_service: [NL2SQL] 执行完成, 共 6 组结果
-2026-07-12 10:48:03 [INFO] httpx: HTTP Request: POST https://ws-ypbgci9xxhkaw467.cn-beijing.maas.aliyuncs.com/compatible-mode/v1/chat/completions "HTTP/1.1 200 OK"
-2026-07-12 10:48:03 [INFO] summary_report.services.nl2sql_service: [NL2SQL] 润色完成, 长约 1409 字
-2026-07-12 10:48:03 [INFO] summary_report.api.routes._helpers: 💬 [客户经营] 回答: **全域客户经营分析报告：客群规模与签约率深度洞察**
-
-**核心结论**  
-当前意向客户池共22人，整体签约率为27.3%，但渠道分化显著——合作机构与电话邀约渠道转化率达100%，而转介绍、广告...
-2026-07-12 10:48:03 [INFO] __main__: [DIAG] -> POST /report/customer_operation => HTTP 200
-INFO:     127.0.0.1:63208 - "POST /report/customer_operation HTTP/1.1" 200 OK
-2026-07-12 10:50:14 [INFO] __main__: 启动 智能报告API v2.0.0 @ 0.0.0.0:8003
-INFO:     Started server process [36116]
+ERROR:    [Errno 10048] error while attempting to bind on address ('0.0.0.0', 8001): 通常每个套接字地址(协议/网络地址/端口)只允许使用一次。
+INFO:     Waiting for application shutdown.
+INFO:     Application shutdown complete.
+2026-07-12 10:27:56 [INFO] __main__: 启动 智能报告API v2.0.0 @ 0.0.0.0:8001
+INFO:     Started server process [19068]
 INFO:     Waiting for application startup.
 INFO:     Application startup complete.
-INFO:     Uvicorn running on http://0.0.0.0:8003 (Press CTRL+C to quit)
-2026-07-12 10:50:29 [INFO] __main__: [DIAG] <- GET / {} (from 127.0.0.1)
-2026-07-12 10:50:29 [INFO] __main__: [DIAG] -> GET / => HTTP 200
-INFO:     127.0.0.1:58180 - "GET / HTTP/1.1" 200 OK
-2026-07-12 10:50:35 [INFO] __main__: [DIAG] <- GET /docs {} (from 127.0.0.1)
-2026-07-12 10:50:35 [INFO] __main__: [DIAG] -> GET /docs => HTTP 200
-INFO:     127.0.0.1:60268 - "GET /docs HTTP/1.1" 200 OK
-2026-07-12 10:50:35 [INFO] __main__: [DIAG] <- GET /openapi.json {} (from 127.0.0.1)
-2026-07-12 10:50:35 [INFO] __main__: [DIAG] -> GET /openapi.json => HTTP 200
-INFO:     127.0.0.1:60268 - "GET /openapi.json HTTP/1.1" 200 OK
-2026-07-12 10:53:55 [INFO] __main__: [DIAG] <- GET /docs {} (from 127.0.0.1)
-2026-07-12 10:53:55 [INFO] __main__: [DIAG] -> GET /docs => HTTP 200
-INFO:     127.0.0.1:60387 - "GET /docs HTTP/1.1" 200 OK
-2026-07-12 10:53:55 [INFO] __main__: [DIAG] <- GET /openapi.json {} (from 127.0.0.1)
-2026-07-12 10:53:55 [INFO] __main__: [DIAG] -> GET /openapi.json => HTTP 200
-INFO:     127.0.0.1:60387 - "GET /openapi.json HTTP/1.1" 200 OK
-2026-07-12 10:56:59 [INFO] __main__: [DIAG] <- POST /report/customer_operation {} (from 127.0.0.1)
-2026-07-12 10:56:59 [INFO] summary_report.api.routes._helpers: 📝 [客户经营] 用户问题: 意向客户各状态的数量和占比
-2026-07-12 10:56:59 [INFO] summary_report.services.nl2sql_service: [NL2SQL] 用户问题: 意向客户各状态的数量和占比
-2026-07-12 10:57:00 [INFO] summary_report.services.nl2sql_service: [NL2SQL] 加载真实库结构: 41 张表
-2026-07-12 10:57:07 [INFO] httpx: HTTP Request: POST https://ws-ypbgci9xxhkaw467.cn-beijing.maas.aliyuncs.com/compatible-mode/v1/chat/completions "HTTP/1.1 200 OK"
-2026-07-12 10:57:07 [INFO] summary_report.services.nl2sql_service: [NL2SQL] 生成 6 条SQL
-2026-07-12 10:57:07 [INFO] summary_report.services.nl2sql_service: [NL2SQL] 执行完成, 共 6 组结果
-2026-07-12 10:57:25 [INFO] httpx: HTTP Request: POST https://ws-ypbgci9xxhkaw467.cn-beijing.maas.aliyuncs.com/compatible-mode/v1/chat/completions "HTTP/1.1 200 OK"
-2026-07-12 10:57:25 [INFO] summary_report.services.nl2sql_service: [NL2SQL] 润色完成, 长约 1808 字
-2026-07-12 10:57:25 [INFO] summary_report.api.routes._helpers: 💬 [客户经营] 回答: **全域客户经营分析报告：意向客户状态分布与核心洞察**  
-*数据周期：截至2026年6月 | 样本量：22名意向客户*
-
----
-
-**核心结论**  
-当前意向客户池呈“橄榄型”结构：**63....
-2026-07-12 10:57:25 [INFO] __main__: [DIAG] -> POST /report/customer_operation => HTTP 200
-INFO:     127.0.0.1:50654 - "POST /report/customer_operation HTTP/1.1" 200 OK
-2026-07-12 10:59:03 [INFO] __main__: [DIAG] <- POST /report/customer_operation {} (from 127.0.0.1)
-2026-07-12 10:59:03 [INFO] summary_report.api.routes._helpers: 📝 [客户经营] 用户问题: 签约客户的目标国家、预算和语言成绩分布
-2026-07-12 10:59:03 [INFO] summary_report.services.nl2sql_service: [NL2SQL] 用户问题: 签约客户的目标国家、预算和语言成绩分布
-2026-07-12 10:59:11 [INFO] httpx: HTTP Request: POST https://ws-ypbgci9xxhkaw467.cn-beijing.maas.aliyuncs.com/compatible-mode/v1/chat/completions "HTTP/1.1 200 OK"
-2026-07-12 10:59:11 [INFO] summary_report.services.nl2sql_service: [NL2SQL] 生成 6 条SQL
-2026-07-12 10:59:11 [WARNING] summary_report.services.nl2sql_service: [NL2SQL] SQL 执行失败(第1/2): SQL 执行失败: (1064, "You have an error in your SQL syntax; check the manual that corresponds to your My
-2026-07-12 10:59:17 [INFO] httpx: HTTP Request: POST https://ws-ypbgci9xxhkaw467.cn-beijing.maas.aliyuncs.com/compatible-mode/v1/chat/completions "HTTP/1.1 200 OK"
-2026-07-12 10:59:17 [INFO] summary_report.services.nl2sql_service: [NL2SQL] 执行完成, 共 6 组结果
-2026-07-12 10:59:33 [INFO] httpx: HTTP Request: POST https://ws-ypbgci9xxhkaw467.cn-beijing.maas.aliyuncs.com/compatible-mode/v1/chat/completions "HTTP/1.1 200 OK"
-2026-07-12 10:59:33 [INFO] summary_report.services.nl2sql_service: [NL2SQL] 润色完成, 长约 1502 字
-2026-07-12 10:59:33 [INFO] summary_report.api.routes._helpers: 💬 [客户经营] 回答: **全域客户经营分析报告：签约客户高价值画像深度解析**
-
-**核心结论**  
-当前签约客户（6人）高度集中于德国、新加坡等高预算留学目的地，预算集中在20–30万元区间，语言成绩以TestDaF ...
-2026-07-12 10:59:33 [INFO] __main__: [DIAG] -> POST /report/customer_operation => HTTP 200
-INFO:     127.0.0.1:50941 - "POST /report/customer_operation HTTP/1.1" 200 OK
-2026-07-12 11:00:38 [INFO] __main__: [DIAG] <- POST /report/customer_operation {} (from 127.0.0.1)
-2026-07-12 11:00:38 [INFO] summary_report.api.routes._helpers: 📝 [客户经营] 用户问题: 每个销售顾问负责多少客户，签约了多少
-2026-07-12 11:00:38 [INFO] summary_report.services.nl2sql_service: [NL2SQL] 用户问题: 每个销售顾问负责多少客户，签约了多少
-2026-07-12 11:00:45 [INFO] httpx: HTTP Request: POST https://ws-ypbgci9xxhkaw467.cn-beijing.maas.aliyuncs.com/compatible-mode/v1/chat/completions "HTTP/1.1 200 OK"
-2026-07-12 11:00:45 [INFO] summary_report.services.nl2sql_service: [NL2SQL] 生成 6 条SQL
-2026-07-12 11:00:45 [INFO] summary_report.services.nl2sql_service: [NL2SQL] 执行完成, 共 6 组结果
-2026-07-12 11:01:06 [INFO] httpx: HTTP Request: POST https://ws-ypbgci9xxhkaw467.cn-beijing.maas.aliyuncs.com/compatible-mode/v1/chat/completions "HTTP/1.1 200 OK"
-2026-07-12 11:01:06 [INFO] summary_report.services.nl2sql_service: [NL2SQL] 润色完成, 长约 1402 字
-2026-07-12 11:01:06 [INFO] summary_report.api.routes._helpers: 💬 [客户经营] 回答: **全域客户经营分析报告：销售顾问效能与签约转化专项**
-
-**核心结论**  
-当前意向客户池共22人，签约率仅27.3%（6人），显著低于行业健康阈值（≥40%）；5名销售顾问人均负责4.4名客户...
-2026-07-12 11:01:06 [INFO] __main__: [DIAG] -> POST /report/customer_operation => HTTP 200
-INFO:     127.0.0.1:51080 - "POST /report/customer_operation HTTP/1.1" 200 OK
-2026-07-12 11:02:17 [INFO] __main__: [DIAG] <- POST /report/customer_operation {} (from 127.0.0.1)
-2026-07-12 11:02:17 [INFO] summary_report.api.routes._helpers: 📝 [客户经营] 用户问题: 已流失的客户都是从哪些渠道来的，按时间分析
-2026-07-12 11:02:17 [INFO] summary_report.services.nl2sql_service: [NL2SQL] 用户问题: 已流失的客户都是从哪些渠道来的，按时间分析
-2026-07-12 11:02:24 [INFO] httpx: HTTP Request: POST https://ws-ypbgci9xxhkaw467.cn-beijing.maas.aliyuncs.com/compatible-mode/v1/chat/completions "HTTP/1.1 200 OK"
-2026-07-12 11:02:24 [INFO] summary_report.services.nl2sql_service: [NL2SQL] 生成 6 条SQL
-2026-07-12 11:02:24 [INFO] summary_report.services.nl2sql_service: [NL2SQL] 执行完成, 共 6 组结果
-2026-07-12 11:02:45 [INFO] httpx: HTTP Request: POST https://ws-ypbgci9xxhkaw467.cn-beijing.maas.aliyuncs.com/compatible-mode/v1/chat/completions "HTTP/1.1 200 OK"
-2026-07-12 11:02:45 [INFO] summary_report.services.nl2sql_service: [NL2SQL] 润色完成, 长约 1536 字
-2026-07-12 11:02:45 [INFO] summary_report.api.routes._helpers: 💬 [客户经营] 回答: **全域客户经营分析报告：已流失客户渠道与时序归因分析**  
-*——聚焦“已流失”客群的来源结构与时间分布*
-
----
-
-**核心结论**  
-当前已流失客户共2人，全部集中于2026年6月，分别来...
-2026-07-12 11:02:45 [INFO] __main__: [DIAG] -> POST /report/customer_operation => HTTP 200
-INFO:     127.0.0.1:51261 - "POST /report/customer_operation HTTP/1.1" 200 OK
-2026-07-12 11:03:28 [INFO] __main__: [DIAG] <- POST /report/customer_operation {} (from 127.0.0.1)
-2026-07-12 11:03:28 [INFO] summary_report.api.routes._helpers: 📝 [客户经营] 用户问题: 今天天气怎么样
-2026-07-12 11:03:28 [INFO] summary_report.services.nl2sql_service: [NL2SQL] 用户问题: 今天天气怎么样
-2026-07-12 11:03:36 [INFO] httpx: HTTP Request: POST https://ws-ypbgci9xxhkaw467.cn-beijing.maas.aliyuncs.com/compatible-mode/v1/chat/completions "HTTP/1.1 200 OK"
-2026-07-12 11:03:36 [INFO] summary_report.services.nl2sql_service: [NL2SQL] 生成 6 条SQL
-2026-07-12 11:03:36 [INFO] summary_report.services.nl2sql_service: [NL2SQL] 执行完成, 共 6 组结果
-2026-07-12 11:03:53 [INFO] httpx: HTTP Request: POST https://ws-ypbgci9xxhkaw467.cn-beijing.maas.aliyuncs.com/compatible-mode/v1/chat/completions "HTTP/1.1 200 OK"
-2026-07-12 11:03:53 [INFO] summary_report.services.nl2sql_service: [NL2SQL] 润色完成, 长约 1671 字
-2026-07-12 11:03:53 [INFO] summary_report.api.routes._helpers: 💬 [客户经营] 回答: **全域客户经营分析报告（2026年6月数据快照）**  
-**核心结论：**  
-当前意向客户池以“意向中”为主力（63.64%），签约转化率整体偏低（27.27%），但合作机构与电话邀约渠道实现1...
-2026-07-12 11:03:53 [INFO] __main__: [DIAG] -> POST /report/customer_operation => HTTP 200
-INFO:     127.0.0.1:51535 - "POST /report/customer_operation HTTP/1.1" 200 OK
-2026-07-12 11:08:18 [INFO] __main__: [DIAG] <- GET /test {} (from 127.0.0.1)
-2026-07-12 11:08:18 [INFO] __main__: [DIAG] -> GET /test => HTTP 404
-INFO:     127.0.0.1:52041 - "GET /test HTTP/1.1" 404 Not Found
-2026-07-12 11:08:18 [INFO] __main__: [DIAG] <- GET /health {} (from 127.0.0.1)
-2026-07-12 11:08:18 [INFO] __main__: [DIAG] -> GET /health => HTTP 200
-INFO:     127.0.0.1:52043 - "GET /health HTTP/1.1" 200 OK
-2026-07-12 11:09:17 [INFO] __main__: 启动 智能报告API v2.0.0 @ 0.0.0.0:8003
-INFO:     Started server process [13112]
+ERROR:    [Errno 10048] error while attempting to bind on address ('0.0.0.0', 8001): 通常每个套接字地址(协议/网络地址/端口)只允许使用一次。
+INFO:     Waiting for application shutdown.
+INFO:     Application shutdown complete.
+2026-07-12 10:31:14 [INFO] __main__: 启动 智能报告API v2.0.0 @ 0.0.0.0:8001
+INFO:     Started server process [22284]
 INFO:     Waiting for application startup.
 INFO:     Application startup complete.
-ERROR:    [Errno 10048] error while attempting to bind on address ('0.0.0.0', 8003): [winerror 10048] 通常每个套接字地址(协议/网络地址/端口)只允许使用一次。
+ERROR:    [Errno 10048] error while attempting to bind on address ('0.0.0.0', 8001): 通常每个套接字地址(协议/网络地址/端口)只允许使用一次。
+INFO:     Waiting for application shutdown.
+INFO:     Application shutdown complete.
+2026-07-12 10:35:28 [INFO] __main__: 启动 智能报告API v2.0.0 @ 0.0.0.0:8001
+INFO:     Started server process [23160]
+INFO:     Waiting for application startup.
+INFO:     Application startup complete.
+ERROR:    [Errno 10048] error while attempting to bind on address ('0.0.0.0', 8001): 通常每个套接字地址(协议/网络地址/端口)只允许使用一次。
+INFO:     Waiting for application shutdown.
+INFO:     Application shutdown complete.
+2026-07-12 10:59:36 [INFO] __main__: 启动 智能报告API v2.0.0 @ 0.0.0.0:8001
+INFO:     Started server process [17092]
+INFO:     Waiting for application startup.
+INFO:     Application startup complete.
+ERROR:    [Errno 10048] error while attempting to bind on address ('0.0.0.0', 8001): 通常每个套接字地址(协议/网络地址/端口)只允许使用一次。
+INFO:     Waiting for application shutdown.
+INFO:     Application shutdown complete.
+2026-07-12 11:32:15 [INFO] __main__: 启动 智能报告API v2.0.0 @ 0.0.0.0:8001
+INFO:     Started server process [13292]
+INFO:     Waiting for application startup.
+INFO:     Application startup complete.
+ERROR:    [Errno 10048] error while attempting to bind on address ('0.0.0.0', 8001): 通常每个套接字地址(协议/网络地址/端口)只允许使用一次。
+INFO:     Waiting for application shutdown.
+INFO:     Application shutdown complete.
+2026-07-12 11:49:27 [INFO] __main__: 启动 智能报告API v2.0.0 @ 0.0.0.0:8001
+INFO:     Started server process [26184]
+INFO:     Waiting for application startup.
+INFO:     Application startup complete.
+ERROR:    [Errno 10048] error while attempting to bind on address ('0.0.0.0', 8001): 通常每个套接字地址(协议/网络地址/端口)只允许使用一次。
+INFO:     Waiting for application shutdown.
+INFO:     Application shutdown complete.
+2026-07-12 11:57:48 [INFO] __main__: 启动 智能报告API v2.0.0 @ 0.0.0.0:8001
+INFO:     Started server process [13896]
+INFO:     Waiting for application startup.
+INFO:     Application startup complete.
+ERROR:    [Errno 10048] error while attempting to bind on address ('0.0.0.0', 8001): 通常每个套接字地址(协议/网络地址/端口)只允许使用一次。
+INFO:     Waiting for application shutdown.
+INFO:     Application shutdown complete.
+2026-07-12 12:03:15 [INFO] __main__: 启动 智能报告API v2.0.0 @ 0.0.0.0:8001
+INFO:     Started server process [2328]
+INFO:     Waiting for application startup.
+INFO:     Application startup complete.
+ERROR:    [Errno 10048] error while attempting to bind on address ('0.0.0.0', 8001): 通常每个套接字地址(协议/网络地址/端口)只允许使用一次。
+INFO:     Waiting for application shutdown.
+INFO:     Application shutdown complete.
+2026-07-12 12:08:51 [INFO] __main__: 启动 智能报告API v2.0.0 @ 0.0.0.0:8001
+INFO:     Started server process [19780]
+INFO:     Waiting for application startup.
+INFO:     Application startup complete.
+ERROR:    [Errno 10048] error while attempting to bind on address ('0.0.0.0', 8001): 通常每个套接字地址(协议/网络地址/端口)只允许使用一次。
 INFO:     Waiting for application shutdown.
 INFO:     Application shutdown complete.

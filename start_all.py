@@ -11,9 +11,14 @@ dify_pro — 粤教留学 AI 智能助手平台
 
 import os
 import sys
+import io
 import subprocess
 import time
 import argparse
+
+# 修复 Windows GBK 编码问题
+if sys.stdout.encoding != 'utf-8':
+    sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8')
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent

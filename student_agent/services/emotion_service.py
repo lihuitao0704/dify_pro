@@ -13,7 +13,7 @@
 
 import json
 import logging
-from datetime import datetime, date
+from datetime import datetime
 from typing import Optional
 
 from student_agent import db
@@ -174,10 +174,11 @@ def get_or_create_profile(student_id: int) -> dict:
         "last_assessment_at": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
     }
     db.insert("mental_health_profile", default_data)
+    # 插入后再查一次确认；如果失败则返回构造的 dict
     return db.query_one(
         "SELECT * FROM mental_health_profile WHERE student_id = %s",
         (student_id,)
-    )
+    ) or dict(default_data)
 
 
 def update_profile(
@@ -218,15 +219,11 @@ def update_profile(
     })
     emotion_history = emotion_history[-30:]  # 保留最近30条
 
-    # 计算连续负面天数
-    if risk_level not in ("low",):
-        new_cons = (profile.get("consecutive_negative_days") or 0) + 1
-    else:
-        new_cons = 0
-
-    # 累计负面关键词次数
+    # 计算连续负面天数 / 关键词次数（统一判定：low 和 normal 不算负面）
+    is_negative = risk_level not in ("low", "normal")
+    new_cons = (profile.get("consecutive_negative_days") or 0) + 1 if is_negative else 0
     old_neg = profile.get("negative_keywords_count") or 0
-    new_neg = old_neg + (1 if risk_level not in ("low", "normal") else 0)
+    new_neg = old_neg + (1 if is_negative else 0)
 
     upsert_data = {
         "current_emotion": emotion.get("emotion", "正常"),

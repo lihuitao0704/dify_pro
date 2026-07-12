@@ -25,7 +25,9 @@ def _get_pool():
     return _pool
 
 def _create_conn():
-    return pymysql.connect(**DB_CONFIG)
+    conn = pymysql.connect(**DB_CONFIG)
+    conn.autocommit(True)
+    return conn
 
 def get_conn():
     """获取数据库连接（来自连接池）"""
@@ -48,7 +50,9 @@ def _release_conn(conn):
 def get_conn_no_db():
     """获取不指定数据库的连接（用于建库）"""
     cfg = {k: v for k, v in DB_CONFIG.items() if k != "database"}
-    return pymysql.connect(**cfg)
+    conn = pymysql.connect(**cfg)
+    conn.autocommit(True)
+    return conn
 
 
 # ============================================================
@@ -542,29 +546,6 @@ TABLE_LIST = [
     INDEX idx_created (created_at)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci"""),
 
-    ("feedback_ticket", """CREATE TABLE IF NOT EXISTS feedback_ticket (
-    id            INT AUTO_INCREMENT PRIMARY KEY,
-    student_id    INT NOT NULL,
-    title         VARCHAR(200),
-    content       TEXT NOT NULL,
-    summary       TEXT         COMMENT 'AI自动生成摘要',
-    category      VARCHAR(50)  COMMENT '签证办理/院校申请/生活服务/教学质量/其他',
-    urgency       VARCHAR(10)  DEFAULT 'normal' COMMENT 'normal/urgent',
-    status        VARCHAR(20)  DEFAULT 'open' COMMENT 'open/processing/resolved/closed',
-    priority      INT          DEFAULT 5 COMMENT '1-10',
-    handler_id    INT,
-    handler_name  VARCHAR(50),
-    resolution    TEXT,
-    satisfaction  VARCHAR(10)  COMMENT 'satisfied/neutral/unsatisfied',
-    resolved_at   DATETIME,
-    created_at    DATETIME DEFAULT CURRENT_TIMESTAMP,
-    updated_at    DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-    INDEX idx_student (student_id),
-    INDEX idx_status (status),
-    INDEX idx_category (category),
-    INDEX idx_urgency (urgency)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci"""),
-
     ("academic_schedule", """CREATE TABLE IF NOT EXISTS academic_schedule (
     id               INT AUTO_INCREMENT PRIMARY KEY,
     student_id       INT NOT NULL,
@@ -717,21 +698,6 @@ def _seed_all():
                 (2, 1002, '期末周压力诱发持续失眠，焦虑评分上升至45', 'medium', '最近快考试了压力好大晚上一直睡不着', '焦虑', 45, 'in_progress', 201, '陈老师', None, None),
                 (3, 1005, '对当地饮食与气候不适应，连续两周情绪低落', 'medium', '天天下雨心情也很差身体各种不舒服', '适应困难', 35, 'in_progress', 202, '刘老师', None, None),
                 (4, 1003, '历史轻度焦虑已恢复正常，记录备查', 'low', '之前考试周有点紧张现在考完了好多了', '正常', 10, 'resolved', 201, '陈老师', '一对一谈话疏导情绪已恢复', '2026-07-06 15:00:00'),
-            ])
-
-    # ── feedback_ticket ──
-    if not query("SELECT 1 FROM feedback_ticket LIMIT 1"):
-        execute_many(
-            """INSERT INTO feedback_ticket (id, student_id, title, content, summary, category, urgency, status, priority,
-               handler_id, handler_name, resolution, satisfaction, resolved_at)
-               VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)""",
-            [
-                (1, 1002, '签证材料反馈延迟', '我的签证材料已经提交两周了一直没有反馈', '签证材料提交两周未获反馈', '签证办理', 'urgent', 'open', 10, None, None, None, None, None),
-                (2, 1001, '宿舍空调报修三次无人处理', '宿舍空调从上周开始坏我已经报了三次维修', '空调报修三次无响应已持续一周', '生活服务', 'urgent', 'processing', 9, 204, '王主管', None, None, None),
-                (3, 1003, '选课系统体验优化建议', '选课系统每次到高峰期就崩溃', '建议升级选课系统服务器', '教学质量', 'normal', 'open', 3, None, None, None, None, None),
-                (4, 1005, '住宿安排与承诺不符', '当初说好是单人间到了发现是双人间', '实际住宿与合同约定的单人间不符', '生活服务', 'urgent', 'open', 7, None, None, None, None, None),
-                (5, 1002, '院校申请文书修改', '我的PS和CV已经写好了但感觉语言不够地道', '申请文书需要导师审核修改', '院校申请', 'normal', 'resolved', 5, 203, '张顾问', '已安排导师一对一修改', 'satisfied', '2026-07-05 16:00:00'),
-                (6, 1004, '语言课程时间冲突', '报了雅思冲刺班但是上课时间和我专业课冲突', '语言课程与专业课时间冲突申请换班', '教学质量', 'normal', 'resolved', 4, 202, '刘老师', '协调后换至周六班', 'satisfied', '2026-07-03 11:00:00'),
             ])
 
     # ── academic_schedule ──
