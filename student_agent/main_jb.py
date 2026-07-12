@@ -158,15 +158,12 @@ def _hash_password(plain: str) -> str:
 # ============================================================
 @app.post("/auth/login")
 async def login(request: Request):
-    """统一登录：支持 account 表（用户名+密码）和 student 表（学号+姓名）两种方式"""
+    """统一登录：account 表用户名+密码"""
     import json as _json
     body = await request.json()
     username = (body.get("username") or "").strip()
     password = (body.get("password") or "").strip()
-    student_id = body.get("student_id") or 0
-    name = (body.get("name") or "").strip()
 
-    # ── 方式1: account 表登录（用户名 + 密码）──
     if username and password:
         user = query_one(
             """SELECT user_id, username, password, real_name, user_type,
@@ -198,20 +195,7 @@ async def login(request: Request):
             "phone": user.get("phone", ""), "email": user.get("email", ""),
         }}
 
-    # ── 方式2: student 表登录（学号 + 姓名，兼容同事旧门户）──
-    if student_id and name:
-        student = query_one(
-            "SELECT id, name, education, major, gpa FROM student WHERE id = %s AND name = %s",
-            (student_id, name))
-        if student:
-            return {"success": True, "student": {
-                "id": student["id"], "name": student["name"],
-                "education": student.get("education", ""),
-                "major": student.get("major", ""),
-            }}
-        return {"success": False, "message": "学号或姓名不正确"}
-
-    return {"success": False, "message": "请提供用户名+密码 或 学号+姓名"}
+    return {"success": False, "message": "请提供用户名和密码"}
 
 
 # ============================================================

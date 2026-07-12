@@ -152,8 +152,6 @@ async def auth_login(request: Request):
     body = await request.json()
     username = (body.get("username") or "").strip()
     password = (body.get("password") or "").strip()
-    sid = body.get("student_id") or 0
-    sname = (body.get("name") or "").strip()
 
     def check_pw(plain, stored):
         try:
@@ -187,17 +185,7 @@ async def auth_login(request: Request):
                     "id": uid, "name": dname, "user_id": user["user_id"],
                     "user_type": user["user_type"], "student_id": user.get("student_id"),
                     "phone": user.get("phone",""), "email": user.get("email","")}}
-            if sid and sname:
-                cur.execute("SELECT id, name, education, major FROM student WHERE id=%s AND name=%s", (sid, sname))
-                row = cur.fetchone()
-                if row:
-                    cols = [c[0] for c in cur.description]
-                    stu = dict(zip(cols, row))
-                    return {"success": True, "student": {
-                        "id": stu["id"], "name": stu["name"],
-                        "education": stu.get("education",""), "major": stu.get("major","")}}
-                return {"success": False, "message": "学号或姓名不正确"}
-            return {"success": False, "message": "请提供用户名+密码 或 学号+姓名"}
+            return {"success": False, "message": "请提供用户名和密码"}
     finally:
         conn.close()
 
