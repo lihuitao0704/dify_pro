@@ -68,8 +68,9 @@ const Auth = {
     return h;
   },
 
-  // ── 学生登录（统一账户密码，查 account 表） ──
-  async studentLogin(username, password) {
+  // ── 学生登录 ──
+  async studentLogin(studentId, name) {
+    // Try unified API first
     const urls = [
       `http://localhost:8000/auth/login`,
     ];
@@ -78,23 +79,21 @@ const Auth = {
         const r = await fetch(url, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ username, password }),
+          body: JSON.stringify({ student_id: parseInt(studentId), name }),
         });
         const data = await r.json();
         if (data.success) {
-          const s = data.student;
           this.set({
             role: 'student',
-            user_id: s.id,
-            user_name: s.name,
+            user_id: studentId,
+            user_name: name,
             token: data.token || '',
-            student: s,
-            user_type: s.user_type || '',
+            student: data.student || {},
             exp: data.exp || (Date.now()/1000 + 86400),
           });
           return { success: true };
         }
-        return { success: false, message: data.message || '用户名或密码不正确' };
+        return { success: false, message: data.message || '学号或姓名不正确' };
       } catch (e) {
         continue;
       }
