@@ -13,3 +13,35 @@ Traceback (most recent call last):
     import pymysql
 ModuleNotFoundError: No module named 'pymysql'
 [Config] �Ѽ��� .env: D:\dify_pro\student_agent\.env
+[Config] 已加载 .env: C:\Users\Windows\PycharmProjects\PythonProject10\dify_pro\student_agent\.env
+Traceback (most recent call last):
+  File "<frozen runpy>", line 198, in _run_module_as_main
+  File "<frozen runpy>", line 88, in _run_code
+  File "C:\Users\Windows\PycharmProjects\PythonProject10\dify_pro\student_agent\main_jb.py", line 349, in <module>
+    uvicorn.run("student_agent.main:app", host=AGENT_HOST, port=AGENT_PORT)
+    ^^^^^^^
+NameError: name 'uvicorn' is not defined
+[Config] 已加载 .env: C:\Users\Windows\PycharmProjects\PythonProject10\dify_pro\student_agent\.env
+Traceback (most recent call last):
+  File "<frozen runpy>", line 198, in _run_module_as_main
+  File "<frozen runpy>", line 88, in _run_code
+  File "C:\Users\Windows\PycharmProjects\PythonProject10\dify_pro\student_agent\main_jb.py", line 349, in <module>
+    uvicorn.run("student_agent.main:app", host=AGENT_HOST, port=AGENT_PORT)
+    ^^^^^^^
+NameError: name 'uvicorn' is not defined
+[Config] 已加载 .env: C:\Users\Windows\PycharmProjects\PythonProject10\dify_pro\student_agent\.env
+Traceback (most recent call last):
+  File "<frozen runpy>", line 198, in _run_module_as_main
+  File "<frozen runpy>", line 88, in _run_code
+  File "C:\Users\Windows\PycharmProjects\PythonProject10\dify_pro\student_agent\main_jb.py", line 349, in <module>
+    uvicorn.run("student_agent.main:app", host=AGENT_HOST, port=AGENT_PORT)
+    ^^^^^^^
+NameError: name 'uvicorn' is not defined
+[Config] 已加载 .env: C:\Users\Windows\PycharmProjects\PythonProject10\dify_pro\student_agent\.env
+Traceback (most recent call last):
+  File "<frozen runpy>", line 198, in _run_module_as_main
+  File "<frozen runpy>", line 88, in _run_code
+  File "C:\Users\Windows\PycharmProjects\PythonProject10\dify_pro\student_agent\main_jb.py", line 349, in <module>
+    uvicorn.run("student_agent.main:app", host=AGENT_HOST, port=AGENT_PORT)
+    ^^^^^^^
+NameError: name 'uvicorn' is not defined

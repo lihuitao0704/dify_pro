@@ -14,3 +14,824 @@ Traceback (most recent call last):
   File "D:\dify_pro\enterprise_agent\database.py", line 5, in <module>
     from sqlalchemy import create_engine, text
 ModuleNotFoundError: No module named 'sqlalchemy'
+SECURITY: Using default database password '123456'! Set DB_PASSWORD in .env or environment variable.
+2026-07-12 09:55:56 | INFO  | agent | Config loaded: host=192.168.48.121, db=dify_pro
+C:\Users\Windows\PycharmProjects\PythonProject10\dify_pro\enterprise_agent\main.py:45: DeprecationWarning: 
+        on_event is deprecated, use lifespan event handlers instead.
+
+        Read more about it in the
+        [FastAPI docs for Lifespan Events](https://fastapi.tiangolo.com/advanced/events/).
+        
+  @app.on_event("startup")
+2026-07-12 09:55:57 | INFO  | agent | Routes registered: /api/agent/* (16 modules)
+INFO:     Will watch for changes in these directories: ['C:\\Users\\Windows\\PycharmProjects\\PythonProject10\\dify_pro']
+2026-07-12 09:55:57 | INFO  | agent | Routes registered: /api/agent/* (16 modules)
+INFO:     Uvicorn running on http://0.0.0.0:8001 (Press CTRL+C to quit)
+INFO:     Started reloader process [3612] using WatchFiles
+2026-07-12 09:55:58 | INFO  | watchfiles.main | 1 change detected
+2026-07-12 09:55:58 | INFO  | watchfiles.main | 8 changes detected
+SECURITY: Using default database password '123456'! Set DB_PASSWORD in .env or environment variable.
+2026-07-12 09:55:58 | INFO  | agent | Config loaded: host=192.168.48.121, db=dify_pro
+2026-07-12 09:55:59 | INFO  | agent | Routes registered: /api/agent/* (16 modules)
+2026-07-12 09:55:59 | INFO  | watchfiles.main | 60 changes detected
+2026-07-12 09:55:59 | INFO  | agent | Routes registered: /api/agent/* (16 modules)
+INFO:     Started server process [38664]
+INFO:     Waiting for application startup.
+2026-07-12 09:55:59 | INFO  | watchfiles.main | 4 changes detected
+2026-07-12 09:56:00 | INFO  | agent | Database OK: 192.168.48.121:3306/dify_pro
+2026-07-12 09:56:00 | INFO  | agent | DB status: connected
+2026-07-12 09:56:00 | INFO  | enterprise_agent.scheduler | 待办推送调度器已启动，扫描间隔: 300s
+2026-07-12 09:56:00 | INFO  | agent | 待办推送调度器已启动
+INFO:     Application startup complete.
+2026-07-12 09:56:00 | INFO  | enterprise_agent.scheduler | 待办扫描: 发现 4 类待办，共 23 条
+2026-07-12 09:56:00 | INFO  | enterprise_agent.scheduler |   - 待审批请假: 5 条
+2026-07-12 09:56:00 | INFO  | enterprise_agent.scheduler |   - 待处理投诉: 1 条
+2026-07-12 09:56:00 | INFO  | enterprise_agent.scheduler |   - 待跟进客户: 14 条
+2026-07-12 09:56:00 | INFO  | enterprise_agent.scheduler |   - 处理中的投诉: 3 条
+2026-07-12 09:56:00 | INFO  | watchfiles.main | 4 changes detected
+2026-07-12 09:56:00 | INFO  | watchfiles.main | 5 changes detected
+2026-07-12 09:56:01 | INFO  | watchfiles.main | 44 changes detected
+2026-07-12 09:56:01 | INFO  | watchfiles.main | 9 changes detected
+2026-07-12 09:56:02 | INFO  | watchfiles.main | 19 changes detected
+2026-07-12 09:56:04 | INFO  | watchfiles.main | 13 changes detected
+2026-07-12 09:56:04 | INFO  | watchfiles.main | 11 changes detected
+2026-07-12 09:56:26 | INFO  | watchfiles.main | 1 change detected
+2026-07-12 09:56:31 | INFO  | watchfiles.main | 4 changes detected
+2026-07-12 09:56:31 | INFO  | watchfiles.main | 3 changes detected
+2026-07-12 09:56:32 | INFO  | watchfiles.main | 1 change detected
+2026-07-12 09:59:44 | INFO  | watchfiles.main | 3 changes detected
+2026-07-12 09:59:48 | INFO  | watchfiles.main | 1 change detected
+2026-07-12 10:00:03 | INFO  | watchfiles.main | 1 change detected
+2026-07-12 10:00:07 | INFO  | watchfiles.main | 1 change detected
+2026-07-12 10:00:27 | INFO  | watchfiles.main | 1 change detected
+2026-07-12 10:01:00 | INFO  | enterprise_agent.scheduler | 待办扫描: 发现 4 类待办，共 23 条
+2026-07-12 10:01:00 | INFO  | enterprise_agent.scheduler |   - 待审批请假: 5 条
+2026-07-12 10:01:00 | INFO  | enterprise_agent.scheduler |   - 待处理投诉: 1 条
+2026-07-12 10:01:00 | INFO  | enterprise_agent.scheduler |   - 待跟进客户: 14 条
+2026-07-12 10:01:00 | INFO  | enterprise_agent.scheduler |   - 处理中的投诉: 3 条
+2026-07-12 10:01:13 | INFO  | watchfiles.main | 1 change detected
+2026-07-12 10:01:28 | INFO  | watchfiles.main | 1 change detected
+2026-07-12 10:01:43 | INFO  | watchfiles.main | 1 change detected
+2026-07-12 10:01:45 | INFO  | watchfiles.main | 1 change detected
+2026-07-12 10:01:45 | INFO  | watchfiles.main | 1 change detected
+2026-07-12 10:01:58 | INFO  | watchfiles.main | 1 change detected
+2026-07-12 10:02:13 | INFO  | watchfiles.main | 1 change detected
+2026-07-12 10:02:28 | INFO  | watchfiles.main | 1 change detected
+2026-07-12 10:02:43 | INFO  | watchfiles.main | 1 change detected
+2026-07-12 10:02:58 | INFO  | watchfiles.main | 1 change detected
+2026-07-12 10:03:13 | INFO  | watchfiles.main | 1 change detected
+2026-07-12 10:03:28 | INFO  | watchfiles.main | 1 change detected
+2026-07-12 10:03:43 | INFO  | watchfiles.main | 1 change detected
+2026-07-12 10:03:58 | INFO  | watchfiles.main | 1 change detected
+2026-07-12 10:04:13 | INFO  | watchfiles.main | 1 change detected
+2026-07-12 10:04:28 | INFO  | watchfiles.main | 1 change detected
+2026-07-12 10:04:43 | INFO  | watchfiles.main | 1 change detected
+2026-07-12 10:04:58 | INFO  | watchfiles.main | 1 change detected
+2026-07-12 10:05:04 | INFO  | watchfiles.main | 1 change detected
+2026-07-12 10:05:22 | INFO  | watchfiles.main | 1 change detected
+2026-07-12 10:06:00 | INFO  | enterprise_agent.scheduler | 待办扫描: 发现 4 类待办，共 23 条
+2026-07-12 10:06:00 | INFO  | enterprise_agent.scheduler |   - 待审批请假: 5 条
+2026-07-12 10:06:00 | INFO  | enterprise_agent.scheduler |   - 待处理投诉: 1 条
+2026-07-12 10:06:00 | INFO  | enterprise_agent.scheduler |   - 待跟进客户: 14 条
+2026-07-12 10:06:00 | INFO  | enterprise_agent.scheduler |   - 处理中的投诉: 3 条
+2026-07-12 10:06:01 | INFO  | watchfiles.main | 1 change detected
+2026-07-12 10:06:16 | INFO  | watchfiles.main | 1 change detected
+2026-07-12 10:06:31 | INFO  | watchfiles.main | 1 change detected
+2026-07-12 10:06:35 | INFO  | watchfiles.main | 1 change detected
+INFO:     127.0.0.1:51037 - "GET / HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51037 - "GET /favicon.ico HTTP/1.1" 404 Not Found
+2026-07-12 10:06:52 | INFO  | watchfiles.main | 1 change detected
+2026-07-12 10:07:05 | INFO  | watchfiles.main | 1 change detected
+2026-07-12 10:07:23 | INFO  | watchfiles.main | 1 change detected
+2026-07-12 10:07:38 | INFO  | watchfiles.main | 1 change detected
+2026-07-12 10:07:53 | INFO  | watchfiles.main | 1 change detected
+2026-07-12 10:08:04 | INFO  | watchfiles.main | 1 change detected
+2026-07-12 10:08:37 | INFO  | watchfiles.main | 1 change detected
+INFO:     127.0.0.1:51344 - "GET /docs HTTP/1.1" 200 OK
+2026-07-12 10:08:52 | INFO  | watchfiles.main | 1 change detected
+2026-07-12 10:09:07 | INFO  | watchfiles.main | 1 change detected
+2026-07-12 10:09:22 | INFO  | watchfiles.main | 1 change detected
+2026-07-12 10:09:37 | INFO  | watchfiles.main | 1 change detected
+2026-07-12 10:09:52 | INFO  | watchfiles.main | 1 change detected
+2026-07-12 10:10:07 | INFO  | watchfiles.main | 1 change detected
+2026-07-12 10:10:22 | INFO  | watchfiles.main | 1 change detected
+2026-07-12 10:10:30 | INFO  | watchfiles.main | 1 change detected
+2026-07-12 10:11:02 | INFO  | enterprise_agent.scheduler | 待办扫描: 发现 4 类待办，共 23 条
+2026-07-12 10:11:02 | INFO  | enterprise_agent.scheduler |   - 待审批请假: 5 条
+2026-07-12 10:11:02 | INFO  | enterprise_agent.scheduler |   - 待处理投诉: 1 条
+2026-07-12 10:11:02 | INFO  | enterprise_agent.scheduler |   - 待跟进客户: 14 条
+2026-07-12 10:11:02 | INFO  | enterprise_agent.scheduler |   - 处理中的投诉: 3 条
+2026-07-12 10:11:33 | INFO  | watchfiles.main | 1 change detected
+2026-07-12 10:11:34 | INFO  | watchfiles.main | 4 changes detected
+2026-07-12 10:11:34 | INFO  | watchfiles.main | 3 changes detected
+2026-07-12 10:13:07 | INFO  | watchfiles.main | 1 change detected
+2026-07-12 10:13:22 | INFO  | watchfiles.main | 1 change detected
+2026-07-12 10:13:37 | INFO  | watchfiles.main | 1 change detected
+2026-07-12 10:13:52 | INFO  | watchfiles.main | 1 change detected
+2026-07-12 10:14:07 | INFO  | watchfiles.main | 1 change detected
+2026-07-12 10:14:22 | INFO  | watchfiles.main | 1 change detected
+2026-07-12 10:14:37 | INFO  | watchfiles.main | 1 change detected
+2026-07-12 10:14:52 | INFO  | watchfiles.main | 1 change detected
+2026-07-12 10:15:07 | INFO  | watchfiles.main | 1 change detected
+2026-07-12 10:15:14 | INFO  | watchfiles.main | 1 change detected
+2026-07-12 10:16:02 | INFO  | enterprise_agent.scheduler | 待办扫描: 发现 4 类待办，共 23 条
+2026-07-12 10:16:02 | INFO  | enterprise_agent.scheduler |   - 待审批请假: 5 条
+2026-07-12 10:16:02 | INFO  | enterprise_agent.scheduler |   - 待处理投诉: 1 条
+2026-07-12 10:16:02 | INFO  | enterprise_agent.scheduler |   - 待跟进客户: 14 条
+2026-07-12 10:16:02 | INFO  | enterprise_agent.scheduler |   - 处理中的投诉: 3 条
+2026-07-12 10:18:24 | INFO  | watchfiles.main | 2 changes detected
+2026-07-12 10:18:27 | INFO  | watchfiles.main | 1 change detected
+2026-07-12 10:19:54 | INFO  | watchfiles.main | 1 change detected
+2026-07-12 10:19:55 | INFO  | watchfiles.main | 1 change detected
+INFO:     127.0.0.1:54277 - "GET /health HTTP/1.1" 200 OK
+2026-07-12 10:21:03 | INFO  | enterprise_agent.scheduler | 待办扫描: 发现 4 类待办，共 23 条
+2026-07-12 10:21:03 | INFO  | enterprise_agent.scheduler |   - 待审批请假: 5 条
+2026-07-12 10:21:03 | INFO  | enterprise_agent.scheduler |   - 待处理投诉: 1 条
+2026-07-12 10:21:03 | INFO  | enterprise_agent.scheduler |   - 待跟进客户: 14 条
+2026-07-12 10:21:03 | INFO  | enterprise_agent.scheduler |   - 处理中的投诉: 3 条
+2026-07-12 10:23:04 | INFO  | watchfiles.main | 5 changes detected
+2026-07-12 10:24:42 | INFO  | watchfiles.main | 1 change detected
+2026-07-12 10:26:03 | INFO  | enterprise_agent.scheduler | 待办扫描: 发现 4 类待办，共 23 条
+2026-07-12 10:26:03 | INFO  | enterprise_agent.scheduler |   - 待审批请假: 5 条
+2026-07-12 10:26:03 | INFO  | enterprise_agent.scheduler |   - 待处理投诉: 1 条
+2026-07-12 10:26:03 | INFO  | enterprise_agent.scheduler |   - 待跟进客户: 14 条
+2026-07-12 10:26:03 | INFO  | enterprise_agent.scheduler |   - 处理中的投诉: 3 条
+2026-07-12 10:31:03 | INFO  | enterprise_agent.scheduler | 待办扫描: 发现 4 类待办，共 23 条
+2026-07-12 10:31:03 | INFO  | enterprise_agent.scheduler |   - 待审批请假: 5 条
+2026-07-12 10:31:03 | INFO  | enterprise_agent.scheduler |   - 待处理投诉: 1 条
+2026-07-12 10:31:03 | INFO  | enterprise_agent.scheduler |   - 待跟进客户: 14 条
+2026-07-12 10:31:03 | INFO  | enterprise_agent.scheduler |   - 处理中的投诉: 3 条
+2026-07-12 10:36:03 | INFO  | enterprise_agent.scheduler | 待办扫描: 发现 4 类待办，共 23 条
+2026-07-12 10:36:03 | INFO  | enterprise_agent.scheduler |   - 待审批请假: 5 条
+2026-07-12 10:36:03 | INFO  | enterprise_agent.scheduler |   - 待处理投诉: 1 条
+2026-07-12 10:36:03 | INFO  | enterprise_agent.scheduler |   - 待跟进客户: 14 条
+2026-07-12 10:36:03 | INFO  | enterprise_agent.scheduler |   - 处理中的投诉: 3 条
+2026-07-12 10:41:04 | INFO  | enterprise_agent.scheduler | 待办扫描: 发现 4 类待办，共 23 条
+2026-07-12 10:41:04 | INFO  | enterprise_agent.scheduler |   - 待审批请假: 5 条
+2026-07-12 10:41:04 | INFO  | enterprise_agent.scheduler |   - 待处理投诉: 1 条
+2026-07-12 10:41:04 | INFO  | enterprise_agent.scheduler |   - 待跟进客户: 14 条
+2026-07-12 10:41:04 | INFO  | enterprise_agent.scheduler |   - 处理中的投诉: 3 条
+2026-07-12 10:46:04 | INFO  | enterprise_agent.scheduler | 待办扫描: 发现 4 类待办，共 23 条
+2026-07-12 10:46:04 | INFO  | enterprise_agent.scheduler |   - 待审批请假: 5 条
+2026-07-12 10:46:04 | INFO  | enterprise_agent.scheduler |   - 待处理投诉: 1 条
+2026-07-12 10:46:04 | INFO  | enterprise_agent.scheduler |   - 待跟进客户: 14 条
+2026-07-12 10:46:04 | INFO  | enterprise_agent.scheduler |   - 处理中的投诉: 3 条
+2026-07-12 10:51:06 | INFO  | enterprise_agent.scheduler | 待办扫描: 发现 4 类待办，共 23 条
+2026-07-12 10:51:06 | INFO  | enterprise_agent.scheduler |   - 待审批请假: 5 条
+2026-07-12 10:51:06 | INFO  | enterprise_agent.scheduler |   - 待处理投诉: 1 条
+2026-07-12 10:51:06 | INFO  | enterprise_agent.scheduler |   - 待跟进客户: 14 条
+2026-07-12 10:51:06 | INFO  | enterprise_agent.scheduler |   - 处理中的投诉: 3 条
+2026-07-12 10:56:06 | INFO  | enterprise_agent.scheduler | 待办扫描: 发现 4 类待办，共 23 条
+2026-07-12 10:56:06 | INFO  | enterprise_agent.scheduler |   - 待审批请假: 5 条
+2026-07-12 10:56:06 | INFO  | enterprise_agent.scheduler |   - 待处理投诉: 1 条
+2026-07-12 10:56:06 | INFO  | enterprise_agent.scheduler |   - 待跟进客户: 14 条
+2026-07-12 10:56:06 | INFO  | enterprise_agent.scheduler |   - 处理中的投诉: 3 条
+2026-07-12 11:01:06 | INFO  | enterprise_agent.scheduler | 待办扫描: 发现 4 类待办，共 23 条
+2026-07-12 11:01:06 | INFO  | enterprise_agent.scheduler |   - 待审批请假: 5 条
+2026-07-12 11:01:06 | INFO  | enterprise_agent.scheduler |   - 待处理投诉: 1 条
+2026-07-12 11:01:06 | INFO  | enterprise_agent.scheduler |   - 待跟进客户: 14 条
+2026-07-12 11:01:06 | INFO  | enterprise_agent.scheduler |   - 处理中的投诉: 3 条
+2026-07-12 11:06:06 | INFO  | enterprise_agent.scheduler | 待办扫描: 发现 4 类待办，共 23 条
+2026-07-12 11:06:06 | INFO  | enterprise_agent.scheduler |   - 待审批请假: 5 条
+2026-07-12 11:06:06 | INFO  | enterprise_agent.scheduler |   - 待处理投诉: 1 条
+2026-07-12 11:06:06 | INFO  | enterprise_agent.scheduler |   - 待跟进客户: 14 条
+2026-07-12 11:06:06 | INFO  | enterprise_agent.scheduler |   - 处理中的投诉: 3 条
+2026-07-12 11:11:06 | INFO  | enterprise_agent.scheduler | 待办扫描: 发现 4 类待办，共 23 条
+2026-07-12 11:11:06 | INFO  | enterprise_agent.scheduler |   - 待审批请假: 5 条
+2026-07-12 11:11:06 | INFO  | enterprise_agent.scheduler |   - 待处理投诉: 1 条
+2026-07-12 11:11:06 | INFO  | enterprise_agent.scheduler |   - 待跟进客户: 14 条
+2026-07-12 11:11:06 | INFO  | enterprise_agent.scheduler |   - 处理中的投诉: 3 条
+2026-07-12 11:16:06 | INFO  | enterprise_agent.scheduler | 待办扫描: 发现 4 类待办，共 24 条
+2026-07-12 11:16:06 | INFO  | enterprise_agent.scheduler |   - 待审批请假: 6 条
+2026-07-12 11:16:06 | INFO  | enterprise_agent.scheduler |   - 待处理投诉: 1 条
+2026-07-12 11:16:06 | INFO  | enterprise_agent.scheduler |   - 待跟进客户: 14 条
+2026-07-12 11:16:06 | INFO  | enterprise_agent.scheduler |   - 处理中的投诉: 3 条
+2026-07-12 11:21:06 | INFO  | enterprise_agent.scheduler | 待办扫描: 发现 4 类待办，共 24 条
+2026-07-12 11:21:06 | INFO  | enterprise_agent.scheduler |   - 待审批请假: 6 条
+2026-07-12 11:21:06 | INFO  | enterprise_agent.scheduler |   - 待处理投诉: 1 条
+2026-07-12 11:21:06 | INFO  | enterprise_agent.scheduler |   - 待跟进客户: 14 条
+2026-07-12 11:21:06 | INFO  | enterprise_agent.scheduler |   - 处理中的投诉: 3 条
+2026-07-12 11:26:06 | INFO  | enterprise_agent.scheduler | 待办扫描: 发现 4 类待办，共 24 条
+2026-07-12 11:26:06 | INFO  | enterprise_agent.scheduler |   - 待审批请假: 6 条
+2026-07-12 11:26:06 | INFO  | enterprise_agent.scheduler |   - 待处理投诉: 1 条
+2026-07-12 11:26:06 | INFO  | enterprise_agent.scheduler |   - 待跟进客户: 14 条
+2026-07-12 11:26:06 | INFO  | enterprise_agent.scheduler |   - 处理中的投诉: 3 条
+2026-07-12 11:31:06 | INFO  | enterprise_agent.scheduler | 待办扫描: 发现 4 类待办，共 24 条
+2026-07-12 11:31:06 | INFO  | enterprise_agent.scheduler |   - 待审批请假: 6 条
+2026-07-12 11:31:06 | INFO  | enterprise_agent.scheduler |   - 待处理投诉: 1 条
+2026-07-12 11:31:06 | INFO  | enterprise_agent.scheduler |   - 待跟进客户: 14 条
+2026-07-12 11:31:06 | INFO  | enterprise_agent.scheduler |   - 处理中的投诉: 3 条
+2026-07-12 11:36:06 | INFO  | enterprise_agent.scheduler | 待办扫描: 发现 4 类待办，共 24 条
+2026-07-12 11:36:06 | INFO  | enterprise_agent.scheduler |   - 待审批请假: 6 条
+2026-07-12 11:36:06 | INFO  | enterprise_agent.scheduler |   - 待处理投诉: 1 条
+2026-07-12 11:36:06 | INFO  | enterprise_agent.scheduler |   - 待跟进客户: 14 条
+2026-07-12 11:36:06 | INFO  | enterprise_agent.scheduler |   - 处理中的投诉: 3 条
+2026-07-12 11:41:06 | INFO  | enterprise_agent.scheduler | 待办扫描: 发现 4 类待办，共 24 条
+2026-07-12 11:41:06 | INFO  | enterprise_agent.scheduler |   - 待审批请假: 6 条
+2026-07-12 11:41:06 | INFO  | enterprise_agent.scheduler |   - 待处理投诉: 1 条
+2026-07-12 11:41:06 | INFO  | enterprise_agent.scheduler |   - 待跟进客户: 14 条
+2026-07-12 11:41:06 | INFO  | enterprise_agent.scheduler |   - 处理中的投诉: 3 条
+2026-07-12 11:46:07 | INFO  | enterprise_agent.scheduler | 待办扫描: 发现 4 类待办，共 24 条
+2026-07-12 11:46:07 | INFO  | enterprise_agent.scheduler |   - 待审批请假: 6 条
+2026-07-12 11:46:07 | INFO  | enterprise_agent.scheduler |   - 待处理投诉: 1 条
+2026-07-12 11:46:07 | INFO  | enterprise_agent.scheduler |   - 待跟进客户: 14 条
+2026-07-12 11:46:07 | INFO  | enterprise_agent.scheduler |   - 处理中的投诉: 3 条
+2026-07-12 11:51:07 | INFO  | enterprise_agent.scheduler | 待办扫描: 发现 4 类待办，共 25 条
+2026-07-12 11:51:07 | INFO  | enterprise_agent.scheduler |   - 待审批请假: 6 条
+2026-07-12 11:51:07 | INFO  | enterprise_agent.scheduler |   - 待处理投诉: 1 条
+2026-07-12 11:51:07 | INFO  | enterprise_agent.scheduler |   - 待跟进客户: 15 条
+2026-07-12 11:51:07 | INFO  | enterprise_agent.scheduler |   - 处理中的投诉: 3 条
+2026-07-12 11:56:07 | INFO  | enterprise_agent.scheduler | 待办扫描: 发现 4 类待办，共 25 条
+2026-07-12 11:56:07 | INFO  | enterprise_agent.scheduler |   - 待审批请假: 6 条
+2026-07-12 11:56:07 | INFO  | enterprise_agent.scheduler |   - 待处理投诉: 1 条
+2026-07-12 11:56:07 | INFO  | enterprise_agent.scheduler |   - 待跟进客户: 15 条
+2026-07-12 11:56:07 | INFO  | enterprise_agent.scheduler |   - 处理中的投诉: 3 条
+2026-07-12 12:01:07 | INFO  | enterprise_agent.scheduler | 待办扫描: 发现 4 类待办，共 25 条
+2026-07-12 12:01:07 | INFO  | enterprise_agent.scheduler |   - 待审批请假: 6 条
+2026-07-12 12:01:07 | INFO  | enterprise_agent.scheduler |   - 待处理投诉: 1 条
+2026-07-12 12:01:07 | INFO  | enterprise_agent.scheduler |   - 待跟进客户: 15 条
+2026-07-12 12:01:07 | INFO  | enterprise_agent.scheduler |   - 处理中的投诉: 3 条
+ | enterprise_agent.scheduler | 待办扫描: 发现 4 类待办，共 24 条
+2026-07-12 11:35:04 | INFO  | enterprise_agent.scheduler |   - 待审批请假: 6 条
+2026-07-12 11:35:04 | INFO  | enterprise_agent.scheduler |   - 待处理投诉: 1 条
+2026-07-12 11:35:04 | INFO  | enterprise_agent.scheduler |   - 待跟进客户: 14 条
+2026-07-12 11:35:04 | INFO  | enterprise_agent.scheduler |   - 处理中的投诉: 3 条
+2026-07-12 11:40:04 | INFO  | enterprise_agent.scheduler | 待办扫描: 发现 4 类待办，共 24 条
+2026-07-12 11:40:04 | INFO  | enterprise_agent.scheduler |   - 待审批请假: 6 条
+2026-07-12 11:40:04 | INFO  | enterprise_agent.scheduler |   - 待处理投诉: 1 条
+2026-07-12 11:40:04 | INFO  | enterprise_agent.scheduler |   - 待跟进客户: 14 条
+2026-07-12 11:40:04 | INFO  | enterprise_agent.scheduler |   - 处理中的投诉: 3 条
+2026-07-12 11:45:04 | INFO  | enterprise_agent.scheduler | 待办扫描: 发现 4 类待办，共 24 条
+2026-07-12 11:45:04 | INFO  | enterprise_agent.scheduler |   - 待审批请假: 6 条
+2026-07-12 11:45:04 | INFO  | enterprise_agent.scheduler |   - 待处理投诉: 1 条
+2026-07-12 11:45:04 | INFO  | enterprise_agent.scheduler |   - 待跟进客户: 14 条
+2026-07-12 11:45:04 | INFO  | enterprise_agent.scheduler |   - 处理中的投诉: 3 条
+2026-07-12 11:50:04 | INFO  | enterprise_agent.scheduler | 待办扫描: 发现 4 类待办，共 25 条
+2026-07-12 11:50:04 | INFO  | enterprise_agent.scheduler |   - 待审批请假: 6 条
+2026-07-12 11:50:04 | INFO  | enterprise_agent.scheduler |   - 待处理投诉: 1 条
+2026-07-12 11:50:04 | INFO  | enterprise_agent.scheduler |   - 待跟进客户: 15 条
+2026-07-12 11:50:04 | INFO  | enterprise_agent.scheduler |   - 处理中的投诉: 3 条
+2026-07-12 11:55:04 | INFO  | enterprise_agent.scheduler | 待办扫描: 发现 4 类待办，共 25 条
+2026-07-12 11:55:04 | INFO  | enterprise_agent.scheduler |   - 待审批请假: 6 条
+2026-07-12 11:55:04 | INFO  | enterprise_agent.scheduler |   - 待处理投诉: 1 条
+2026-07-12 11:55:04 | INFO  | enterprise_agent.scheduler |   - 待跟进客户: 15 条
+2026-07-12 11:55:04 | INFO  | enterprise_agent.scheduler |   - 处理中的投诉: 3 条
+2026-07-12 12:00:04 | INFO  | enterprise_agent.scheduler | 待办扫描: 发现 4 类待办，共 25 条
+2026-07-12 12:00:04 | INFO  | enterprise_agent.scheduler |   - 待审批请假: 6 条
+2026-07-12 12:00:04 | INFO  | enterprise_agent.scheduler |   - 待处理投诉: 1 条
+2026-07-12 12:00:04 | INFO  | enterprise_agent.scheduler |   - 待跟进客户: 15 条
+2026-07-12 12:00:04 | INFO  | enterprise_agent.scheduler |   - 处理中的投诉: 3 条
+2026-07-12 12:05:04 | INFO  | enterprise_agent.scheduler | 待办扫描: 发现 4 类待办，共 26 条
+2026-07-12 12:05:04 | INFO  | enterprise_agent.scheduler |   - 待审批请假: 6 条
+2026-07-12 12:05:04 | INFO  | enterprise_agent.scheduler |   - 待处理投诉: 1 条
+2026-07-12 12:05:04 | INFO  | enterprise_agent.scheduler |   - 待跟进客户: 16 条
+2026-07-12 12:05:04 | INFO  | enterprise_agent.scheduler |   - 处理中的投诉: 3 条
+ain | 1 change detected
+2026-07-12 11:03:34 | INFO  | watchfiles.main | 1 change detected
+2026-07-12 11:03:49 | INFO  | watchfiles.main | 1 change detected
+2026-07-12 11:04:04 | INFO  | watchfiles.main | 1 change detected
+2026-07-12 11:04:19 | INFO  | watchfiles.main | 1 change detected
+2026-07-12 11:04:34 | INFO  | watchfiles.main | 1 change detected
+2026-07-12 11:04:41 | INFO  | watchfiles.main | 1 change detected
+2026-07-12 11:05:13 | INFO  | enterprise_agent.scheduler | 待办扫描: 发现 4 类待办，共 23 条
+2026-07-12 11:05:13 | INFO  | enterprise_agent.scheduler |   - 待审批请假: 5 条
+2026-07-12 11:05:13 | INFO  | enterprise_agent.scheduler |   - 待处理投诉: 1 条
+2026-07-12 11:05:13 | INFO  | enterprise_agent.scheduler |   - 待跟进客户: 14 条
+2026-07-12 11:05:13 | INFO  | enterprise_agent.scheduler |   - 处理中的投诉: 3 条
+2026-07-12 11:07:43 | INFO  | watchfiles.main | 4 changes detected
+2026-07-12 11:07:51 | INFO  | watchfiles.main | 5 changes detected
+WARNING:  WatchFiles detected changes in 'summary_report\main.py'. Reloading...
+ INFO:     Shutting down
+INFO:     Waiting for application shutdown.
+INFO:     Application shutdown complete.
+INFO:     Finished server process [2068]
+SECURITY: Using default database password '123456'! Set DB_PASSWORD in .env or environment variable.
+2026-07-12 11:09:13 | INFO  | agent | Config loaded: host=192.168.48.121, db=dify_pro
+C:\Users\Windows\PycharmProjects\PythonProject10\dify_pro\enterprise_agent\main.py:45: DeprecationWarning: 
+        on_event is deprecated, use lifespan event handlers instead.
+
+        Read more about it in the
+        [FastAPI docs for Lifespan Events](https://fastapi.tiangolo.com/advanced/events/).
+        
+  @app.on_event("startup")
+2026-07-12 11:09:14 | INFO  | agent | Routes registered: /api/agent/* (16 modules)
+INFO:     Will watch for changes in these directories: ['C:\\Users\\Windows\\PycharmProjects\\PythonProject10\\dify_pro']
+2026-07-12 11:09:14 | INFO  | agent | Routes registered: /api/agent/* (16 modules)
+INFO:     Uvicorn running on http://0.0.0.0:8001 (Press CTRL+C to quit)
+INFO:     Started reloader process [30844] using WatchFiles
+2026-07-12 11:09:15 | INFO  | watchfiles.main | 1 change detected
+SECURITY: Using default database password '123456'! Set DB_PASSWORD in .env or environment variable.
+2026-07-12 11:09:15 | INFO  | agent | Config loaded: host=192.168.48.121, db=dify_pro
+2026-07-12 11:09:15 | INFO  | agent | Routes registered: /api/agent/* (16 modules)
+2026-07-12 11:09:16 | INFO  | agent | Routes registered: /api/agent/* (16 modules)
+INFO:     Started server process [26932]
+INFO:     Waiting for application startup.
+2026-07-12 11:09:16 | INFO  | agent | Database OK: 192.168.48.121:3306/dify_pro
+2026-07-12 11:09:16 | INFO  | agent | DB status: connected
+2026-07-12 11:09:16 | INFO  | enterprise_agent.scheduler | 待办推送调度器已启动，扫描间隔: 300s
+2026-07-12 11:09:16 | INFO  | agent | 待办推送调度器已启动
+INFO:     Application startup complete.
+2026-07-12 11:09:16 | INFO  | enterprise_agent.scheduler | 待办扫描: 发现 4 类待办，共 23 条
+2026-07-12 11:09:16 | INFO  | enterprise_agent.scheduler |   - 待审批请假: 5 条
+2026-07-12 11:09:16 | INFO  | enterprise_agent.scheduler |   - 待处理投诉: 1 条
+2026-07-12 11:09:16 | INFO  | enterprise_agent.scheduler |   - 待跟进客户: 14 条
+2026-07-12 11:09:16 | INFO  | enterprise_agent.scheduler |   - 处理中的投诉: 3 条
+2026-07-12 11:09:18 | INFO  | watchfiles.main | 1 change detected
+2026-07-12 11:09:24 | INFO  | watchfiles.main | 2 changes detected
+2026-07-12 11:09:39 | INFO  | watchfiles.main | 1 change detected
+2026-07-12 11:09:41 | INFO  | watchfiles.main | 1 change detected
+2026-07-12 11:09:43 | INFO  | watchfiles.main | 1 change detected
+2026-07-12 11:09:44 | INFO  | watchfiles.main | 1 change detected
+2026-07-12 11:11:42 | INFO  | watchfiles.main | 1 change detected
+2026-07-12 11:11:44 | INFO  | watchfiles.main | 7 changes detected
+2026-07-12 11:11:44 | INFO  | watchfiles.main | 1 change detected
+2026-07-12 11:14:16 | INFO  | enterprise_agent.scheduler | 待办扫描: 发现 4 类待办，共 23 条
+2026-07-12 11:14:16 | INFO  | enterprise_agent.scheduler |   - 待审批请假: 5 条
+2026-07-12 11:14:16 | INFO  | enterprise_agent.scheduler |   - 待处理投诉: 1 条
+2026-07-12 11:14:16 | INFO  | enterprise_agent.scheduler |   - 待跟进客户: 14 条
+2026-07-12 11:14:16 | INFO  | enterprise_agent.scheduler |   - 处理中的投诉: 3 条
+2026-07-12 11:18:12 | INFO  | watchfiles.main | 5 changes detected
+WARNING:  WatchFiles detected changes in 'summary_report\services\nl2sql_service.py'. Reloading...
+ INFO:     Shutting down
+INFO:     Waiting for application shutdown.
+INFO:     Application shutdown complete.
+INFO:     Finished server process [26932]
+2026-07-12 11:19:13 | INFO  | watchfiles.main | 24 changes detected
+WARNING:  WatchFiles detected changes in 'summary_report\services\employee_report_service.py', 'summary_report\api\routes\_helpers.py', 'summary_report\services\nl2sql_service.py', 'summary_report\services\mental_report_service.py', 'summary_report\services\customer_report_service.py'. Reloading...
+ SECURITY: Using default database password '123456'! Set DB_PASSWORD in .env or environment variable.
+2026-07-12 11:19:14 | INFO  | agent | Config loaded: host=192.168.48.121, db=dify_pro
+Traceback (most recent call last):
+  File "<string>", line 1, in <module>
+    from multiprocessing.spawn import spawn_main; spawn_main(parent_pid=30844, pipe_handle=812)
+                                                  ~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Windows\miniconda3\Lib\multiprocessing\spawn.py", line 122, in spawn_main
+    exitcode = _main(fd, parent_sentinel)
+  File "C:\Users\Windows\miniconda3\Lib\multiprocessing\spawn.py", line 131, in _main
+    prepare(preparation_data)
+    ~~~~~~~^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Windows\miniconda3\Lib\multiprocessing\spawn.py", line 244, in prepare
+    _fixup_main_from_name(data['init_main_from_name'])
+    ~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Windows\miniconda3\Lib\multiprocessing\spawn.py", line 268, in _fixup_main_from_name
+    main_content = runpy.run_module(mod_name,
+                                    run_name="__mp_main__",
+                                    alter_sys=True)
+  File "<frozen runpy>", line 226, in run_module
+  File "<frozen runpy>", line 98, in _run_module_code
+  File "<frozen runpy>", line 88, in _run_code
+  File "C:\Users\Windows\PycharmProjects\PythonProject10\dify_pro\enterprise_agent\main.py", line 15, in <module>
+    from enterprise_agent.database import test_connection
+  File "C:\Users\Windows\PycharmProjects\PythonProject10\dify_pro\enterprise_agent\database.py", line 5, in <module>
+    from sqlalchemy import create_engine, text
+  File "C:\Users\Windows\miniconda3\Lib\site-packages\sqlalchemy\__init__.py", line 12, in <module>
+    from . import util as _util
+  File "C:\Users\Windows\miniconda3\Lib\site-packages\sqlalchemy\util\__init__.py", line 14, in <module>
+    from ._collections import coerce_generator_arg as coerce_generator_arg
+  File "C:\Users\Windows\miniconda3\Lib\site-packages\sqlalchemy\util\_collections.py", line 39, in <module>
+    from ._has_cy import HAS_CYEXTENSION
+  File "C:\Users\Windows\miniconda3\Lib\site-packages\sqlalchemy\util\_has_cy.py", line 32, in <module>
+    _import_cy_extensions()
+    ~~~~~~~~~~~~~~~~~~~~~^^
+  File "C:\Users\Windows\miniconda3\Lib\site-packages\sqlalchemy\util\_has_cy.py", line 20, in _import_cy_extensions
+    from ..cyextension import util
+  File "lib/sqlalchemy/cyextension/util.pyx", line 9, in init sqlalchemy.cyextension.util
+  File "C:\Users\Windows\miniconda3\Lib\site-packages\sqlalchemy\exc.py", line 27, in <module>
+    from .util import compat
+  File "C:\Users\Windows\miniconda3\Lib\site-packages\sqlalchemy\util\compat.py", line 50, in <module>
+    arm = "aarch" in platform.machine().lower()
+                     ~~~~~~~~~~~~~~~~^^
+  File "C:\Users\Windows\miniconda3\Lib\platform.py", line 1110, in machine
+    return uname().machine
+           ~~~~~^^
+  File "C:\Users\Windows\miniconda3\Lib\platform.py", line 999, in uname
+    release, version, csd, ptype = win32_ver()
+                                   ~~~~~~~~~^^
+  File "C:\Users\Windows\miniconda3\Lib\platform.py", line 450, in win32_ver
+    version, csd, ptype, is_client = _win32_ver(version, csd, ptype)
+                                     ~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Windows\miniconda3\Lib\platform.py", line 391, in _win32_ver
+    (version, product_type, ptype, spmajor, spminor)  = _wmi_query(
+                                                        ~~~~~~~~~~^
+        'OS',
+        ^^^^^
+    ...<4 lines>...
+        'ServicePackMinorVersion',
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "C:\Users\Windows\miniconda3\Lib\platform.py", line 330, in _wmi_query
+    data = _wmi.exec_query("SELECT {} FROM {}".format(
+           ~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+        ",".join(keys),
+        ^^^^^^^^^^^^^^^
+        table,
+        ^^^^^^
+    )).split("\0")
+    ^^
+KeyboardInterrupt
+2026-07-12 11:19:14 | INFO  | watchfiles.main | 5 changes detected
+WARNING:  WatchFiles detected changes in 'summary_report\services\complaint_report_service.py'. Reloading...
+ SECURITY: Using default database password '123456'! Set DB_PASSWORD in .env or environment variable.
+2026-07-12 11:19:15 | INFO  | agent | Config loaded: host=192.168.48.121, db=dify_pro
+Traceback (most recent call last):
+  File "<string>", line 1, in <module>
+    from multiprocessing.spawn import spawn_main; spawn_main(parent_pid=30844, pipe_handle=812)
+                                                  ~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Windows\miniconda3\Lib\multiprocessing\spawn.py", line 122, in spawn_main
+    exitcode = _main(fd, parent_sentinel)
+  File "C:\Users\Windows\miniconda3\Lib\multiprocessing\spawn.py", line 131, in _main
+    prepare(preparation_data)
+    ~~~~~~~^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Windows\miniconda3\Lib\multiprocessing\spawn.py", line 244, in prepare
+    _fixup_main_from_name(data['init_main_from_name'])
+    ~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Windows\miniconda3\Lib\multiprocessing\spawn.py", line 268, in _fixup_main_from_name
+    main_content = runpy.run_module(mod_name,
+                                    run_name="__mp_main__",
+                                    alter_sys=True)
+  File "<frozen runpy>", line 226, in run_module
+  File "<frozen runpy>", line 98, in _run_module_code
+  File "<frozen runpy>", line 88, in _run_code
+  File "C:\Users\Windows\PycharmProjects\PythonProject10\dify_pro\enterprise_agent\main.py", line 15, in <module>
+    from enterprise_agent.database import test_connection
+  File "C:\Users\Windows\PycharmProjects\PythonProject10\dify_pro\enterprise_agent\database.py", line 5, in <module>
+    from sqlalchemy import create_engine, text
+  File "C:\Users\Windows\miniconda3\Lib\site-packages\sqlalchemy\__init__.py", line 12, in <module>
+    from . import util as _util
+  File "C:\Users\Windows\miniconda3\Lib\site-packages\sqlalchemy\util\__init__.py", line 14, in <module>
+    from ._collections import coerce_generator_arg as coerce_generator_arg
+  File "C:\Users\Windows\miniconda3\Lib\site-packages\sqlalchemy\util\_collections.py", line 39, in <module>
+    from ._has_cy import HAS_CYEXTENSION
+  File "C:\Users\Windows\miniconda3\Lib\site-packages\sqlalchemy\util\_has_cy.py", line 32, in <module>
+    _import_cy_extensions()
+    ~~~~~~~~~~~~~~~~~~~~~^^
+  File "C:\Users\Windows\miniconda3\Lib\site-packages\sqlalchemy\util\_has_cy.py", line 20, in _import_cy_extensions
+    from ..cyextension import util
+  File "lib/sqlalchemy/cyextension/util.pyx", line 9, in init sqlalchemy.cyextension.util
+  File "C:\Users\Windows\miniconda3\Lib\site-packages\sqlalchemy\exc.py", line 27, in <module>
+    from .util import compat
+  File "C:\Users\Windows\miniconda3\Lib\site-packages\sqlalchemy\util\compat.py", line 50, in <module>
+    arm = "aarch" in platform.machine().lower()
+                     ~~~~~~~~~~~~~~~~^^
+  File "C:\Users\Windows\miniconda3\Lib\platform.py", line 1110, in machine
+    return uname().machine
+           ~~~~~^^
+  File "C:\Users\Windows\miniconda3\Lib\platform.py", line 999, in uname
+    release, version, csd, ptype = win32_ver()
+                                   ~~~~~~~~~^^
+  File "C:\Users\Windows\miniconda3\Lib\platform.py", line 450, in win32_ver
+    version, csd, ptype, is_client = _win32_ver(version, csd, ptype)
+                                     ~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Windows\miniconda3\Lib\platform.py", line 391, in _win32_ver
+    (version, product_type, ptype, spmajor, spminor)  = _wmi_query(
+                                                        ~~~~~~~~~~^
+        'OS',
+        ^^^^^
+    ...<4 lines>...
+        'ServicePackMinorVersion',
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "C:\Users\Windows\miniconda3\Lib\platform.py", line 330, in _wmi_query
+    data = _wmi.exec_query("SELECT {} FROM {}".format(
+           ~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+        ",".join(keys),
+        ^^^^^^^^^^^^^^^
+        table,
+        ^^^^^^
+    )).split("\0")
+    ^^
+KeyboardInterrupt
+SECURITY: Using default database password '123456'! Set DB_PASSWORD in .env or environment variable.
+2026-07-12 11:19:17 | INFO  | agent | Config loaded: host=192.168.48.121, db=dify_pro
+2026-07-12 11:19:18 | INFO  | agent | Routes registered: /api/agent/* (16 modules)
+2026-07-12 11:19:18 | INFO  | agent | Routes registered: /api/agent/* (16 modules)
+INFO:     Started server process [35936]
+INFO:     Waiting for application startup.
+2026-07-12 11:19:19 | INFO  | agent | Database OK: 192.168.48.121:3306/dify_pro
+2026-07-12 11:19:19 | INFO  | agent | DB status: connected
+2026-07-12 11:19:19 | INFO  | enterprise_agent.scheduler | 待办推送调度器已启动，扫描间隔: 300s
+2026-07-12 11:19:19 | INFO  | agent | 待办推送调度器已启动
+INFO:     Application startup complete.
+2026-07-12 11:19:19 | INFO  | enterprise_agent.scheduler | 待办扫描: 发现 4 类待办，共 24 条
+2026-07-12 11:19:19 | INFO  | enterprise_agent.scheduler |   - 待审批请假: 6 条
+2026-07-12 11:19:19 | INFO  | enterprise_agent.scheduler |   - 待处理投诉: 1 条
+2026-07-12 11:19:19 | INFO  | enterprise_agent.scheduler |   - 待跟进客户: 14 条
+2026-07-12 11:19:19 | INFO  | enterprise_agent.scheduler |   - 处理中的投诉: 3 条
+2026-07-12 11:19:32 | INFO  | watchfiles.main | 14 changes detected
+2026-07-12 11:19:34 | INFO  | watchfiles.main | 13 changes detected
+2026-07-12 11:19:56 | INFO  | watchfiles.main | 5 changes detected
+WARNING:  WatchFiles detected changes in 'summary_report\api\routes\_helpers.py'. Reloading...
+ INFO:     Shutting down
+INFO:     Waiting for application shutdown.
+INFO:     Application shutdown complete.
+INFO:     Finished server process [35936]
+2026-07-12 11:24:16 | INFO  | watchfiles.main | 294 changes detected
+WARNING:  WatchFiles detected changes in 'summary_report\api\routes\_helpers.py'. Reloading...
+ SECURITY: Using default database password '123456'! Set DB_PASSWORD in .env or environment variable.
+2026-07-12 11:24:17 | INFO  | agent | Config loaded: host=192.168.48.121, db=dify_pro
+Traceback (most recent call last):
+  File "<string>", line 1, in <module>
+    from multiprocessing.spawn import spawn_main; spawn_main(parent_pid=30844, pipe_handle=812)
+                                                  ~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Windows\miniconda3\Lib\multiprocessing\spawn.py", line 122, in spawn_main
+    exitcode = _main(fd, parent_sentinel)
+  File "C:\Users\Windows\miniconda3\Lib\multiprocessing\spawn.py", line 131, in _main
+    prepare(preparation_data)
+    ~~~~~~~^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Windows\miniconda3\Lib\multiprocessing\spawn.py", line 244, in prepare
+    _fixup_main_from_name(data['init_main_from_name'])
+    ~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Windows\miniconda3\Lib\multiprocessing\spawn.py", line 268, in _fixup_main_from_name
+    main_content = runpy.run_module(mod_name,
+                                    run_name="__mp_main__",
+                                    alter_sys=True)
+  File "<frozen runpy>", line 226, in run_module
+  File "<frozen runpy>", line 98, in _run_module_code
+  File "<frozen runpy>", line 88, in _run_code
+  File "C:\Users\Windows\PycharmProjects\PythonProject10\dify_pro\enterprise_agent\main.py", line 15, in <module>
+    from enterprise_agent.database import test_connection
+  File "C:\Users\Windows\PycharmProjects\PythonProject10\dify_pro\enterprise_agent\database.py", line 5, in <module>
+    from sqlalchemy import create_engine, text
+  File "C:\Users\Windows\miniconda3\Lib\site-packages\sqlalchemy\__init__.py", line 12, in <module>
+    from . import util as _util
+  File "C:\Users\Windows\miniconda3\Lib\site-packages\sqlalchemy\util\__init__.py", line 14, in <module>
+    from ._collections import coerce_generator_arg as coerce_generator_arg
+  File "C:\Users\Windows\miniconda3\Lib\site-packages\sqlalchemy\util\_collections.py", line 39, in <module>
+    from ._has_cy import HAS_CYEXTENSION
+  File "C:\Users\Windows\miniconda3\Lib\site-packages\sqlalchemy\util\_has_cy.py", line 32, in <module>
+    _import_cy_extensions()
+    ~~~~~~~~~~~~~~~~~~~~~^^
+  File "C:\Users\Windows\miniconda3\Lib\site-packages\sqlalchemy\util\_has_cy.py", line 20, in _import_cy_extensions
+    from ..cyextension import util
+  File "lib/sqlalchemy/cyextension/util.pyx", line 9, in init sqlalchemy.cyextension.util
+  File "C:\Users\Windows\miniconda3\Lib\site-packages\sqlalchemy\exc.py", line 27, in <module>
+    from .util import compat
+  File "C:\Users\Windows\miniconda3\Lib\site-packages\sqlalchemy\util\compat.py", line 50, in <module>
+    arm = "aarch" in platform.machine().lower()
+                     ~~~~~~~~~~~~~~~~^^
+  File "C:\Users\Windows\miniconda3\Lib\platform.py", line 1110, in machine
+    return uname().machine
+           ~~~~~^^
+  File "C:\Users\Windows\miniconda3\Lib\platform.py", line 999, in uname
+    release, version, csd, ptype = win32_ver()
+                                   ~~~~~~~~~^^
+  File "C:\Users\Windows\miniconda3\Lib\platform.py", line 450, in win32_ver
+    version, csd, ptype, is_client = _win32_ver(version, csd, ptype)
+                                     ~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Windows\miniconda3\Lib\platform.py", line 391, in _win32_ver
+    (version, product_type, ptype, spmajor, spminor)  = _wmi_query(
+                                                        ~~~~~~~~~~^
+        'OS',
+        ^^^^^
+    ...<4 lines>...
+        'ServicePackMinorVersion',
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "C:\Users\Windows\miniconda3\Lib\platform.py", line 330, in _wmi_query
+    data = _wmi.exec_query("SELECT {} FROM {}".format(
+           ~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+        ",".join(keys),
+        ^^^^^^^^^^^^^^^
+        table,
+        ^^^^^^
+    )).split("\0")
+    ^^
+KeyboardInterrupt
+SECURITY: Using default database password '123456'! Set DB_PASSWORD in .env or environment variable.
+2026-07-12 11:24:18 | INFO  | agent | Config loaded: host=192.168.48.121, db=dify_pro
+2026-07-12 11:24:19 | INFO  | agent | Routes registered: /api/agent/* (16 modules)
+2026-07-12 11:24:19 | INFO  | agent | Routes registered: /api/agent/* (16 modules)
+INFO:     Started server process [37120]
+INFO:     Waiting for application startup.
+2026-07-12 11:24:20 | INFO  | agent | Database OK: 192.168.48.121:3306/dify_pro
+2026-07-12 11:24:20 | INFO  | agent | DB status: connected
+2026-07-12 11:24:20 | INFO  | enterprise_agent.scheduler | 待办推送调度器已启动，扫描间隔: 300s
+2026-07-12 11:24:20 | INFO  | agent | 待办推送调度器已启动
+INFO:     Application startup complete.
+2026-07-12 11:24:20 | INFO  | enterprise_agent.scheduler | 待办扫描: 发现 4 类待办，共 24 条
+2026-07-12 11:24:20 | INFO  | enterprise_agent.scheduler |   - 待审批请假: 6 条
+2026-07-12 11:24:20 | INFO  | enterprise_agent.scheduler |   - 待处理投诉: 1 条
+2026-07-12 11:24:20 | INFO  | enterprise_agent.scheduler |   - 待跟进客户: 14 条
+2026-07-12 11:24:20 | INFO  | enterprise_agent.scheduler |   - 处理中的投诉: 3 条
+2026-07-12 11:25:15 | INFO  | watchfiles.main | 53 changes detected
+2026-07-12 11:25:25 | INFO  | watchfiles.main | 5 changes detected
+WARNING:  WatchFiles detected changes in 'summary_report\api\routes\_helpers.py'. Reloading...
+ INFO:     Shutting down
+INFO:     Waiting for application shutdown.
+INFO:     Application shutdown complete.
+INFO:     Finished server process [37120]
+2026-07-12 11:29:18 | INFO  | watchfiles.main | 294 changes detected
+WARNING:  WatchFiles detected changes in 'summary_report\api\routes\_helpers.py', 'summary_report\services\nl2sql_service.py'. Reloading...
+ SECURITY: Using default database password '123456'! Set DB_PASSWORD in .env or environment variable.
+2026-07-12 11:29:19 | INFO  | agent | Config loaded: host=192.168.48.121, db=dify_pro
+Traceback (most recent call last):
+  File "<string>", line 1, in <module>
+    from multiprocessing.spawn import spawn_main; spawn_main(parent_pid=30844, pipe_handle=988)
+                                                  ~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Windows\miniconda3\Lib\multiprocessing\spawn.py", line 122, in spawn_main
+    exitcode = _main(fd, parent_sentinel)
+  File "C:\Users\Windows\miniconda3\Lib\multiprocessing\spawn.py", line 131, in _main
+    prepare(preparation_data)
+    ~~~~~~~^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Windows\miniconda3\Lib\multiprocessing\spawn.py", line 244, in prepare
+    _fixup_main_from_name(data['init_main_from_name'])
+    ~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Windows\miniconda3\Lib\multiprocessing\spawn.py", line 268, in _fixup_main_from_name
+    main_content = runpy.run_module(mod_name,
+                                    run_name="__mp_main__",
+                                    alter_sys=True)
+  File "<frozen runpy>", line 226, in run_module
+  File "<frozen runpy>", line 98, in _run_module_code
+  File "<frozen runpy>", line 88, in _run_code
+  File "C:\Users\Windows\PycharmProjects\PythonProject10\dify_pro\enterprise_agent\main.py", line 15, in <module>
+    from enterprise_agent.database import test_connection
+  File "C:\Users\Windows\PycharmProjects\PythonProject10\dify_pro\enterprise_agent\database.py", line 5, in <module>
+    from sqlalchemy import create_engine, text
+  File "C:\Users\Windows\miniconda3\Lib\site-packages\sqlalchemy\__init__.py", line 12, in <module>
+    from . import util as _util
+  File "C:\Users\Windows\miniconda3\Lib\site-packages\sqlalchemy\util\__init__.py", line 14, in <module>
+    from ._collections import coerce_generator_arg as coerce_generator_arg
+  File "C:\Users\Windows\miniconda3\Lib\site-packages\sqlalchemy\util\_collections.py", line 39, in <module>
+    from ._has_cy import HAS_CYEXTENSION
+  File "C:\Users\Windows\miniconda3\Lib\site-packages\sqlalchemy\util\_has_cy.py", line 32, in <module>
+    _import_cy_extensions()
+    ~~~~~~~~~~~~~~~~~~~~~^^
+  File "C:\Users\Windows\miniconda3\Lib\site-packages\sqlalchemy\util\_has_cy.py", line 20, in _import_cy_extensions
+    from ..cyextension import util
+  File "lib/sqlalchemy/cyextension/util.pyx", line 9, in init sqlalchemy.cyextension.util
+  File "C:\Users\Windows\miniconda3\Lib\site-packages\sqlalchemy\exc.py", line 27, in <module>
+    from .util import compat
+  File "C:\Users\Windows\miniconda3\Lib\site-packages\sqlalchemy\util\compat.py", line 50, in <module>
+    arm = "aarch" in platform.machine().lower()
+                     ~~~~~~~~~~~~~~~~^^
+  File "C:\Users\Windows\miniconda3\Lib\platform.py", line 1110, in machine
+    return uname().machine
+           ~~~~~^^
+  File "C:\Users\Windows\miniconda3\Lib\platform.py", line 999, in uname
+    release, version, csd, ptype = win32_ver()
+                                   ~~~~~~~~~^^
+  File "C:\Users\Windows\miniconda3\Lib\platform.py", line 450, in win32_ver
+    version, csd, ptype, is_client = _win32_ver(version, csd, ptype)
+                                     ~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Windows\miniconda3\Lib\platform.py", line 391, in _win32_ver
+    (version, product_type, ptype, spmajor, spminor)  = _wmi_query(
+                                                        ~~~~~~~~~~^
+        'OS',
+        ^^^^^
+    ...<4 lines>...
+        'ServicePackMinorVersion',
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "C:\Users\Windows\miniconda3\Lib\platform.py", line 330, in _wmi_query
+    data = _wmi.exec_query("SELECT {} FROM {}".format(
+           ~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+        ",".join(keys),
+        ^^^^^^^^^^^^^^^
+        table,
+        ^^^^^^
+    )).split("\0")
+    ^^
+KeyboardInterrupt
+SECURITY: Using default database password '123456'! Set DB_PASSWORD in .env or environment variable.
+2026-07-12 11:29:21 | INFO  | agent | Config loaded: host=192.168.48.121, db=dify_pro
+2026-07-12 11:29:21 | INFO  | agent | Routes registered: /api/agent/* (16 modules)
+2026-07-12 11:29:21 | INFO  | agent | Routes registered: /api/agent/* (16 modules)
+INFO:     Started server process [38996]
+INFO:     Waiting for application startup.
+2026-07-12 11:29:21 | INFO  | agent | Database OK: 192.168.48.121:3306/dify_pro
+2026-07-12 11:29:21 | INFO  | agent | DB status: connected
+2026-07-12 11:29:21 | INFO  | enterprise_agent.scheduler | 待办推送调度器已启动，扫描间隔: 300s
+2026-07-12 11:29:21 | INFO  | agent | 待办推送调度器已启动
+INFO:     Application startup complete.
+2026-07-12 11:29:21 | INFO  | enterprise_agent.scheduler | 待办扫描: 发现 4 类待办，共 24 条
+2026-07-12 11:29:21 | INFO  | enterprise_agent.scheduler |   - 待审批请假: 6 条
+2026-07-12 11:29:21 | INFO  | enterprise_agent.scheduler |   - 待处理投诉: 1 条
+2026-07-12 11:29:21 | INFO  | enterprise_agent.scheduler |   - 待跟进客户: 14 条
+2026-07-12 11:29:21 | INFO  | enterprise_agent.scheduler |   - 处理中的投诉: 3 条
+2026-07-12 11:29:35 | INFO  | watchfiles.main | 5 changes detected
+WARNING:  WatchFiles detected changes in 'summary_report\services\nl2sql_service.py'. Reloading...
+ INFO:     Shutting down
+INFO:     Waiting for application shutdown.
+INFO:     Application shutdown complete.
+INFO:     Finished server process [38996]
+2026-07-12 11:34:20 | INFO  | watchfiles.main | 426 changes detected
+WARNING:  WatchFiles detected changes in 'summary_report\api\routes\_helpers.py', 'summary_report\services\nl2sql_service.py'. Reloading...
+ SECURITY: Using default database password '123456'! Set DB_PASSWORD in .env or environment variable.
+2026-07-12 11:34:21 | INFO  | agent | Config loaded: host=192.168.48.121, db=dify_pro
+Traceback (most recent call last):
+  File "<string>", line 1, in <module>
+    from multiprocessing.spawn import spawn_main; spawn_main(parent_pid=30844, pipe_handle=988)
+                                                  ~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Windows\miniconda3\Lib\multiprocessing\spawn.py", line 122, in spawn_main
+    exitcode = _main(fd, parent_sentinel)
+  File "C:\Users\Windows\miniconda3\Lib\multiprocessing\spawn.py", line 131, in _main
+    prepare(preparation_data)
+    ~~~~~~~^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Windows\miniconda3\Lib\multiprocessing\spawn.py", line 244, in prepare
+    _fixup_main_from_name(data['init_main_from_name'])
+    ~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Windows\miniconda3\Lib\multiprocessing\spawn.py", line 268, in _fixup_main_from_name
+    main_content = runpy.run_module(mod_name,
+                                    run_name="__mp_main__",
+                                    alter_sys=True)
+  File "<frozen runpy>", line 226, in run_module
+  File "<frozen runpy>", line 98, in _run_module_code
+  File "<frozen runpy>", line 88, in _run_code
+  File "C:\Users\Windows\PycharmProjects\PythonProject10\dify_pro\enterprise_agent\main.py", line 15, in <module>
+    from enterprise_agent.database import test_connection
+  File "C:\Users\Windows\PycharmProjects\PythonProject10\dify_pro\enterprise_agent\database.py", line 5, in <module>
+    from sqlalchemy import create_engine, text
+  File "C:\Users\Windows\miniconda3\Lib\site-packages\sqlalchemy\__init__.py", line 12, in <module>
+    from . import util as _util
+  File "C:\Users\Windows\miniconda3\Lib\site-packages\sqlalchemy\util\__init__.py", line 14, in <module>
+    from ._collections import coerce_generator_arg as coerce_generator_arg
+  File "C:\Users\Windows\miniconda3\Lib\site-packages\sqlalchemy\util\_collections.py", line 39, in <module>
+    from ._has_cy import HAS_CYEXTENSION
+  File "C:\Users\Windows\miniconda3\Lib\site-packages\sqlalchemy\util\_has_cy.py", line 32, in <module>
+    _import_cy_extensions()
+    ~~~~~~~~~~~~~~~~~~~~~^^
+  File "C:\Users\Windows\miniconda3\Lib\site-packages\sqlalchemy\util\_has_cy.py", line 20, in _import_cy_extensions
+    from ..cyextension import util
+  File "lib/sqlalchemy/cyextension/util.pyx", line 9, in init sqlalchemy.cyextension.util
+  File "C:\Users\Windows\miniconda3\Lib\site-packages\sqlalchemy\exc.py", line 27, in <module>
+    from .util import compat
+  File "C:\Users\Windows\miniconda3\Lib\site-packages\sqlalchemy\util\compat.py", line 50, in <module>
+    arm = "aarch" in platform.machine().lower()
+                     ~~~~~~~~~~~~~~~~^^
+  File "C:\Users\Windows\miniconda3\Lib\platform.py", line 1110, in machine
+    return uname().machine
+           ~~~~~^^
+  File "C:\Users\Windows\miniconda3\Lib\platform.py", line 999, in uname
+    release, version, csd, ptype = win32_ver()
+                                   ~~~~~~~~~^^
+  File "C:\Users\Windows\miniconda3\Lib\platform.py", line 450, in win32_ver
+    version, csd, ptype, is_client = _win32_ver(version, csd, ptype)
+                                     ~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Windows\miniconda3\Lib\platform.py", line 391, in _win32_ver
+    (version, product_type, ptype, spmajor, spminor)  = _wmi_query(
+                                                        ~~~~~~~~~~^
+        'OS',
+        ^^^^^
+    ...<4 lines>...
+        'ServicePackMinorVersion',
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "C:\Users\Windows\miniconda3\Lib\platform.py", line 330, in _wmi_query
+    data = _wmi.exec_query("SELECT {} FROM {}".format(
+           ~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+        ",".join(keys),
+        ^^^^^^^^^^^^^^^
+        table,
+        ^^^^^^
+    )).split("\0")
+    ^^
+KeyboardInterrupt
+SECURITY: Using default database password '123456'! Set DB_PASSWORD in .env or environment variable.
+2026-07-12 11:34:22 | INFO  | agent | Config loaded: host=192.168.48.121, db=dify_pro
+2026-07-12 11:34:23 | INFO  | agent | Routes registered: /api/agent/* (16 modules)
+2026-07-12 11:34:23 | INFO  | agent | Routes registered: /api/agent/* (16 modules)
+INFO:     Started server process [32128]
+INFO:     Waiting for application startup.
+2026-07-12 11:34:24 | INFO  | agent | Database OK: 192.168.48.121:3306/dify_pro
+2026-07-12 11:34:24 | INFO  | agent | DB status: connected
+2026-07-12 11:34:24 | INFO  | enterprise_agent.scheduler | 待办推送调度器已启动，扫描间隔: 300s
+2026-07-12 11:34:24 | INFO  | agent | 待办推送调度器已启动
+INFO:     Application startup complete.
+2026-07-12 11:34:24 | INFO  | enterprise_agent.scheduler | 待办扫描: 发现 4 类待办，共 24 条
+2026-07-12 11:34:24 | INFO  | enterprise_agent.scheduler |   - 待审批请假: 6 条
+2026-07-12 11:34:24 | INFO  | enterprise_agent.scheduler |   - 待处理投诉: 1 条
+2026-07-12 11:34:24 | INFO  | enterprise_agent.scheduler |   - 待跟进客户: 14 条
+2026-07-12 11:34:24 | INFO  | enterprise_agent.scheduler |   - 处理中的投诉: 3 条
+2026-07-12 11:39:24 | INFO  | enterprise_agent.scheduler | 待办扫描: 发现 4 类待办，共 24 条
+2026-07-12 11:39:24 | INFO  | enterprise_agent.scheduler |   - 待审批请假: 6 条
+2026-07-12 11:39:24 | INFO  | enterprise_agent.scheduler |   - 待处理投诉: 1 条
+2026-07-12 11:39:24 | INFO  | enterprise_agent.scheduler |   - 待跟进客户: 14 条
+2026-07-12 11:39:24 | INFO  | enterprise_agent.scheduler |   - 处理中的投诉: 3 条
+2026-07-12 11:41:48 | INFO  | watchfiles.main | 1 change detected
+2026-07-12 11:41:49 | INFO  | watchfiles.main | 7 changes detected
+2026-07-12 11:41:49 | INFO  | watchfiles.main | 1 change detected
+2026-07-12 11:44:24 | INFO  | enterprise_agent.scheduler | 待办扫描: 发现 4 类待办，共 24 条
+2026-07-12 11:44:24 | INFO  | enterprise_agent.scheduler |   - 待审批请假: 6 条
+2026-07-12 11:44:24 | INFO  | enterprise_agent.scheduler |   - 待处理投诉: 1 条
+2026-07-12 11:44:24 | INFO  | enterprise_agent.scheduler |   - 待跟进客户: 14 条
+2026-07-12 11:44:24 | INFO  | enterprise_agent.scheduler |   - 处理中的投诉: 3 条
+2026-07-12 11:49:24 | INFO  | enterprise_agent.scheduler | 待办扫描: 发现 4 类待办，共 25 条
+2026-07-12 11:49:24 | INFO  | enterprise_agent.scheduler |   - 待审批请假: 6 条
+2026-07-12 11:49:24 | INFO  | enterprise_agent.scheduler |   - 待处理投诉: 1 条
+2026-07-12 11:49:24 | INFO  | enterprise_agent.scheduler |   - 待跟进客户: 15 条
+2026-07-12 11:49:24 | INFO  | enterprise_agent.scheduler |   - 处理中的投诉: 3 条
+2026-07-12 11:50:58 | INFO  | watchfiles.main | 5 changes detected
+2026-07-12 11:51:07 | INFO  | watchfiles.main | 5 changes detected
+2026-07-12 11:51:18 | INFO  | watchfiles.main | 5 changes detected
+2026-07-12 11:51:25 | INFO  | watchfiles.main | 5 changes detected
+2026-07-12 11:51:44 | INFO  | watchfiles.main | 5 changes detected
+WARNING:  WatchFiles detected changes in 'summary_report\services\nl2sql_service.py'. Reloading...
+ 2026-07-12 11:54:24 | INFO  | enterprise_agent.scheduler | 待办扫描: 发现 4 类待办，共 25 条
+2026-07-12 11:54:24 | INFO  | enterprise_agent.scheduler |   - 待审批请假: 6 条
+2026-07-12 11:54:24 | INFO  | enterprise_agent.scheduler |   - 待处理投诉: 1 条
+2026-07-12 11:54:24 | INFO  | enterprise_agent.scheduler |   - 待跟进客户: 15 条
+2026-07-12 11:54:24 | INFO  | enterprise_agent.scheduler |   - 处理中的投诉: 3 条

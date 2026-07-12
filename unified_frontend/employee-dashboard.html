@@ -23,6 +23,8 @@
       <a href="#" data-panel="customers"><span class="icon">👥</span>客户管理</a>
       <a href="#" data-panel="leaves"><span class="icon">📝</span>请假审批</a>
       <a href="#" data-panel="scores"><span class="icon">📊</span>成绩管理</a>
+      <div class="nav-section" style="margin-top:16px">数据分析</div>
+      <a href="#" data-panel="smartReport"><span class="icon">📈</span>智能报告</a>
       <div class="nav-section" style="margin-top:16px">快捷操作</div>
       <a href="#" data-action="report"><span class="icon">📄</span>提交日报</a>
       <a href="#" data-action="addCustomer"><span class="icon">➕</span>录入客户</a>
@@ -71,6 +73,51 @@
         <div class="chat-input-area">
           <input id="chatInput" placeholder="输入消息，Enter 发送..." />
           <button id="sendBtn">发送</button>
+        </div>
+      </div>
+
+      <!-- Smart Report Panel -->
+      <div class="report-panel" id="smartReportPanel" style="display:none">
+        <div class="report-layout">
+          <!-- 左侧：报告类型选择 -->
+          <div class="report-types">
+            <div class="report-types-title">报告类型</div>
+            <button class="report-type-btn active" data-report="customer_operation">
+              <span class="icon">📊</span>客户经营分析
+            </button>
+            <button class="report-type-btn" data-report="employee_daily">
+              <span class="icon">👥</span>员工日报汇总
+            </button>
+            <button class="report-type-btn" data-report="student_mental">
+              <span class="icon">🧠</span>心理关怀周报
+            </button>
+            <button class="report-type-btn" data-report="complaint_weekly">
+              <span class="icon">📋</span>投诉处理周报
+            </button>
+            <button class="report-type-btn" data-report="nl2sql">
+              <span class="icon">🔍</span>通用数据查询
+            </button>
+          </div>
+          <!-- 右侧：输入 + 报告结果 -->
+          <div class="report-main">
+            <div class="report-input-area">
+              <input type="text" id="reportQuestion" placeholder="输入你的问题，如：最近一周各渠道的客户数量和签约转化率" />
+              <button class="btn btn-primary" id="generateReportBtn" onclick="generateSmartReport()">📈 生成报告</button>
+            </div>
+            <div class="report-loading" id="reportLoading" style="display:none">
+              <div class="typing-dots"><span></span><span></span><span></span></div>
+              <span>正在分析数据，请稍候...</span>
+            </div>
+            <div class="report-result" id="reportResult" style="display:none">
+              <div class="report-answer" id="reportAnswer"></div>
+              <div class="report-tables" id="reportTables"></div>
+            </div>
+            <div class="report-empty" id="reportEmpty">
+              <div class="empty-icon">📈</div>
+              <p>选择左侧报告类型，输入问题后点击"生成报告"</p>
+              <p class="empty-hint">AI 会自动查询数据库并生成专业分析报告</p>
+            </div>
+          </div>
         </div>
       </div>
 

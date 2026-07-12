@@ -6,3 +6,19 @@ Traceback (most recent call last):
   File "D:\dify_pro\Assessment\main_ass.py", line 15, in <module>
     from Assessment.router import router as assessment_router
 ModuleNotFoundError: No module named 'Assessment'
+Traceback (most recent call last):
+  File "C:\Users\Windows\PycharmProjects\PythonProject10\dify_pro\Assessment\main_ass.py", line 15, in <module>
+    from Assessment.router import router as assessment_router
+ModuleNotFoundError: No module named 'Assessment'
+Traceback (most recent call last):
+  File "C:\Users\Windows\PycharmProjects\PythonProject10\dify_pro\Assessment\main_ass.py", line 15, in <module>
+    from Assessment.router import router as assessment_router
+ModuleNotFoundError: No module named 'Assessment'
+Traceback (most recent call last):
+  File "C:\Users\Windows\PycharmProjects\PythonProject10\dify_pro\Assessment\main_ass.py", line 15, in <module>
+    from Assessment.router import router as assessment_router
+ModuleNotFoundError: No module named 'Assessment'
+Traceback (most recent call last):
+  File "C:\Users\Windows\PycharmProjects\PythonProject10\dify_pro\Assessment\main_ass.py", line 15, in <module>
+    from Assessment.router import router as assessment_router
+ModuleNotFoundError: No module named 'Assessment'
