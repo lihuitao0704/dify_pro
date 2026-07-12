@@ -175,16 +175,63 @@ document.addEventListener('click', (e) => {
 
 const REPORT_API = 'http://localhost:8003/report';
 
-// 报告类型 → 默认占位提示
-const REPORT_PLACEHOLDERS = {
-  customer_operation: '如：最近一周各渠道的客户数量和签约转化率',
-  employee_daily:     '如：本周各部门日报提交情况和工作产出',
-  student_mental:     '如：本月学生整体情绪态势和高风险学生名单',
-  complaint_weekly:   '如：本周投诉总量、处理进度和积压预警',
-  nl2sql:             '如：各国家方向的课程数量和价格分布',
+// 推荐问题
+const REPORT_SUGGESTIONS = {
+  customer_operation: [
+    '最近一周各渠道的客户数量和签约转化率',
+    '本月已签约客户的目标国家和预算分布',
+    '哪些渠道的客户流失率最高',
+    '各销售顾问的客户数量和签约业绩',
+    '意向客户的状态分布和占比',
+  ],
+  employee_daily: [
+    '本周各部门的日报提交情况',
+    '最近一周员工日报中提到的风险或阻塞项',
+    '各部门的工作产出统计对比',
+    '哪些员工连续多天未提交日报',
+  ],
+  student_mental: [
+    '本月学生整体情绪态势和趋势',
+    '当前有哪些高风险等级的学生',
+    '最近一周心理预警的处理情况',
+    '近4周学生情绪评分的变化趋势',
+  ],
+  complaint_weekly: [
+    '本周投诉工单的总量和分类分布',
+    '各类型投诉的处理进度和积压情况',
+    '哪些投诉超过3天未处理需要预警',
+    '投诉满意度评分按类别统计',
+  ],
+  nl2sql: [
+    '各国家方向的课程数量和价格区间',
+    '留学申请各阶段的学生数量分布',
+    '最近一周新增的意向客户来源分析',
+    '讲座活动的报名人数统计',
+  ],
 };
 
 let currentReportType = 'customer_operation';
+
+// ── 渲染推荐问题 ──
+function renderReportSuggestions(type) {
+  const list = REPORT_SUGGESTIONS[type] || [];
+  const container = document.getElementById('suggestTags');
+  if (!container) return;
+  container.innerHTML = list.map(q =>
+    `<span class="suggest-tag" onclick="pickReportSuggestion(this)">${escapeHTML(q)}</span>`
+  ).join('');
+}
+
+// ── 点击推荐问题 → 填入并生成 ──
+function pickReportSuggestion(el) {
+  document.getElementById('reportQuestion').value = el.textContent;
+  document.querySelectorAll('#suggestTags .suggest-tag').forEach(t => {
+    t.style.background = ''; t.style.color = '';
+  });
+  el.style.background = 'var(--primary)';
+  el.style.color = '#fff';
+  generateSmartReport();
+}
 
 // ── 报告类型切换 ──
 document.querySelectorAll('.report-type-btn').forEach(btn => {
@@ -192,14 +239,15 @@ document.querySelectorAll('.report-type-btn').forEach(btn => {
     document.querySelectorAll('.report-type-btn').forEach(b => b.classList.remove('active'));
     btn.classList.add('active');
     currentReportType = btn.dataset.report;
-    const input = document.getElementById('reportQuestion');
-    input.placeholder = REPORT_PLACEHOLDERS[currentReportType] || '';
-    input.value = '';
-    // 隐藏旧结果，显示空状态
+    document.getElementById('reportQuestion').value = '';
     document.getElementById('reportResult').style.display = 'none';
     document.getElementById('reportEmpty').style.display = '';
+    renderReportSuggestions(currentReportType);
   });
 });
+
+// 初始加载推荐问题
+renderReportSuggestions(currentReportType);
 
 // ── 生成报告 ──
 async function generateSmartReport() {

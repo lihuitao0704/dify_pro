@@ -100,8 +100,12 @@
           </div>
           <!-- 右侧：输入 + 报告结果 -->
           <div class="report-main">
+            <div class="report-suggest" id="reportSuggest">
+              <span class="suggest-label">💡 试试：</span>
+              <span class="suggest-tags" id="suggestTags"></span>
+            </div>
             <div class="report-input-area">
-              <input type="text" id="reportQuestion" placeholder="输入你的问题，如：最近一周各渠道的客户数量和签约转化率" />
+              <input type="text" id="reportQuestion" placeholder="或输入你自己的问题..." />
               <button class="btn btn-primary" id="generateReportBtn" onclick="generateSmartReport()">📈 生成报告</button>
             </div>
             <div class="report-loading" id="reportLoading" style="display:none">
