@@ -109,9 +109,13 @@ def _validate_sql(sql: str) -> str:
 
 
 def _validate_query(sql: str) -> None:
-    """只读校验：只允许 SELECT / WITH 开头。"""
+    """只读校验：只允许 SELECT / WITH 开头，且禁止一次执行多条语句。"""
     cleaned = sql.strip().rstrip(";").strip()
     lowered = cleaned.lower()
+    # 多条语句校验（对齐 _validate_insert）：语句内不允许出现分号，
+    # 防止 LLM 一次生成多句 SELECT 导致 PyMySQL 报 1064 语法错误。
+    if ";" in cleaned:
+        raise ValueError("禁止一次执行多条语句（语句内不允许出现分号）。")
     if lowered.startswith(("select", "with")):
         return
     for kw in _WRITE_FORBIDDEN:

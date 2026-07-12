@@ -68,51 +68,59 @@ def sa_recommend(conversation_id: str, timeout: float = None) -> dict:
 
 
 def event_query(nl_query: str) -> dict:
-    """通过 NL2SQL 查询活动/讲座 (本地版，替代 HTTP bridge)。
+    """通过直接 SQL + 可选 NL2SQL 增强 查询活动/讲座 (本地版，替代 HTTP bridge)。
 
-    LLM 不可用时自动降级到直接 SQL 查库，不阻塞对话。
+    路径顺序（直查优先，LLM 增强）:
+      1. 直接 SQL 查 lectures + activities（确定性最强，不依赖 LLM）
+      2. LLM NL2SQL 仅作为增强路径（生成更精确的过滤 SQL，失败不影响主结果）
+      3. 两者都无结果 → 返回 error 类型
     """
     import logging
     log = logging.getLogger(__name__)
 
-    # ── 1. 先尝试 LLM NL2SQL 路径 ──
+    # ── 1. 主路径: 直接 SQL 查 lectures + activities（LLM 无关，最可靠）──
+    rows = []
     try:
-        result = NL2SQLService.run_nl2sql(
-            question=nl_query, include_sql=True, polish=True,
-        )
-        if result.get("action") == "insert":
-            return {
-                "query": nl_query,
-                "result": {"type": "dml", "message": "操作已执行"},
-                "polished": result.get("polished", "操作已执行"),
-            }
-        rows = result.get("rows") or []
-        if rows:
-            return {
-                "query": nl_query,
-                "result": {"type": "select", "data": rows},
-                "polished": result.get("polished", ""),
-                "data": rows,
-            }
-    except Exception as e:
-        # 真实报错打出来，方便排查; 不要吞掉
-        log.warning("[event_query] NL2SQL LLM 失败  (将降级直查): %s", e)
-        print(f"[event_query] NL2SQL LLM 失败 (将降级直查): {e}")
-
-    # ── 2. 降级: 直接 SQL 查 lectures + activities ──
-    try:
-        from customer_agent.db import get_db
         rows = _fallback_event_list(nl_query)
-        if rows:
-            return {
-                "query": nl_query,
-                "result": {"type": "select", "data": rows},
-                "polished": _format_events_readable(rows),
-                "data": rows,
-            }
     except Exception as e:
-        log.error("[event_query] 降级直查也失败: %s", e)
+        log.error("[event_query] 主路径直查失败: %s", e)
 
+    # ── 2. 增强路径: 尝试 LLM NL2SQL 做更精确的过滤/排序 ──
+    # LLM 生成的 SQL 可能命中更精准的结果；失败时静默降级，不阻塞主路径。
+    if not rows:
+        try:
+            result = NL2SQLService.run_nl2sql(
+                question=nl_query, include_sql=True, polish=True,
+            )
+            if result.get("action") == "insert":
+                return {
+                    "query": nl_query,
+                    "result": {"type": "dml", "message": "操作已执行"},
+                    "polished": result.get("polished", "操作已执行"),
+                }
+            llm_rows = result.get("rows") or []
+            if llm_rows:
+                return {
+                    "query": nl_query,
+                    "result": {"type": "select", "data": llm_rows},
+                    "polished": result.get("polished", ""),
+                    "data": llm_rows,
+                }
+            log.info("[event_query] NL2SQL 无结果（多语句/解析失败等），保持主路径空结果")
+        except Exception as e:
+            # 真实报错打出来，方便排查；主路径已出结果，此处仅记录
+            log.warning("[event_query] NL2SQL 增强路径失败（已降级）: %s", e)
+            print(f"[event_query] NL2SQL 增强路径失败（已降级）: {e}")
+
+    if rows:
+        return {
+            "query": nl_query,
+            "result": {"type": "select", "data": rows},
+            "polished": _format_events_readable(rows),
+            "data": rows,
+        }
+
+    # ── 3. 两者都无结果 ──
     return {
         "query": nl_query,
         "result": {"type": "error", "message": "没有查询到相关记录"},
@@ -183,5 +191,5 @@ def _format_events_readable(rows: list) -> str:
             f"   时间: {r.get('event_time', '待定')} | 地点: {r.get('location', '待定')}"
             + (f" | 主讲: {r['speaker']}" if r.get("speaker") else "")
         )
-    lines.append("\n感兴趣的话告诉我就行，比如「报名第一个 姓名 手机号」📅")
+    # 注意：CTA 由调用方 handle_activity 统一追加，避免重复
     return "\n".join(lines)

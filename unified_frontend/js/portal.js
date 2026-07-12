@@ -455,88 +455,61 @@ function renderFitRadar(canvas, dims) {
 }
 
 // ============================================================
-// Public Customer Agent Chat
+// 智能客服弹框（浮动按钮 + 弹出式滚动聊天）
 // ============================================================
-let publicSessionId = null;
+let popupChat = null;
+
 function initPublicChat() {
-  const input = document.getElementById('publicInput');
-  const btn = document.getElementById('publicSendBtn');
-  input.addEventListener('keydown', (e) => { if (e.key === 'Enter') publicSend(); });
-  btn.addEventListener('click', publicSend);
-
-  // 彩蛋：输入框聚焦时显示提示
-  input.addEventListener('focus', () => {
-    input.placeholder = '试试：德国留学有什么要求？';
+  // Hero CTA 按钮 → 打开弹框
+  document.getElementById('heroOpenChatBtn')?.addEventListener('click', () => {
+    toggleChatPopup(true);
   });
-  input.addEventListener('blur', () => {
-    input.placeholder = '输入你的留学问题...';
+
+  // 初始化 ChatWidget（绑定到弹框的消息容器 + 输入框）
+  popupChat = new ChatWidget({
+    apiUrl: resolveApiUrl() + '/chat',
+    container: '#chatPopupMessages',
+    input: '#chatPopupInput',
+    sendBtn: '#chatPopupSendBtn',
+    welcome: '嗨同学你好呀 👋 我是粤教留学小助手，有什么留学相关问题尽管问我！',
   });
 }
 
-async function publicSend() {
-  const input = document.getElementById('publicInput');
-  const btn = document.getElementById('publicSendBtn');
-  const text = input.value.trim();
-  if (!text) return;
-
-  input.value = '';
-  btn.disabled = true;
-  addPublicMsg(text, 'user');
-
-  // 打字动画
-  const typingEl = document.createElement('div');
-  typingEl.className = 'msg-item bot typing';
-  typingEl.innerHTML = '<span class="avatar">AI</span><div class="bubble">思考中<span class="dots">...</span></div>';
-  const box = document.querySelector('.hero-chat-card .chat-mockup');
-  if (box) box.appendChild(typingEl);
-
-  try {
-    // 直接调用客服Agent（同域下 /chat 是对 customer_agent 的直接调用）
-    // 在统一门户部署模式下，前端通过代理转发；直连模式直接访问
-    let r;
-    try {
-      r = await fetch('http://localhost:9000/chat', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ message: text, session_id: publicSessionId }),
-      });
-      r = await r.json();
-    } catch (err) {
-      // fallback: 尝试相对路径
-      r = await api('/chat', {
-        method: 'POST',
-        body: JSON.stringify({ message: text, session_id: publicSessionId }),
-      });
-    }
-    publicSessionId = r.session_id;
-    removeTyping();
-    addPublicMsg(r.reply || '(无回复)', 'bot');
-  } catch (err) {
-    removeTyping();
-    addPublicMsg('暂时连接不上 AI 服务，请稍后再试～\n(' + err.message.slice(0, 80) + ')', 'bot');
-  } finally {
-    btn.disabled = false;
-  }
+function resolveApiUrl() {
+  // 统一门户模式下 /api 代理到 customer_agent(:9000)；直连用 localhost:8000
+  if (location.port === '9000') return '';
+  if (location.port === '8000') return '';
+  return 'http://localhost:9000';
 }
 
-function addPublicMsg(text, who) {
-  const box = document.querySelector('.hero-chat-card .chat-mockup');
-  if (!box) return;
-  // 移除 mock 提示类的内容（前3条是静态 mock），只追加到末尾
-  const div = document.createElement('div');
-  div.className = 'msg-item ' + who;
-  if (who === 'user') {
-    div.innerHTML = `<div class="bubble">${escapeHTML(text)}</div><span class="avatar">你</span>`;
+function toggleChatPopup(forceOpen) {
+  const pop = document.getElementById('chatPopup');
+  const fab = document.getElementById('chatFab');
+  const shouldBeOpen = forceOpen === true ? true : !pop.classList.contains('active');
+  if (shouldBeOpen) {
+    pop.classList.add('active');
+    fab?.classList.add('hidden');
+    document.getElementById('chatFabBadge').style.display = 'none';
+    // 聚焦输入框（延迟等动画结束）
+    setTimeout(() => document.getElementById('chatPopupInput')?.focus(), 250);
   } else {
-    div.innerHTML = `<span class="avatar">AI</span><div class="bubble">${escapeHTML(text).replace(/\n/g, '<br/>')}</div>`;
+    pop.classList.remove('active');
+    fab?.classList.remove('hidden');
   }
-  box.appendChild(div);
-  // 滚动到底部（如果模拟框有滚动）
-  box.scrollTop = box.scrollHeight;
 }
 
-function removeTyping() {
-  document.querySelectorAll('.hero-chat-card .typing').forEach(el => el.remove());
+function popupSend() {
+  // 直接转发给 ChatWidget
+  if (popupChat) popupChat.send();
+}
+
+function quickAsk(text) {
+  toggleChatPopup(true);
+  setTimeout(() => {
+    const input = document.getElementById('chatPopupInput');
+    if (input) input.value = text;
+    if (popupChat) popupChat.send();
+  }, 300);
 }
 
 // 平滑滚动
