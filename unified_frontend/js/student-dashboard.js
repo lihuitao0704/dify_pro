@@ -19,6 +19,7 @@ document.addEventListener('DOMContentLoaded', () => {
   // ── 初始化聊天 ──
   chat = new ChatWidget({
     apiUrl: `${STUDENT_API}/chat`,
+    streamUrl: `${STUDENT_API}/chat/stream`,
     container: '#chatMessages',
     input: '#chatInput',
     sendBtn: '#sendBtn',

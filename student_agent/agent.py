@@ -104,6 +104,94 @@ def _merge_replies(user_msg: str, partials: list[str], intents: list[dict],
     return llm.agent_chat(user_msg, context, extra_instruction=instruction)
 
 
+def process_message_stream(student_id: int, message: str, session_id: str = None):
+    """流式版本：先跑完整管线得到 handler 结果，最后 LLM 回复逐 token 输出。
+    第一个 yield: {"type": "meta", "intents": [...], "emotion": {...}, "session_id": "..."}
+    后续 yield: {"type": "token", "text": "..."}
+    最后 yield: {"type": "done"}
+    """
+    if not session_id:
+        session_id = _conv.new_session_id()
+
+    context = _conv.get_history(session_id)
+    raw_intents = llm.classify_intent(message, context)
+    filtered = _intent.filter_low_confidence(raw_intents)
+    sorted_intents = _intent.sort_by_priority(filtered)
+
+    emotion_history = _conv.get_emotion_history(student_id, days=14)
+    emotion_result = llm.analyze_emotion(message, emotion_history)
+    kw_result = emotion_service.analyze_emotion_keywords(message)
+    emotion_result = emotion_service.merge_emotion_results(emotion_result, kw_result)
+
+    # 上下文意图纠正
+    follow_words = ["帮我", "预约", "联系", "怎么", "多少钱", "多久", "什么时候",
+                    "能不能", "还要", "有没有", "处理", "进度", "状态"]
+    if len(message) <= 20 and any(kw in message for kw in follow_words) and sorted_intents:
+        current_intent = sorted_intents[0]["intent"]
+        if current_intent in ("life_guide", "chat", "progress") and session_id:
+            sess = _db.query_one(
+                "SELECT main_intents FROM conversation_session WHERE session_id = %s",
+                (session_id,))
+            if sess and sess.get("main_intents"):
+                prev = sess["main_intents"].split(",")[0].strip()
+                if prev and prev not in ("chat", "life_guide"):
+                    sorted_intents[0]["intent"] = prev
+
+    # 多意图编排
+    partial_replies = []
+    is_multi = _intent.is_multi_intent(sorted_intents)
+
+    for item in sorted_intents:
+        intent_name = item["intent"]
+        params = item.get("params", {})
+        try:
+            handler = INTENT_HANDLERS.get(intent_name)
+            if handler:
+                result = handler(student_id, message, params, context)
+                if result:
+                    partial_replies.append(result)
+        except Exception as e:
+            logger.error("Handler异常: intent=%s error=%s", intent_name, e, exc_info=True)
+
+    emotion_alert = _handle_emotion_update(student_id, emotion_result, message)
+    has_mental = any(i["intent"] == "mental" for i in sorted_intents)
+
+    # 发送元信息
+    yield {"type": "meta", "intents": sorted_intents, "emotion": emotion_result, "session_id": session_id}
+
+    # 流式生成回复
+    full_reply = ""
+    if not sorted_intents or sorted_intents[0]["intent"] == "chat":
+        stream = llm.agent_chat_stream(message, context)
+    elif is_multi and len(partial_replies) > 1:
+        instruction = (
+            "学生的一句话包含了多个意图，你已经分别处理了每个意图。"
+            "请把以下多个处理结果融合成一段自然流畅的回复。像正常对话一样，不要分点列举。\n\n"
+            + "\n---\n".join(partial_replies))
+        stream = llm.agent_chat_stream(message, context, extra_instruction=instruction)
+    elif partial_replies:
+        # 已有 handler 结果，也用 LLM 润色一下流式输出
+        instruction = f"请把以下回答润色后输出，保持原意不改内容：\n\n{partial_replies[0]}"
+        stream = llm.agent_chat_stream(message, context, extra_instruction=instruction)
+    else:
+        stream = llm.agent_chat_stream(message, context)
+
+    for token in stream:
+        full_reply += token
+        yield {"type": "token", "text": token}
+
+    if emotion_alert and has_mental:
+        full_reply += emotion_alert
+        yield {"type": "token", "text": emotion_alert}
+
+    # 记录对话
+    intent_str = ",".join([i["intent"] for i in sorted_intents])
+    _conv.save_turn(session_id, student_id, message, full_reply,
+                    intent=intent_str, emotion=emotion_result.get("emotion", ""))
+
+    yield {"type": "done"}
+
+
 def _handle_emotion_update(student_id: int, emotion: dict, user_msg: str) -> str:
     return emotion_service.analyze_and_update(student_id, emotion, user_msg)
 

@@ -72,6 +72,32 @@ def chat(messages: list[dict], system_prompt: str = "", temperature: float = 0.7
         raise LLMOfflineError(f"LLM 调用失败: {e}") from e
 
 
+def chat_stream(messages: list[dict], system_prompt: str = "", temperature: float = 0.7):
+    """流式对话生成器，逐个 yield token 字符串"""
+    full_messages = []
+    if system_prompt:
+        full_messages.append({"role": "system", "content": system_prompt})
+    full_messages.extend(messages)
+
+    try:
+        client = get_client()
+        stream = client.chat.completions.create(
+            model=LLM_CONFIG["model"],
+            messages=full_messages,
+            temperature=temperature,
+            stream=True,
+        )
+        for chunk in stream:
+            delta = chunk.choices[0].delta
+            if delta.content:
+                yield delta.content
+    except LLMError:
+        raise
+    except Exception as e:
+        logger.error("LLM 流式调用失败: %s", e)
+        raise LLMOfflineError(f"LLM 流式调用失败: {e}") from e
+
+
 def chat_json(messages: list[dict], system_prompt: str = "", temperature: float = 0.3) -> dict | list:
     """对话并要求返回 JSON。LLM 不可用时抛出 LLMOfflineError"""
     raw = chat(messages, system_prompt, temperature)
@@ -349,3 +375,12 @@ def agent_chat(user_msg: str, context: list[dict], extra_instruction: str = "") 
         system += f"\n\n本次回复额外要求：{extra_instruction}"
     messages = list(context[-10:]) + [{"role": "user", "content": user_msg}]
     return chat(messages, system, temperature=0.7)
+
+
+def agent_chat_stream(user_msg: str, context: list[dict], extra_instruction: str = ""):
+    """流式 Agent 人格化回复"""
+    system = AGENT_PERSONA
+    if extra_instruction:
+        system += f"\n\n本次回复额外要求：{extra_instruction}"
+    messages = list(context[-10:]) + [{"role": "user", "content": user_msg}]
+    yield from chat_stream(messages, system, temperature=0.7)

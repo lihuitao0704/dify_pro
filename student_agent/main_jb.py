@@ -11,14 +11,14 @@ import uvicorn
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
-from fastapi.responses import FileResponse, JSONResponse
+from fastapi.responses import FileResponse, JSONResponse, StreamingResponse
 from pydantic import BaseModel
 from contextlib import asynccontextmanager
 from starlette.middleware.base import BaseHTTPMiddleware
 
 from .config import AGENT_HOST, AGENT_PORT, API_TOKEN, API_AUTH_ENABLED
 from .db import init_database, query_one, query, insert, execute
-from .agent import process_message
+from .agent import process_message, process_message_stream
 from .reminder import start_scheduler, stop_scheduler, scan_and_remind, get_pending_reminders, mark_read
 from .knowledge import get_kb
 
@@ -213,6 +213,35 @@ def chat_endpoint(req: ChatRequest):
             reply=f"系统出错：{str(e)}", intents=[], emotion={},
             session_id="", actions=[{"intent": "error", "result": "error", "error": str(e)}],
         )
+
+
+@app.post("/chat/stream")
+async def chat_stream_endpoint(req: ChatRequest):
+    """流式 SSE 聊天端点"""
+    import json as _json
+
+    async def generate():
+        try:
+            for event in process_message_stream(
+                student_id=req.student_id,
+                message=req.message,
+                session_id=req.session_id or None,
+            ):
+                yield f"data: {_json.dumps(event, ensure_ascii=False)}\n\n"
+        except Exception as e:
+            logger.error("Stream异常: %s", e, exc_info=True)
+            yield f"data: {_json.dumps({'type': 'token', 'text': f'[出错] {e}'}, ensure_ascii=False)}\n\n"
+            yield f"data: {_json.dumps({'type': 'done'}, ensure_ascii=False)}\n\n"
+
+    return StreamingResponse(
+        generate(),
+        media_type="text/event-stream",
+        headers={
+            "Cache-Control": "no-cache",
+            "Connection": "keep-alive",
+            "X-Accel-Buffering": "no",
+        },
+    )
 
 
 # ============================================================
