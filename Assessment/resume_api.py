@@ -4,8 +4,11 @@
 
 流程：表单提交 / 简历上传 → 写入 user_profiles → 触发研判 → 返回研判结论
 """
+
 import os
 import sys
+from pathlib import Path
+from typing import Optional
 import json
 import traceback
 import pymysql
@@ -13,6 +16,8 @@ from pymysql.cursors import DictCursor
 from fastapi import APIRouter, FastAPI, UploadFile, File, Form
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse, HTMLResponse
+
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 # 兼容两种运行方式：
 #   python resume_api.py          → 相对导入
