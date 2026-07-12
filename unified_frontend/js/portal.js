@@ -32,7 +32,20 @@ function initLoginTabs() {
       const role = tab.dataset.role;
       document.getElementById('studentLoginForm').style.display = role === 'student' ? 'block' : 'none';
       document.getElementById('employeeLoginForm').style.display = role === 'employee' ? 'block' : 'none';
+      clearLoginErrors();
     });
+  });
+}
+
+// 登录错误提示（模块级，供 initLoginTabs 和 initLoginForms 共用）
+function showLoginError(role, msg) {
+  const errEl = document.getElementById(role === 'student' ? 'studentLoginError' : 'employeeLoginError');
+  if (errEl) { errEl.textContent = msg; errEl.style.display = ''; }
+}
+function clearLoginErrors() {
+  ['studentLoginError', 'employeeLoginError'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) { el.textContent = ''; el.style.display = 'none'; }
   });
 }
 
@@ -45,7 +58,8 @@ function initLoginForms() {
     const passEl = document.getElementById(role === 'student' ? 'studentPass' : 'employeePass');
     const user = userEl.value.trim();
     const pass = passEl.value;
-    if (!user || !pass) { toast('请输入用户名和密码', 'error'); return; }
+    clearLoginErrors();
+    if (!user || !pass) { showLoginError(role, '请输入用户名和密码'); return; }
 
     let result;
     try {
@@ -55,14 +69,18 @@ function initLoginForms() {
         result = await Auth.employeeLogin(user, pass);
       }
     } catch (err) {
-      toast('无法连接服务，请检查网络后重试', 'error');
+      var netMsg = '无法连接服务，请检查网络后重试';
+      showLoginError(role, netMsg);
+      toast(netMsg, 'error');
       return;
     }
 
     if (result.success) {
       location.href = role === 'student' ? '/portal/student-dashboard' : '/portal/employee-dashboard';
     } else {
-      toast(result.message || '用户名或密码不正确', 'error');
+      var errMsg = result.message || '用户名或密码不正确';
+      showLoginError(role, errMsg);
+      toast(errMsg, 'error');
     }
   }
 

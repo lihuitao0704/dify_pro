@@ -507,6 +507,12 @@ input::placeholder { color: var(--text-tertiary); }
   text-align: center; font-size: 12px;
   color: var(--text-tertiary); margin-top: 16px;
 }
+.login-error {
+  text-align: center; font-size: 13px;
+  color: var(--danger); margin: 10px 0 0;
+  padding: 8px 12px; border-radius: 6px;
+  background: rgba(220,53,69,0.08);
+}
 
 /* Footer */
 .portal-footer {
