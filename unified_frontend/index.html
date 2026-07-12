@@ -29,7 +29,7 @@
         <a href="#agents">智能体</a>
       </nav>
       <div class="header-actions">
-        <button class="btn btn-primary btn-sm" id="smartDiagnoseBtn">智能诊断</button>
+        <button class="btn btn-primary btn-sm" id="smartDiagnoseBtn">🎯 项目契合度分析</button>
         <button class="btn btn-secondary btn-sm" id="loginBtn">登录</button>
       </div>
     </div>
@@ -170,11 +170,11 @@
 
   </main>
 
-  <!-- ============ 智能诊断 Modal ============ -->
+  <!-- ============ 项目契合度分析 Modal ============ -->
   <div class="modal-overlay" id="diagnoseModal">
     <div class="modal diagnose-modal">
       <button class="modal-close" onclick="closeDiagnose()">×</button>
-      <h2 class="diagnose-title">🎯 智能诊断</h2>
+      <h2 class="diagnose-title">🎯 项目契合度分析</h2>
       <p class="diagnose-subtitle">AI 助手为你评估最适合的留学项目</p>
 
       <!-- 标签切换 -->
@@ -217,8 +217,8 @@
 
         <div class="form-row">
           <div class="form-group">
-            <label>目标申请专业 <span class="required">*</span></label>
-            <input type="text" id="d_target_major" placeholder="如：人工智能" required>
+            <label>目标申请专业 <span class="optional">选填</span></label>
+            <input type="text" id="d_target_major" placeholder="如：人工智能">
           </div>
           <div class="form-group">
             <label>语言成绩 <span class="required">*</span></label>
@@ -304,10 +304,7 @@
       <div class="diagnose-loading" id="d_loading">正在分析中，请稍候...</div>
       <div class="diagnose-error" id="d_errorMsg"></div>
 
-      <div class="result-box" id="d_resultBox">
-        <h3 id="d_resultTitle">研判结论</h3>
-        <pre id="d_resultContent"></pre>
-      </div>
+      <div id="d_fitResult" class="fit-result"></div>
     </div>
   </div>
 
@@ -330,8 +327,8 @@
           <label>密码</label>
           <input type="password" id="studentPass" placeholder="请输入密码" required />
         </div>
+        <p class="login-error" id="studentLoginError" style="display:none"></p>
         <button type="submit" class="btn btn-primary" style="width:100%">进入学生助手</button>
-        <p class="login-hint">测试账号：student1 / 123456</p>
       </form>
 
       <!-- Employee -->
@@ -344,8 +341,8 @@
           <label>密码</label>
           <input type="password" id="employeePass" placeholder="密码" required />
         </div>
+        <p class="login-error" id="employeeLoginError" style="display:none"></p>
         <button type="submit" class="btn btn-primary" style="width:100%">进入企业工作台</button>
-        <p class="login-hint">测试账号：admin / admin123</p>
       </form>
     </div>
   </div>
@@ -358,6 +355,7 @@
 
   <div id="toastContainer"></div>
 
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
   <script src="/portal/js/utils.js"></script>
   <script src="/portal/js/auth.js"></script>
   <script src="/portal/js/portal.js"></script>

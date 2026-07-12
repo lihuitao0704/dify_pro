@@ -19,10 +19,10 @@ from fastapi.responses import JSONResponse, HTMLResponse
 #   python -m Assessment.resume_api → 绝对导入
 try:
     from resume import ResumeRequest
-    from Assessment.assessment import run_targeted_assessment
+    from Assessment.assessment import run_targeted_assessment, PASS_SCORE
 except ImportError:
     from Assessment.resume import ResumeRequest
-    from Assessment.assessment import run_targeted_assessment
+    from Assessment.assessment import run_targeted_assessment, PASS_SCORE
 
 router = APIRouter()
 app = FastAPI(title="学生信息录入 API", version="2.0.0")
@@ -322,6 +322,300 @@ async def upload_resume(file: UploadFile = File(...)):
     except Exception as e:
         import traceback
         print("RESUME_UPLOAD_ERROR:", traceback.format_exc())
+        return JSONResponse(status_code=500, content={
+            "code": 500, "msg": "处理失败: %s" % str(e), "data": None
+        })
+
+
+# ============================================
+# 项目契合度分析（工作台入口）：结构化分数接口
+# 支持两种输入：表单字段 / 简历文件
+# ============================================
+@router.post("/evaluation/detail")
+async def evaluation_detail(
+    # 文件模式（二选一）：传 file 则走简历解析流程
+    file: Optional[UploadFile] = File(None),
+    # 表单字段模式（与 user_profiles 表字段对齐，name 必填）
+    name:           Optional[str]   = Form(None),
+    age:            Optional[str]   = Form(None),
+    major:          Optional[str]   = Form(None),
+    education:      Optional[str]   = Form(None),
+    target_major:   Optional[str]   = Form(None),
+    language_score: Optional[str]   = Form(None),
+    target_country: Optional[str]   = Form(None),
+    gpa:            Optional[str]   = Form(None),
+    budget:         Optional[str]   = Form(None),
+    phone:          Optional[str]   = Form(None),
+    development:    Optional[str]   = Form(None),
+    abilities:      Optional[str]   = Form(None),
+    is_Closed_loop: Optional[str]   = Form(None),
+    wechat:         Optional[str]   = Form(None),
+    email:          Optional[str]   = Form(None),
+    # 评估模式：student_view=False 为正式（专业简练），True 为学生端（温暖）
+    student_view:   Optional[str]   = Form(None),
+):
+    """
+    项目契合度分析 - 工作台入口
+
+    与「智能诊断」复用同一套评估规则引擎（portrait_rule + study_project），
+    区别：返回结构化分数（契合徽章 + 百分制 + 维度得分 + LLM 文本），
+    供前端绘制契合徽章 / 百分制环 / 雷达图 / LLM 文本四合一。
+
+    调用方式：
+    - 表单：Content-Type: multipart/form-data，body 字段即上表参数
+    - 文件：Content-Type: multipart/form-data，file 字段为 txt/pdf/docx
+
+    返回 JSON：
+    {
+      "code": 0,
+      "msg": "success",
+      "data": {
+        "user_id": 42,
+        "summary": "…LLM NL…",
+        "pass_threshold": 60,
+        "results": [
+          {
+            "project_id": 1,
+            "project_name": "德国 TU9 精英硕士项目",
+            "total_score": 85,
+            "max_score": 100,
+            "pass_threshold": 60,
+            "is_pass": true,
+            "dimensions": [
+              { "key": "gpa_3.5_plus", "name": "GPA",  "score": 25, "max": 30 },
+              { "key": "testdaf_4",   "name": "德语", "score": 20, "max": 25 }
+            ]
+          }
+        ]
+      }
+    }
+    """
+    # ── 参数校验：name 与 file 二选一 ──
+    view = (student_view or "").lower() in ("1", "true", "yes")
+    if file is not None and file.filename:
+        return await _evaluation_by_file(file, view)
+    if not name or not name.strip():
+        return JSONResponse(status_code=400, content={
+            "code": 400, "msg": "name 不能为空，请填写姓名或上传简历", "data": None
+        })
+    return _evaluation_by_form({
+        "name": name, "age": age, "major": major, "education": education,
+        "target_major": target_major, "language_score": language_score,
+        "target_country": target_country, "gpa": gpa, "budget": budget,
+        "phone": phone, "development": development, "abilities": abilities,
+        "is_Closed_loop": is_Closed_loop, "wechat": wechat, "email": email,
+    }, view)
+
+
+def _evaluation_by_form(fields: dict, student_view: bool):
+    """表单模式：提取 user_profiles 字段 → 入库 → 研判 → 结构化返回"""
+    # 1. 字段清洗（截断，超长与 None 兼容）
+    insert_keys = ['name', 'age', 'major', 'education', 'target_major',
+                   'language_score', 'target_country', 'gpa', 'budget',
+                   'phone', 'development', 'abilities', 'is_Closed_loop',
+                   'wechat', 'email']
+    max_lens = {
+        'name': 50, 'major': 100, 'education': 50, 'target_major': 100,
+        'language_score': 50, 'target_country': 50, 'phone': 30,
+        'development': 300, 'abilities': 500, 'is_Closed_loop': 100,
+        'wechat': 50, 'email': 100, 'age': None, 'gpa': None, 'budget': None,
+    }
+    clean = {}
+    for k in insert_keys:
+        v = fields.get(k)
+        if v is None or v == '':
+            if k in ('age', 'gpa', 'budget'):
+                clean[k] = None
+            else:
+                clean[k] = None
+        elif k in max_lens and max_lens[k] and isinstance(v, str) and len(v) > max_lens[k]:
+            clean[k] = v[:max_lens[k]]
+        else:
+            try:
+                if k in ('age', 'budget'):
+                    clean[k] = int(float(v)) if v else None
+                elif k == 'gpa':
+                    clean[k] = round(float(v), 2) if v else None
+                else:
+                    clean[k] = v
+            except (ValueError, TypeError):
+                clean[k] = v
+
+    if not clean.get("name"):
+        return JSONResponse(status_code=400, content={
+            "code": 400, "msg": "name 不能为空", "data": None
+        })
+
+    # 2. 写入 user_profiles
+    conn = pymysql.connect(**DB_CONFIG, cursorclass=DictCursor)
+    try:
+        with conn.cursor() as cur:
+            cur.execute("""
+                INSERT INTO user_profiles
+                (name, age, major, education, target_major, language_score,
+                 target_country, gpa, budget, phone, development, abilities,
+                 `is_Closed_loop`, wechat, email, assess)
+                VALUES
+                (%(name)s, %(age)s, %(major)s, %(education)s, %(target_major)s,
+                 %(language_score)s, %(target_country)s, %(gpa)s, %(budget)s,
+                 %(phone)s, %(development)s, %(abilities)s, %(is_Closed_loop)s,
+                 %(wechat)s, %(email)s, '待研判')
+            """, clean)
+            conn.commit()
+            new_user_id = cur.lastrowid
+    except Exception as e:
+        conn.close()
+        return JSONResponse(status_code=500, content={
+            "code": 500, "msg": "用户信息入库失败: %s" % str(e), "data": None
+        })
+    finally:
+        try:
+            conn.close()
+        except Exception:
+            pass
+
+    # 3. 触发研判（结构化）
+    sql_filter = "`id` = %s" % int(new_user_id)
+    try:
+        detail = run_targeted_assessment(
+            sql_filter=sql_filter,
+            student_view=student_view,
+            detail_view=True,
+        )
+    except ValueError as e:
+        # 重复诊断（理论上同一 id 不会触发，但保险起见）
+        return JSONResponse(status_code=409, content={
+            "code": 409, "msg": str(e), "data": None
+        })
+    except Exception as e:
+        return JSONResponse(status_code=500, content={
+            "code": 500, "msg": "研判失败: %s" % str(e),
+            "data": None,
+        })
+
+    return {
+        "code": 0,
+        "msg": "success",
+        "data": {
+            "user_id": new_user_id,
+            "pass_threshold": PASS_SCORE,
+            "summary": detail.get("summary"),
+            "results": detail.get("results", []),
+        },
+    }
+
+
+async def _evaluation_by_file(file: UploadFile, student_view: bool):
+    """文件模式：复用 resume/upload 的文本提取 + LLM 字段解析 + 入库 + 结构化研判"""
+    # 1. 格式校验
+    filename = file.filename or ""
+    suffix = filename.rsplit(".", 1)[-1].lower() if "." in filename else ""
+    if suffix not in ("txt", "pdf", "docx"):
+        return JSONResponse(status_code=400, content={
+            "code": 400,
+            "msg": "不支持的文件格式 .%s，仅支持 txt / pdf / docx" % suffix,
+            "data": None,
+        })
+
+    try:
+        content = await file.read()
+        if len(content) > 10 * 1024 * 1024:
+            return JSONResponse(status_code=400, content={
+                "code": 400, "msg": "文件过大，请上传 10MB 以内的文件", "data": None
+            })
+
+        # 2. 文本提取
+        resume_text = _extract_text_from_file(filename, content)
+        if not resume_text.strip():
+            return JSONResponse(status_code=400, content={
+                "code": 400, "msg": "未能从文件中提取到有效文本，请检查文件内容", "data": None
+            })
+
+        # 3. LLM 字段提取（复用 upload_resume 的 _extract_fields_from_resume）
+        fields = _extract_fields_from_resume(resume_text)
+        if not fields.get("name"):
+            return JSONResponse(status_code=400, content={
+                "code": 400, "msg": "未能从简历中识别出姓名，请检查简历内容", "data": None
+            })
+
+        # 4. 入库（复用 add_resume 的清洗逻辑）
+        insert_keys = ['name', 'age', 'major', 'education', 'target_major',
+                       'language_score', 'target_country', 'gpa', 'budget',
+                       'phone', 'development', 'abilities', 'is_Closed_loop',
+                       'wechat', 'email']
+        max_lens = {
+            'name': 50, 'major': 100, 'education': 50, 'target_major': 100,
+            'language_score': 50, 'target_country': 50, 'phone': 30,
+            'development': 300, 'abilities': 500, 'is_Closed_loop': 100,
+            'wechat': 50, 'email': 100,
+        }
+        clean = {}
+        for k in insert_keys:
+            v = fields.get(k)
+            if v is None or v == '':
+                clean[k] = None
+            elif isinstance(v, str) and k in max_lens and len(v) > max_lens[k]:
+                clean[k] = v[:max_lens[k]]
+            else:
+                clean[k] = v
+
+        conn = pymysql.connect(**DB_CONFIG, cursorclass=DictCursor)
+        try:
+            with conn.cursor() as cur:
+                cur.execute("""
+                    INSERT INTO user_profiles
+                    (name, age, major, education, target_major, language_score,
+                     target_country, gpa, budget, phone, development, abilities,
+                     `is_Closed_loop`, wechat, email, assess)
+                    VALUES
+                    (%(name)s, %(age)s, %(major)s, %(education)s, %(target_major)s,
+                     %(language_score)s, %(target_country)s, %(gpa)s, %(budget)s,
+                     %(phone)s, %(development)s, %(abilities)s, %(is_Closed_loop)s,
+                     %(wechat)s, %(email)s, '待研判')
+                """, clean)
+                conn.commit()
+                new_user_id = cur.lastrowid
+        finally:
+            conn.close()
+
+        # 5. 结构化研判
+        sql_filter = "`id` = %s" % int(new_user_id)
+        try:
+            detail = run_targeted_assessment(
+                sql_filter=sql_filter,
+                student_view=student_view,
+                detail_view=True,
+            )
+        except ValueError as e:
+            return JSONResponse(status_code=409, content={
+                "code": 409, "msg": str(e), "data": None
+            })
+        except Exception as e:
+            return JSONResponse(status_code=500, content={
+                "code": 500, "msg": "研判失败: %s" % str(e), "data": None
+            })
+
+        return {
+            "code": 0,
+            "msg": "success",
+            "data": {
+                "user_id": new_user_id,
+                "pass_threshold": PASS_SCORE,
+                "summary": detail.get("summary"),
+                "results": detail.get("results", []),
+            },
+        }
+
+    except json.JSONDecodeError:
+        return JSONResponse(status_code=500, content={
+            "code": 500, "msg": "大模型解析简历失败，请检查简历内容是否完整", "data": None
+        })
+    except ValueError as ve:
+        return JSONResponse(status_code=400, content={
+            "code": 400, "msg": str(ve), "data": None
+        })
+    except Exception as e:
+        print("EVALUATION_DETAIL_ERROR:", traceback.format_exc())
         return JSONResponse(status_code=500, content={
             "code": 500, "msg": "处理失败: %s" % str(e), "data": None
         })

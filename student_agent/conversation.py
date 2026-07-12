@@ -5,6 +5,7 @@
 
 import uuid
 from datetime import datetime
+import pymysql
 from . import db as _db
 from .config import MAX_HISTORY_TURNS
 
@@ -68,7 +69,8 @@ def save_turn(session_id: str, student_id: int,
                 "emotion_start": emotion,
                 "emotion_end": emotion,
             })
-        except Exception:
+        except pymysql.err.IntegrityError:
+            # 仅重复键走 update，其他异常向上抛出
             _db.update("conversation_session", {"session_id": session_id}, {
                 "end_time": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
                 "total_turns": 1,
@@ -99,8 +101,9 @@ def get_emotion_history(student_id: int, days: int = 14) -> list[dict]:
             """SELECT emotion_detected, intent, created_at
                FROM conversation_message
                WHERE student_id = %s AND role = 'user' AND emotion_detected != ''
-               ORDER BY created_at DESC LIMIT %s""",
-            (student_id, days * 5)
+               AND created_at >= DATE_SUB(NOW(), INTERVAL %s DAY)
+               ORDER BY created_at DESC""",
+            (student_id, days)
         )
     except Exception:
         return []

@@ -189,7 +189,11 @@ function toast(msg, type = 'info', duration = 3000) {
   el.className = `toast ${type}`;
   el.textContent = msg;
   container.appendChild(el);
-  setTimeout(() => { el.remove(); }, duration);
+  requestAnimationFrame(() => el.classList.add('show'));
+  setTimeout(() => {
+    el.classList.remove('show');
+    setTimeout(() => el.remove(), 250);
+  }, duration);
 }
 
 // ── 转义 HTML ──
