@@ -29,6 +29,18 @@ CREATE TABLE `portrait_rule` (
   KEY `idx_project_id` (`project_id`)
 ) ENGINE=InnoDB AUTO_INCREMENT=17 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='用户画像研判+打分规则表'
 
+CREATE TABLE `project_expression_cache` (
+  `cache_id` int NOT NULL AUTO_INCREMENT,
+  `project_id` int NOT NULL COMMENT '关联项目ID',
+  `expression_json` text NOT NULL COMMENT 'LLM 生成的评分表达式 JSON',
+  `rule_hash` varchar(64) NOT NULL COMMENT '规则版本哈希（MD5），规则变更时缓存失效',
+  `created_at` datetime DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` datetime DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`cache_id`),
+  UNIQUE KEY `uk_project` (`project_id`),
+  KEY `idx_project` (`project_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='项目评分表达式缓存（避免每次评估重复调 LLM）';
+
 CREATE TABLE `study_project` (
   `project_id` int NOT NULL AUTO_INCREMENT COMMENT '项目ID',
   `project_code` varchar(50) NOT NULL COMMENT '项目编码',

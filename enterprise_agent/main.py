@@ -188,10 +188,11 @@ async def index_page():
 
 # ==================== 注册路由 ====================
 from enterprise_agent.routers import (
-    customer, leave, report, organization, todo,
+    auth, customer, leave, report, organization, todo,
     complaint, score, knowledge, nl2sql, mental_health,
 )
 
+app.include_router(auth.router, prefix="/api/agent", tags=["认证"])
 app.include_router(customer.router, prefix="/api/agent", tags=["意向客户管理"])
 app.include_router(leave.router, prefix="/api/agent", tags=["请假管理"])
 app.include_router(report.router, prefix="/api/agent", tags=["日报管理"])

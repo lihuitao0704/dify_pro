@@ -157,6 +157,28 @@ QUERY_TEMPLATES = [
         "description": "查询学生基本信息",
     },
     {
+        "name": "查询讲座报名",
+        "pattern": r"(?:我的|我).*(?:讲座|报名).*(?:记录|情况|哪些|什么)|(?:报名|参加).*(?:讲座|什么讲座)",
+        "sql": """SELECT lr.registration_id, l.title, l.event_time, l.location, lr.phone
+                  FROM lecture_registrations lr
+                  JOIN lectures l ON lr.lecture_id = l.lecture_id
+                  WHERE lr.name COLLATE utf8mb4_unicode_ci = (SELECT name FROM student WHERE id = %s)
+                  ORDER BY l.event_time DESC""",
+        "params_func": lambda sid: (sid,),
+        "description": "查询学生报名的讲座记录",
+    },
+    {
+        "name": "查询活动报名",
+        "pattern": r"(?:我的|我).*(?:活动|报名).*(?:记录|情况|哪些|什么)|(?:报名|参加).*(?:活动|什么活动)",
+        "sql": """SELECT ar.registration_id, a.title, a.event_time, a.location, ar.phone
+                  FROM activity_registrations ar
+                  JOIN activities a ON ar.activity_id = a.activity_id
+                  WHERE ar.name COLLATE utf8mb4_unicode_ci = (SELECT name FROM student WHERE id = %s)
+                  ORDER BY a.event_time DESC""",
+        "params_func": lambda sid: (sid,),
+        "description": "查询学生报名的活动记录",
+    },
+    {
         "name": "查询我的成绩",
         "pattern": r"(?:我的|我).*(?:成绩|分数|绩点)|(?:成绩|分数|绩点|gpa).*(?:查询|多少|怎么|如何)",
         "sql": """SELECT subject, score, exam_type, exam_date

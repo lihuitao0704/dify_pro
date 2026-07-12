@@ -3,13 +3,14 @@
 =========================================================
 - 评估时指定用户（1个/多个/全部）
 - 自动找出 portrait_rule 表中所有 project_id
-- 每个 project_id 独立评分（该 project_id 下所有规则分数之和 >= 80 即通过）
+- 每个 project_id 独立评分（该 project_id 下所有规则分数之和 >= 60 即通过）
 - 结果写入 intention_diagnosis 表（诊断id, user_id, project_id, score, rule_details）
 - 大模型润色结果为自然语言返回
 """
 
 import os
 import json
+import hashlib
 import logging
 import re
 from typing import Optional
@@ -185,8 +186,60 @@ def _build_project_scoring_prompt(rules, project_id):
 
 
 
+def _compute_rule_hash(rules: list[dict]) -> str:
+    """计算规则的 MD5 哈希，用于检测规则是否变更（变更则缓存失效）"""
+    key = json.dumps([(r['rule_key'], r['score_max'], r['rule_value']) for r in rules], sort_keys=True)
+    return hashlib.md5(key.encode()).hexdigest()
+
+
+def _get_cached_expression(project_id: int, rules: list[dict]) -> dict | None:
+    """从缓存获取表达式。如果规则已变更（hash 不同）返回 None（缓存失效）"""
+    conn = get_conn()
+    try:
+        with conn.cursor() as cur:
+            cur.execute(
+                "SELECT expression_json, rule_hash FROM project_expression_cache WHERE project_id = %s",
+                (project_id,)
+            )
+            row = cur.fetchone()
+            if not row:
+                return None
+            # 校验规则是否变更
+            current_hash = _compute_rule_hash(rules)
+            if row["rule_hash"] != current_hash:
+                logger.info(f"project {project_id} 规则已变更，缓存失效")
+                return None
+            return json.loads(row["expression_json"])
+    finally:
+        conn.close()
+
+
+def _set_cached_expression(project_id: int, rules: list[dict], expr_data: dict):
+    """写入/更新缓存"""
+    rule_hash = _compute_rule_hash(rules)
+    conn = get_conn()
+    try:
+        with conn.cursor() as cur:
+            cur.execute("""
+                INSERT INTO project_expression_cache (project_id, expression_json, rule_hash)
+                VALUES (%s, %s, %s)
+                ON DUPLICATE KEY UPDATE expression_json = VALUES(expression_json), rule_hash = VALUES(rule_hash)
+            """, (project_id, json.dumps(expr_data, ensure_ascii=False), rule_hash))
+            conn.commit()
+    finally:
+        conn.close()
+
+
 def generate_project_expression(rules: list[dict], project_id: int) -> dict:
-    """为单个 project_id 生成评分表达式"""
+    """为单个 project_id 生成评分表达式（带缓存）"""
+    # 先查缓存
+    cached = _get_cached_expression(project_id, rules)
+    if cached is not None:
+        logger.info(f"project {project_id} 使用缓存表达式（跳过 LLM）")
+        return cached
+
+    # 缓存未命中 → 调 LLM 生成
+    logger.info(f"project {project_id} 缓存未命中，调 LLM 生成表达式")
     prompt = _build_project_scoring_prompt(rules, project_id)
 
     try:
@@ -223,6 +276,8 @@ def generate_project_expression(rules: list[dict], project_id: int) -> dict:
     if bad:
         raise ValueError(f"project {project_id} 表达式引用了不存在的字段: {bad}")
 
+    # 写入缓存
+    _set_cached_expression(project_id, rules, data)
     return data
 
 
@@ -799,8 +854,25 @@ def insert_intention_customer(user: dict, project_id: int, score: int, conn) -> 
     """
     将达标用户写入 intention_customer，返回 customer_id。
     sales_user_id 由 assign_sales_user_id() 自动分配（咨询部轮询）。
+    字段映射：
+      user_profiles.age   → customer_age（SmallInteger，自动截断到 0-150）
+      user_profiles.phone → customer_phone（VARCHAR(20)，自动截断）
     """
     sales_uid = assign_sales_user_id(conn)
+
+    # 数据清洗：确保类型与 intention_customer 表兼容
+    age_val = user.get("age")
+    try:
+        age_val = int(age_val)
+        if age_val < 0 or age_val > 150:
+            age_val = None
+    except (ValueError, TypeError):
+        age_val = None
+
+    phone_val = user.get("phone")
+    if phone_val:
+        phone_val = str(phone_val)[:20]  # VARCHAR(20) 防止超长
+
     with conn.cursor() as cur:
         cur.execute("""
             INSERT INTO intention_customer
@@ -809,8 +881,8 @@ def insert_intention_customer(user: dict, project_id: int, score: int, conn) -> 
             VALUES (%s, %s, %s, %s, %s, %s, %s)
         """, (
             user.get("name"),
-            user.get("age"),
-            user.get("phone"),
+            age_val,
+            phone_val,
             "表单录入",
             user.get("development"),
             "意向中",

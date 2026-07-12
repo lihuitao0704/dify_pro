@@ -4,7 +4,7 @@
 一个接口：
   POST /api/agent/assessment
   - 输入自然语言 → 大模型解析研判意图
-  - 自动研判所有 project_id，单项目内规则得分和 >= 80 即通过
+  - 自动研判所有 project_id，单项目内规则得分和 >= 60 即通过
   - 结果写入 intention_diagnosis 表（不重复诊断）
   - 大模型润色为自然语言返回
 """
@@ -67,7 +67,7 @@ def assess(req: AssessmentRequest):
 
     1. 大模型解析自然语言 → 确定要评估的目标用户
     2. 检查是否有重复诊断（有则返回"该用户已是意向客户"）
-    3. 自动评估所有 project_id，单项目内规则得分和 >= 80 即通过
+    3. 自动评估所有 project_id，单项目内规则得分和 >= 60 即通过
     4. 结果写入 intention_diagnosis 表
     5. 大模型润色为自然语言返回
     """

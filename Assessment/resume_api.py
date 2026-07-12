@@ -250,7 +250,28 @@ async def upload_resume(file: UploadFile = File(...)):
                 "code": 400, "msg": "未能从简历中识别出姓名，请检查简历内容", "data": None
             })
 
-        # 4. 写入 user_profiles 表
+        # 4. 写入 user_profiles 表（只保留 INSERT 需要的字段，忽略多余的）
+        insert_keys = ['name', 'age', 'major', 'education', 'target_major',
+                       'language_score', 'target_country', 'gpa', 'budget',
+                       'phone', 'development', 'abilities', 'is_Closed_loop',
+                       'wechat', 'email']
+        # 字段长度上限（与数据库 VARCHAR 一致），超长自动截断
+        max_lens = {
+            'name': 50, 'major': 100, 'education': 50, 'target_major': 100,
+            'language_score': 50, 'target_country': 50, 'phone': 30,
+            'development': 300, 'abilities': 500, 'is_Closed_loop': 100,
+            'wechat': 50, 'email': 100,
+        }
+        clean_fields = {}
+        for k in insert_keys:
+            v = fields.get(k)
+            if v is None or v == '':
+                clean_fields[k] = None
+            elif isinstance(v, str) and k in max_lens and len(v) > max_lens[k]:
+                clean_fields[k] = v[:max_lens[k]]
+            else:
+                clean_fields[k] = v
+
         conn = pymysql.connect(**DB_CONFIG, cursorclass=DictCursor)
         try:
             with conn.cursor() as cur:
@@ -264,7 +285,7 @@ async def upload_resume(file: UploadFile = File(...)):
                      %(language_score)s, %(target_country)s, %(gpa)s, %(budget)s,
                      %(phone)s, %(development)s, %(abilities)s, %(is_Closed_loop)s,
                      %(wechat)s, %(email)s, '待研判')
-                """, fields)
+                """, clean_fields)
                 conn.commit()
                 new_user_id = cur.lastrowid
         finally:
@@ -299,7 +320,8 @@ async def upload_resume(file: UploadFile = File(...)):
             "code": 400, "msg": str(ve), "data": None
         })
     except Exception as e:
-        logger.error("简历上传处理失败: %s", e, exc_info=True) if 'logger' in dir() else None
+        import traceback
+        print("RESUME_UPLOAD_ERROR:", traceback.format_exc())
         return JSONResponse(status_code=500, content={
             "code": 500, "msg": "处理失败: %s" % str(e), "data": None
         })
@@ -426,7 +448,13 @@ def index():
             font-size: 13px;
             color: #333;
             line-height: 1.7;
+            max-height: 300px;
+            overflow-y: auto;
+            padding-right: 8px;
         }
+        .result-box pre::-webkit-scrollbar { width: 6px; }
+        .result-box pre::-webkit-scrollbar-thumb { background: #ccc; border-radius: 3px; }
+        .result-box pre::-webkit-scrollbar-track { background: transparent; }
         .result-box.success {
             background: #f0f9eb;
             border-color: #e1f3d8;
@@ -625,9 +653,9 @@ def index():
                     throw new Error(data.msg || '提交失败');
                 }
 
-                // 直接展示研判结论
-                const result = data.data.assessment_result || '研判完成，无详细结论。';
-                resultContent.textContent = result;
+                // 直接展示研判结论（支持换行）
+                const raw = data.data.assessment_result || '研判完成，无详细结论。';
+                resultContent.innerHTML = raw.replace(/\\n/g, '\n').replace(/\n/g, '<br>');
 
                 // 根据结论判断是"通过"还是"未通过"
                 if (result.includes('已通过') && !result.includes('已通过 0 人')) {
@@ -662,4 +690,4 @@ if __name__ == "__main__":
 
     host = os.getenv("HOST", "0.0.0.0")
     port = int(os.getenv("PORT", "8080"))
-    uvicorn.run("resume_api:app", host=host, port=port, reload=True)
+    uvicorn.run("Assessment.resume_api:app", host=host, port=port, reload=True)
