@@ -146,8 +146,20 @@ def health():
 @app.post("/auth/login")
 async def auth_login(request: Request):
     """统一登录：account表用户名+密码，bcrypt/明文兼容"""
-    import pymysql, json as _json, traceback as _tb
-    from student_agent.config import DB_CONFIG
+    import pymysql, json as _json, os as _os
+
+    # 数据库配置（兼容有无student_agent的情况）
+    try:
+        from student_agent.config import DB_CONFIG
+    except ImportError:
+        DB_CONFIG = {
+            "host": _os.getenv("MYSQL_HOST", "192.168.48.121"),
+            "port": int(_os.getenv("MYSQL_PORT", "3306")),
+            "user": _os.getenv("MYSQL_USER", "offer"),
+            "password": _os.getenv("MYSQL_PASSWORD", "123456"),
+            "database": _os.getenv("MYSQL_DATABASE", "dify_pro"),
+            "charset": "utf8mb4",
+        }
 
     try:
         body = await request.json()
