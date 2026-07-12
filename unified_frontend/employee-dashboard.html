@@ -67,11 +67,20 @@
               <span class="suggestion" onclick="quickSend('查看组织架构')">🏢 组织架构</span>
               <span class="suggestion" onclick="quickSend('查询投诉处理')">📮 投诉处理</span>
               <span class="suggestion" onclick="quickSend('新增客户: 张三, 25岁, 本科, 德国留学')">➕ 录入客户</span>
+              <span class="suggestion" onclick="document.getElementById('batchFileInput').click()">📎 批量导入</span>
             </div>
           </div>
         </div>
+        <!-- 批量导入文件预览区 -->
+        <div class="batch-file-bar" id="batchFileBar" style="display:none">
+          <span class="batch-file-info" id="batchFileInfo"></span>
+          <button class="batch-file-clear" onclick="clearBatchFiles()">×</button>
+        </div>
         <div class="chat-input-area">
-          <input id="chatInput" placeholder="输入消息，Enter 发送..." />
+          <button class="chat-voice-btn" id="voiceBtn" title="语音输入">🎤</button>
+          <button class="chat-attach-btn" onclick="document.getElementById('batchFileInput').click()" title="上传简历">📎</button>
+          <input type="file" id="batchFileInput" accept=".txt,.pdf,.docx" multiple style="display:none">
+          <input id="chatInput" placeholder="输入消息，Enter 发送... 或粘贴客户信息批量导入" />
           <button id="sendBtn">发送</button>
         </div>
       </div>
@@ -177,6 +186,10 @@
 <script src="/portal/js/utils.js"></script>
 <script src="/portal/js/auth.js"></script>
 <script src="/portal/js/chat.js"></script>
-<script src="/portal/js/employee-dashboard.js"></script>
+<script src="/portal/js/employee-dashboard.js?v=2"></script>
+<script>
+  console.log('[DEBUG] dify_auth:', localStorage.getItem('dify_auth'));
+  console.log('[DEBUG] role:', typeof Auth !== 'undefined' ? Auth.role() : 'Auth not loaded');
+</script>
 </body>
 </html>

@@ -145,7 +145,7 @@ function initResumeUpload() {
 
 function handleResumeFile(file) {
   const allowedExt = ['txt', 'pdf', 'docx'];
-  const ext = file.name.rsplit('.', 1)[-1].toLowerCase();
+  const ext = file.name.split('.').pop().toLowerCase();
   if (!allowedExt.includes(ext)) {
     showDiagnoseError('不支持的文件格式，仅支持 TXT / PDF / DOCX');
     return;
@@ -197,7 +197,7 @@ function submitResume() {
       if (data.code !== 0) throw new Error(data.msg || '诊断失败');
 
       const result = data.data.assessment_result || '诊断完成，无详细结论。';
-      resultContent.textContent = result;
+      resultContent.innerHTML = result.replace(/\\n/g, '\n').replace(/\n/g, '<br>');
       if (result.includes('已通过') && !result.includes('已通过 0 人')) {
         resultBox.classList.add('success');
         resultTitle.textContent = '研判结论 - 已通过';
@@ -289,7 +289,7 @@ function initSmartDiagnose() {
       }
 
       const result = data.data.assessment_result || '诊断完成，无详细结论。';
-      resultContent.textContent = result;
+      resultContent.innerHTML = result.replace(/\\n/g, '\n').replace(/\n/g, '<br>');
 
       // 根据结论判断是"通过"还是"未通过"
       if (result.includes('已通过') && !result.includes('已通过 0 人')) {
