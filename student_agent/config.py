@@ -14,7 +14,7 @@ if os.path.exists(_env_path):
 
 # ========== MySQL 数据库配置 ==========
 DB_CONFIG = {
-    "host": os.getenv("MYSQL_HOST", "127.0.0.1"),
+    "host": os.getenv("MYSQL_HOST", "192.168.48.121"),
     "port": int(os.getenv("MYSQL_PORT", "3306")),
     "user": os.getenv("MYSQL_USER", "root"),
     "password": os.getenv("MYSQL_PASSWORD", "123456"),
