@@ -25,8 +25,8 @@ DB_CONFIG = {
 # ========== LLM 配置（OpenAI 兼容接口） ==========
 LLM_CONFIG = {
     "api_key": os.getenv("LLM_API_KEY", "sk-your-api-key-here"),
-    "base_url": os.getenv("LLM_BASE_URL", "https://dashscope.aliyuncs.com/compatible-mode/v1"),
-    "model": os.getenv("LLM_MODEL", "qwen-plus"),
+    "base_url": os.getenv("LLM_BASE_URL", "https://api.deepseek.com"),
+    "model": os.getenv("LLM_MODEL", "deepseek-chat"),
 }
 
 # ========== 服务配置 ==========

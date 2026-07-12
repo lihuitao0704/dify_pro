@@ -171,13 +171,6 @@ async def auth_login(request: Request):
     if not username or not password:
         return {"success": False, "message": "请提供用户名和密码"}
 
-    def check_pw(plain, stored):
-        try:
-            import bcrypt
-            return bcrypt.checkpw(plain.encode(), stored.encode())
-        except Exception:
-            return plain == stored
-
     try:
         conn = pymysql.connect(**DB_CONFIG)
         conn.autocommit(True)
@@ -194,7 +187,7 @@ async def auth_login(request: Request):
                 return {"success": False, "message": "用户名或密码不正确"}
             cols = [c[0] for c in cur.description]
             user = dict(zip(cols, row))
-            if not check_pw(password, user["password"]):
+            if password != user["password"]:
                 return {"success": False, "message": "用户名或密码不正确"}
             uid = user.get("student_id") or user["user_id"]
             dname = user["real_name"] or user["username"]

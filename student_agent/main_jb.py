@@ -7,12 +7,6 @@ import os
 import logging
 import traceback
 import uvicorn
-from typing import Optional
-
-try:
-    import bcrypt
-except ImportError:
-    bcrypt = None
 
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
@@ -134,26 +128,6 @@ class LeaveSubmitRequest(BaseModel):
 
 
 # ============================================================
-#  密码工具
-# ============================================================
-def _verify_password(plain: str, stored: str) -> bool:
-    if bcrypt is not None:
-        try:
-            return bcrypt.checkpw(plain.encode(), stored.encode())
-        except (ValueError, AttributeError):
-            pass
-    return plain == stored
-
-def _hash_password(plain: str) -> str:
-    if bcrypt is not None:
-        try:
-            return bcrypt.hashpw(plain.encode(), bcrypt.gensalt()).decode()
-        except (ValueError, AttributeError):
-            pass
-    return plain
-
-
-# ============================================================
 #  登录接口
 # ============================================================
 @app.post("/auth/login")
@@ -172,16 +146,8 @@ async def login(request: Request):
             (username,))
         if not user:
             return {"success": False, "message": "用户名或密码不正确"}
-        if not _verify_password(password, user["password"]):
+        if password != user["password"]:
             return {"success": False, "message": "用户名或密码不正确"}
-
-        if not user["password"].startswith("$2b$") and not user["password"].startswith("$2a$"):
-            try:
-                execute("UPDATE account SET password = %s WHERE user_id = %s",
-                        (_hash_password(password), user["user_id"]))
-                logger.info("密码已升级为 bcrypt: user=%s", user["username"])
-            except Exception:
-                logger.warning("bcrypt 升级失败: user=%s", user["username"])
 
         sid = user.get("student_id") or user["user_id"]
         display_name = user["real_name"] or user["username"]
