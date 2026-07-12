@@ -1,0 +1,19 @@
+INFO:     Started server process [27904]
+INFO:     Waiting for application startup.
+INFO:     Application startup complete.
+INFO:     Uvicorn running on http://0.0.0.0:8002 (Press CTRL+C to quit)
+2026-07-11 14:53:08 [INFO] HTTP Request: POST https://ws-80gz91pjbhgouudd.cn-beijing.maas.aliyuncs.com/compatible-mode/v1/chat/completions "HTTP/1.1 200 OK"
+2026-07-11 14:53:08 [INFO] 输入: 研判测试张三 → 意图: evaluate_one | 目标: ['张三']
+2026-07-11 14:53:32 [INFO] HTTP Request: POST https://ws-80gz91pjbhgouudd.cn-beijing.maas.aliyuncs.com/compatible-mode/v1/chat/completions "HTTP/1.1 200 OK"
+2026-07-11 14:53:44 [INFO] HTTP Request: POST https://ws-80gz91pjbhgouudd.cn-beijing.maas.aliyuncs.com/compatible-mode/v1/chat/completions "HTTP/1.1 200 OK"
+INFO:     127.0.0.1:52899 - "POST /api/agent/assessment HTTP/1.1" 200 OK
+2026-07-11 14:54:21 [INFO] HTTP Request: POST https://ws-80gz91pjbhgouudd.cn-beijing.maas.aliyuncs.com/compatible-mode/v1/chat/completions "HTTP/1.1 200 OK"
+2026-07-11 14:54:21 [INFO] 输入: 研判全部用户 → 意图: evaluate_all | 目标: []
+2026-07-11 14:54:38 [INFO] HTTP Request: POST https://ws-80gz91pjbhgouudd.cn-beijing.maas.aliyuncs.com/compatible-mode/v1/chat/completions "HTTP/1.1 200 OK"
+2026-07-11 14:54:53 [INFO] HTTP Request: POST https://ws-80gz91pjbhgouudd.cn-beijing.maas.aliyuncs.com/compatible-mode/v1/chat/completions "HTTP/1.1 200 OK"
+INFO:     127.0.0.1:52954 - "POST /api/agent/assessment HTTP/1.1" 200 OK
+INFO:     127.0.0.1:53044 - "GET /docs HTTP/1.1" 200 OK
+INFO:     127.0.0.1:53044 - "GET /openapi.json HTTP/1.1" 200 OK
+2026-07-11 14:56:15 [INFO] HTTP Request: POST https://ws-80gz91pjbhgouudd.cn-beijing.maas.aliyuncs.com/compatible-mode/v1/chat/completions "HTTP/1.1 200 OK"
+2026-07-11 14:56:15 [INFO] 输入: 研判李四的用户信息 → 意图: evaluate_one | 目标: ['李四']
+INFO:     127.0.0.1:53045 - "POST /api/agent/assessment HTTP/1.1" 200 OK
