@@ -6,6 +6,7 @@ Swagger: /docs
 
 import os
 import sys
+import logging
 from pathlib import Path
 
 # 确保能 import customer_agent 包（当直接运行 main.py 时需加上级目录到 sys.path）
@@ -18,19 +19,12 @@ from fastapi.middleware.cors import CORSMiddleware
 from starlette.middleware.base import BaseHTTPMiddleware
 from fastapi.staticfiles import StaticFiles
 
-from customer_agent.api import (
-    chat as chat_api,
-    admin as admin_api,
-    courses as courses_api,
-    profiles as profiles_api,
-    consultations as consultations_api,
-    nl2sql as nl2sql_api,
-    events as events_api,
-)
+from customer_agent.api import chat as chat_api, admin as admin_api
 from customer_agent.knowledge import get_kb
 from customer_agent.config import config
-from customer_agent.services.nl2sql import ensure_unique_constraints
+from customer_agent.security import create_token, verify_token
 
+logger = logging.getLogger(__name__)
 
 # ============================================================
 # UTF-8 编码中间件（防止Dify调用时出现 ASCII 编码错误）
@@ -66,19 +60,56 @@ async def lifespan(app: FastAPI):
     # 初始化知识库
     kb = get_kb()
 
-    # 确保活动 / 讲座相关唯一约束 (合并自 Event_Lecture)
-    ensure_unique_constraints()
-
     print(f"  知识库: {len(kb.chunks)} chunks, {len(kb.faq_map)} FAQ")
     print(f"  文档: http://localhost:{config.AGENT_PORT}/docs")
     print(f"  知识库状态: http://localhost:{config.AGENT_PORT}/admin/kb-status")
     print(f"  LLM模型: {config.LLM_MODEL}")
-    print(f"  数据库: {config.MYSQL_HOST}:{config.MYSQL_PORT}/{config.MYSQL_DATABASE}")
-    print(f"  NL2SQL 表白名单: {config.NL2SQL_ALLOWED_TABLES}")
-    print(f"  桥接 Assessment: {config.ASSESSMENT_URL}")
+    print(f"  桥接 study_abroad_agent: {config.STUDY_ABROAD_URL}")
+    print(f"  桥接 Event&Lecture: {config.EVENT_LECTURE_URL}")
     print("=" * 55)
 
     yield
+
+
+# ============================================================
+# Bearer Token 鉴权中间件
+# ============================================================
+_AUTH_SKIP_PATHS = {"/", "/health", "/docs", "/openapi.json", "/favicon.ico",
+                    "/static", "/login", "/auth/login", "/portal"}
+
+
+class BearerAuthMiddleware(BaseHTTPMiddleware):
+    """验证 Bearer Token，将解析后的用户信息注入 request.state"""
+
+    async def dispatch(self, request: Request, call_next):
+        # 用 scope 取 path（兼容 BaseHTTPMiddleware 的 _CachedRequest 包装）
+        path = request.scope.get("path", "") if hasattr(request, "scope") else str(request.url.path)
+        method = request.scope.get("method", "GET") if hasattr(request, "scope") else request.method
+
+        # 跳过不需要鉴权的路径
+        if any(path.startswith(p) for p in _AUTH_SKIP_PATHS):
+            return await call_next(request)
+
+        auth = request.headers.get("authorization", "")
+        if not auth.lower().startswith("bearer "):
+            # /chat 允许无 token 访问（公开体验模式），但不注入用户信息
+            if path == "/chat" and method == "POST":
+                return await call_next(request)
+            return JSONResponse(status_code=401, content={"detail": "缺少认证令牌"})
+
+        token = auth.split(" ", 1)[-1].strip()
+        payload = verify_token(token)
+        if payload is None:
+            # /chat 允许过期 token 降级为公开体验
+            if path == "/chat" and method == "POST":
+                return await call_next(request)
+            return JSONResponse(status_code=401, content={"detail": "令牌无效或已过期"})
+
+        # 注入用户信息供后续端点使用
+        request.state.auth_user_id = payload.get("user_id")
+        request.state.auth_user_type = payload.get("user_type")
+        request.state.auth_username = payload.get("username")
+        return await call_next(request)
 
 
 # ============================================================
@@ -102,7 +133,9 @@ app = FastAPI(
     lifespan=lifespan,
 )
 
-# 中间件（后添加的先执行）
+# 中间件（Starlette 后添加 = 外层先执行）
+# 执行顺序：BearerAuth → UTF8 → CORS
+app.add_middleware(BearerAuthMiddleware)
 app.add_middleware(UTF8Middleware)
 app.add_middleware(
     CORSMiddleware,
@@ -114,13 +147,6 @@ app.add_middleware(
 # 路由
 app.include_router(chat_api.router)
 app.include_router(admin_api.router)
-
-# 合并自 study_abroad_agent + Event&Lecture 的 CRUD 路由 (前缀 /api/v1)
-app.include_router(courses_api.router, prefix="/api/v1")
-app.include_router(profiles_api.router, prefix="/api/v1")
-app.include_router(consultations_api.router, prefix="/api/v1")
-app.include_router(nl2sql_api.router, prefix="/api/v1")
-app.include_router(events_api.router, prefix="/api/v1")
 
 # 静态文件服务（前端页面）
 _static_dir = str(Path(__file__).resolve().parent / "static")
@@ -209,13 +235,32 @@ async def auth_login(request: Request):
             user = dict(zip(cols, row))
             if password != user["password"]:
                 return {"success": False, "message": "用户名或密码不正确"}
+
+            # 角色校验：客服端仅允许学员登录
+            actual_type = (user.get("user_type") or "").strip()
+            if actual_type != "学员":
+                logger.warning("客服端拒绝非学员登录: username=%s user_type=%r", username, actual_type)
+                return {"success": False, "message": f"该账号为{actual_type}账号，请使用员工登录入口"} if actual_type else \
+                       {"success": False, "message": "该账号非学生账号，请使用员工登录入口"}
+
             uid = user.get("student_id") or user["user_id"]
             dname = user["real_name"] or user["username"]
             if user.get("student_id"):
                 cur.execute("SELECT name FROM student WHERE id = %s", (user["student_id"],))
                 sr = cur.fetchone()
                 if sr: dname = sr[0]
-            return {"success": True, "student": {
+
+            # 签发 JWT
+            token = create_token(
+                user_id=user["user_id"],
+                username=user["username"],
+                user_type=user["user_type"],
+                real_name=user["real_name"],
+            )
+            expire_hours = int(os.getenv("CUSTOMER_JWT_EXPIRE_HOURS", "24"))
+
+            return {"success": True, "token": token, "token_type": "Bearer",
+                    "expire_hours": expire_hours, "student": {
                 "id": uid, "name": dname, "user_id": user["user_id"],
                 "user_type": user["user_type"], "student_id": user.get("student_id"),
                 "phone": user.get("phone",""), "email": user.get("email","")}}

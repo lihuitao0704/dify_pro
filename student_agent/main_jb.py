@@ -191,6 +191,12 @@ async def login(request: Request):
         if password != user["password"]:
             return {"success": False, "message": "用户名或密码不正确"}
 
+        # 角色校验：学生端仅允许学员登录
+        actual_type = (user.get("user_type") or "").strip()
+        if actual_type != "学员":
+            logger.warning("学生端拒绝非学员登录: username=%s user_type=%r", username, actual_type)
+            return {"success": False, "message": f"该账号为{actual_type}账号，请使用员工登录入口"}
+
         sid = user.get("student_id") or user["user_id"]
         display_name = user["real_name"] or user["username"]
         if user.get("student_id"):
