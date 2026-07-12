@@ -239,6 +239,7 @@ def _handle_life_guide(student_id: int, message: str, params: dict, context: lis
 
     # 活动/讲座查询
     if any(kw in message for kw in ["活动", "社团", "讲座", "分享会", "见面会", "迎新"]):
+        is_lecture = any(kw in message for kw in ["讲座", "分享会", "见面会"])
         table = "lectures" if is_lecture else "activities"
         rows = _db.query(
             f"SELECT title, event_time, location, registration_method, "

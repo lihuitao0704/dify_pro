@@ -6,6 +6,7 @@
   <title>学生工作台 · 粤教留学</title>
   <link rel="stylesheet" href="/portal/css/base.css" />
   <link rel="stylesheet" href="/portal/css/dashboard.css" />
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 </head>
 <body>
 
@@ -87,11 +88,48 @@
           <div class="panel-title">😊 我的状态</div>
           <div class="card" id="emotionCard">
             <div class="card-title">🧠 心理画像</div>
+            <!-- 待处理预警提醒 -->
+            <div class="alert-reminder" id="alertReminder" style="display:none">
+              ⚠️ 你有一条待处理的心理关怀提醒
+            </div>
+            <!-- 情绪概览 -->
             <div class="emotion-hero">
               <div class="emoji" id="emotionEmoji">😊</div>
               <div class="emotion-name" id="emotionStatus">加载中...</div>
               <div class="risk-meta" id="emotionRisk">--</div>
               <div class="risk-bar"><div class="risk-bar-fill" id="riskFill" style="width:0%"></div></div>
+            </div>
+            <!-- 情绪趋势图 -->
+            <div class="emotion-section-title">📈 情绪趋势（近14天）</div>
+            <div class="emotion-chart-wrap">
+              <canvas id="emotionTrendChart"></canvas>
+            </div>
+            <div class="chart-empty" id="trendEmpty" style="display:none">暂无足够数据，多和小留聊天吧～</div>
+            <!-- 情绪分布 -->
+            <div class="emotion-section-title">🎨 情绪分布</div>
+            <div class="emotion-donut-wrap">
+              <canvas id="emotionDistChart"></canvas>
+            </div>
+            <div class="chart-empty" id="distEmpty" style="display:none">暂无情绪数据</div>
+            <!-- 关键指标 -->
+            <div class="emotion-section-title">📊 关键指标</div>
+            <div class="metrics-row">
+              <div class="metric-item">
+                <div class="metric-value" id="metricNegKeywords">0</div>
+                <div class="metric-label">负面关键词</div>
+              </div>
+              <div class="metric-item">
+                <div class="metric-value" id="metricConsDays">0</div>
+                <div class="metric-label">连续负面天数</div>
+              </div>
+              <div class="metric-item">
+                <div class="metric-value" id="metricLastAssess">--</div>
+                <div class="metric-label">最近评估</div>
+              </div>
+            </div>
+            <!-- 个性化建议 -->
+            <div class="suggestion-box suggestion-low" id="suggestionBox">
+              <div id="suggestionText">加载中...</div>
             </div>
           </div>
           <div class="card">

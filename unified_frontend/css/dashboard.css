@@ -159,6 +159,32 @@ body{font-family:"SF Pro Display","PingFang SC","Microsoft YaHei",sans-serif;bac
 .emotion-hero .emotion-name{font-size:18px;font-weight:700;margin:4px 0}
 .emotion-hero .risk-meta{font-size:12px;color:#64748b}
 
+/* ── 预警提醒条 ── */
+.alert-reminder{background:#fff7ed;border:1px solid #fdba74;border-radius:8px;padding:8px 12px;font-size:12px;color:#c2410c;margin-bottom:10px;text-align:center;font-weight:600;animation:pulse 2s infinite}
+
+/* ── 情绪图表 ── */
+.emotion-section-title{font-size:11px;font-weight:700;color:#64748b;margin:14px 0 6px;letter-spacing:.3px}
+.emotion-chart-wrap{height:160px;position:relative}
+.emotion-chart-wrap canvas{width:100%!important;height:100%!important}
+.emotion-donut-wrap{height:150px;position:relative;display:flex;justify-content:center}
+.emotion-donut-wrap canvas{max-width:150px!important;max-height:150px!important}
+.chart-empty{text-align:center;padding:20px 10px;color:#94a3b8;font-size:12px}
+
+/* ── 关键指标行 ── */
+.metrics-row{display:flex;gap:8px;margin:8px 0}
+.metric-item{flex:1;background:#fff;border:1px solid var(--border);border-radius:8px;padding:10px 8px;text-align:center}
+.metric-item .metric-value{font-size:20px;font-weight:700;color:#1e293b;line-height:1.2}
+.metric-item .metric-label{font-size:10px;color:#94a3b8;margin-top:2px}
+.metric-item.warn .metric-value{color:#f97316}
+.metric-item.danger .metric-value{color:#dc2626}
+
+/* ── 个性化建议 ── */
+.suggestion-box{margin-top:10px;padding:10px 12px;border-radius:8px;font-size:12px;line-height:1.6;border-left:3px solid}
+.suggestion-box.suggestion-low{background:#f0fdf4;border-color:#10b981;color:#065f46}
+.suggestion-box.suggestion-medium{background:#fffbeb;border-color:#f59e0b;color:#92400e}
+.suggestion-box.suggestion-high{background:#fff7ed;border-color:#f97316;color:#9a3412}
+.suggestion-box.suggestion-critical{background:#fef2f2;border-color:#dc2626;color:#991b1b}
+
 /* ── Quick Actions ── */
 .quick-actions{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:16px}
 .quick-action{padding:8px 14px;background:#f1f5f9;border:1px solid var(--border);border-radius:20px;font-size:12px;cursor:pointer;transition:all .15s;white-space:nowrap}

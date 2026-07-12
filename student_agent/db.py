@@ -30,9 +30,19 @@ def _create_conn():
     return conn
 
 def get_conn():
-    """获取数据库连接（来自连接池）"""
+    """获取数据库连接（来自连接池），自动检测并丢弃已断开的连接"""
     try:
-        return _get_pool().get_nowait()
+        conn = _get_pool().get_nowait()
+        try:
+            conn.ping(reconnect=False)
+        except Exception:
+            # 连接已断开，关闭并创建新连接
+            try:
+                conn.close()
+            except Exception:
+                pass
+            conn = _create_conn()
+        return conn
     except Empty:
         return _create_conn()
 

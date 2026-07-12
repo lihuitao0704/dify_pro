@@ -5,6 +5,9 @@
 
 const STUDENT_API = 'http://localhost:8000';
 let chat;
+// Chart.js 实例引用
+let trendChart = null;
+let distChart = null;
 
 document.addEventListener('DOMContentLoaded', () => {
   // ── 权限检查 ──
@@ -115,26 +118,229 @@ function switchPanel(panel) {
   if (panel === 'progress') refreshProgress();
 }
 
+// ── 销毁已有图表 ──
+function destroyCharts() {
+  if (trendChart) { trendChart.destroy(); trendChart = null; }
+  if (distChart) { distChart.destroy(); distChart = null; }
+}
+
+// ── 渲染情绪趋势折线图 ──
+function renderEmotionTrend(history) {
+  const canvas = el('emotionTrendChart');
+  const empty = el('trendEmpty');
+  if (!canvas) return;
+
+  if (!history || history.length < 2) {
+    canvas.style.display = 'none';
+    if (empty) empty.style.display = '';
+    return;
+  }
+  canvas.style.display = '';
+  if (empty) empty.style.display = 'none';
+
+  const recent = history.slice(-14);
+  const labels = recent.map(h => (h.date || '').slice(-5)); // MM-DD
+  const scores = recent.map(h => h.score || 0);
+
+  // 根据平均风险分确定渐变主色
+  const avgScore = scores.reduce((a, b) => a + b, 0) / scores.length;
+  let mainColor;
+  if (avgScore < 30) mainColor = '#10b981';
+  else if (avgScore < 60) mainColor = '#f59e0b';
+  else if (avgScore < 80) mainColor = '#f97316';
+  else mainColor = '#dc2626';
+
+  const ctx = canvas.getContext('2d');
+  trendChart = new Chart(ctx, {
+    type: 'line',
+    data: {
+      labels: labels,
+      datasets: [{
+        label: '风险分数',
+        data: scores,
+        borderColor: mainColor,
+        backgroundColor: mainColor + '20',
+        borderWidth: 2,
+        fill: true,
+        tension: 0.4,
+        pointRadius: 3,
+        pointBackgroundColor: mainColor,
+        pointBorderColor: '#fff',
+        pointBorderWidth: 1,
+        pointHoverRadius: 5,
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          callbacks: {
+            label: ctx => `风险分: ${ctx.parsed.y}/100`
+          }
+        }
+      },
+      scales: {
+        x: {
+          grid: { display: false },
+          ticks: { font: { size: 10 }, color: '#94a3b8', maxRotation: 0 }
+        },
+        y: {
+          min: 0,
+          max: 100,
+          grid: { color: '#f1f5f9' },
+          ticks: { font: { size: 10 }, color: '#94a3b8', stepSize: 25, callback: v => v }
+        }
+      },
+      interaction: { intersect: false, mode: 'index' }
+    }
+  });
+}
+
+// ── 渲染情绪分布环形图 ──
+function renderEmotionDist(history) {
+  const canvas = el('emotionDistChart');
+  const empty = el('distEmpty');
+  if (!canvas) return;
+
+  if (!history || history.length === 0) {
+    canvas.style.display = 'none';
+    if (empty) empty.style.display = '';
+    return;
+  }
+  canvas.style.display = '';
+  if (empty) empty.style.display = 'none';
+
+  // 统计各情绪出现次数
+  const countMap = {};
+  history.forEach(h => {
+    const e = h.emotion || '未知';
+    countMap[e] = (countMap[e] || 0) + 1;
+  });
+
+  const DIST_COLORS = {
+    '正常': '#10b981', '积极': '#06b6d4', '焦虑': '#f59e0b',
+    '低落': '#64748b', '孤独': '#8b5cf6', '适应困难': '#f97316',
+    '高危': '#dc2626', '未知': '#cbd5e1'
+  };
+  const labels = Object.keys(countMap);
+  const data = Object.values(countMap);
+  const colors = labels.map(l => DIST_COLORS[l] || '#94a3b8');
+
+  const ctx = canvas.getContext('2d');
+  distChart = new Chart(ctx, {
+    type: 'doughnut',
+    data: {
+      labels: labels,
+      datasets: [{
+        data: data,
+        backgroundColor: colors,
+        borderColor: '#fff',
+        borderWidth: 2,
+        hoverBorderWidth: 3,
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: true,
+      cutout: '60%',
+      plugins: {
+        legend: {
+          position: 'bottom',
+          labels: {
+            font: { size: 10 },
+            padding: 12,
+            usePointStyle: true,
+            pointStyleWidth: 8,
+          }
+        },
+        tooltip: {
+          callbacks: {
+            label: ctx => ` ${ctx.label}: ${ctx.parsed}次`
+          }
+        }
+      }
+    }
+  });
+}
+
+// ── 更新个性化建议 ──
+function updateSuggestion(riskLevel) {
+  const box = el('suggestionBox');
+  const text = el('suggestionText');
+  if (!box || !text) return;
+
+  const config = {
+    low:     { cls: 'suggestion-low',     text: '🎉 当前状态良好，保持积极心态！' },
+    medium:  { cls: 'suggestion-medium',  text: '💪 最近有些压力，注意自我调节～需要的话可以随时和我聊聊 💙' },
+    high:    { cls: 'suggestion-high',    text: '⚠️ 情绪波动较大，建议多关注自己的感受，也可以找信任的老师或朋友倾诉' },
+    critical:{ cls: 'suggestion-critical',text: '🚨 如果你感到非常难受，请不要一个人扛着。寻求专业心理支持是勇敢的表现，你不是一个人 💙' },
+  };
+  const c = config[riskLevel] || config['low'];
+  box.className = 'suggestion-box ' + c.cls;
+  text.textContent = c.text;
+}
+
 // ── 刷新我的状态 ──
 async function refreshProfile() {
   const id = Auth.userId();
   try {
     const r = await fetch(`${STUDENT_API}/my/profile/${id}`);
     const data = await r.json();
-    const emotion = data.mental?.emotion || '正常';
-    const riskLevel = data.mental?.risk_level || 'low';
-    const score = data.mental?.risk_score || 0;
+    const mental = data.mental || {};
+    const emotion = mental.emotion || '正常';
+    const riskLevel = mental.risk_level || 'low';
+    const score = mental.risk_score || 0;
+    const history = mental.emotion_history || [];
 
     const riskPct = Math.min(100, Math.max(0, score));
     const card = el('emotionCard');
     card.className = 'card risk-' + riskLevel;
 
+    // 情绪概览
     el('emotionEmoji').textContent = EMOJI_MAP[emotion] || '😊';
     el('emotionStatus').textContent = emotion;
     el('emotionStatus').style.color = { low:'#10b981', medium:'#f59e0b', high:'#f97316', critical:'#dc2626' }[riskLevel] || '#10b981';
     el('emotionRisk').textContent = `风险评分 ${score}/100  ·  ${riskLevel === 'low' ? '状态良好' : riskLevel === 'medium' ? '需关注' : riskLevel === 'high' ? '⚠️ 高风险' : '🚨 危急'}`;
     el('riskFill').style.width = riskPct + '%';
 
+    // 预警提醒
+    const alertBox = el('alertReminder');
+    if (alertBox) {
+      alertBox.style.display = (mental.recent_alert && mental.recent_alert.follow_up_status === 'pending') ? '' : 'none';
+    }
+
+    // 趋势图
+    destroyCharts();
+    renderEmotionTrend(history);
+    // 分布图
+    renderEmotionDist(history);
+
+    // 关键指标
+    const negKw = mental.negative_keywords_count || 0;
+    const consDays = mental.consecutive_negative_days || 0;
+    const lastAssess = mental.last_assessment_at;
+
+    const negEl = el('metricNegKeywords');
+    const consEl = el('metricConsDays');
+    const assessEl = el('metricLastAssess');
+    if (negEl) {
+      negEl.textContent = negKw;
+      negEl.parentElement.className = 'metric-item' + (negKw > 10 ? ' danger' : negKw > 5 ? ' warn' : '');
+    }
+    if (consEl) {
+      consEl.textContent = consDays;
+      consEl.parentElement.className = 'metric-item' + (consDays > 3 ? ' danger' : consDays > 1 ? ' warn' : '');
+    }
+    if (assessEl) {
+      assessEl.textContent = lastAssess ? timeAgo(lastAssess) : '--';
+    }
+
+    // 个性化建议
+    updateSuggestion(riskLevel);
+
+    // 升学意向
     const upEl = el('upgradeStatus');
     if (data.upgrades && data.upgrades.length > 0) {
       const u = data.upgrades[0];

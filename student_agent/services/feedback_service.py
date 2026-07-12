@@ -91,7 +91,7 @@ def handle_feedback(student_id: int, message: str, params: dict, context: list) 
 def update_ticket_status(ticket_id: int, status: str, handler_user_id: int = None) -> bool:
     update_data = {"handle_status": status, "update_time": datetime.now().strftime("%Y-%m-%d %H:%M:%S")}
     if handler_user_id:
-        update_data["handler_user_id"] = handler_user_id
+        update_data["handler_id"] = handler_user_id  # student_complaint 表实际列名
     return db.update("student_complaint", {"id": ticket_id}, update_data) > 0
 
 
