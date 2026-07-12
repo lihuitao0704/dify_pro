@@ -18,10 +18,19 @@ import time
 import signal
 import argparse
 from pathlib import Path
+from typing import TypedDict
+
+
+class ServiceConfig(TypedDict):
+    name: str
+    module: str
+    port: int
+    dir: str
+    cmd: list[str]
 
 ROOT = Path(__file__).resolve().parent
 
-SERVICES = {
+SERVICES: dict[str, ServiceConfig] = {
     "study_abroad": {
         "name": "课程推荐引擎",
         "module": "study_abroad_agent.app",
