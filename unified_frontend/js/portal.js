@@ -37,70 +37,57 @@ function initLoginTabs() {
 }
 
 function initLoginForms() {
-  const STUDENT_LOGIN_API = 'http://localhost:8000/auth/login';
+  const LOGIN_API = 'http://localhost:8000/auth/login';
 
-  // Student login — 统一账户密码，查 account 表
+  // 学生登录
   document.getElementById('studentLoginForm').addEventListener('submit', async e => {
     e.preventDefault();
     const user = document.getElementById('studentUser').value.trim();
     const pass = document.getElementById('studentPass').value;
+    if (!user || !pass) { toast('请输入用户名和密码', 'error'); return; }
     try {
-      const resp = await fetch(STUDENT_LOGIN_API, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+      const resp = await fetch(LOGIN_API, {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ username: user, password: pass }),
       });
       const r = await resp.json();
       if (r.success) {
         const s = r.student;
-        Auth.set({
-          role: 'student',
-          user_id: s.id,
-          user_name: s.name,
-          student: s,
-          user_type: s.user_type || '',
-          token: 'token-' + Date.now(),
-          exp: Date.now()/1000 + 86400,
-        });
-        toast('登录成功！正在进入学生助手...', 'success');
-        setTimeout(() => location.replace('/portal/student-dashboard'), 600);
+        Auth.set({ role: 'student', user_id: s.id, user_name: s.name,
+                   student: s, user_type: s.user_type || '',
+                   token: 'token-' + Date.now(), exp: Date.now()/1000 + 86400 });
+        location.href = '/portal/student-dashboard';
       } else {
         toast(r.message || '用户名或密码不正确', 'error');
       }
     } catch (err) {
-      toast('无法连接学生服务：' + err.message, 'error');
+      toast('无法连接服务，请检查网络后重试', 'error');
     }
   });
 
-  // Employee login — 统一 account 表验证
+  // 员工登录
   document.getElementById('employeeLoginForm').addEventListener('submit', async e => {
     e.preventDefault();
     const user = document.getElementById('employeeUser').value.trim();
     const pass = document.getElementById('employeePass').value;
+    if (!user || !pass) { toast('请输入用户名和密码', 'error'); return; }
     try {
-      const resp = await fetch('http://localhost:8000/auth/login', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+      const resp = await fetch(LOGIN_API, {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ username: user, password: pass }),
       });
       const r = await resp.json();
       if (r.success) {
         const s = r.student;
-        Auth.set({
-          role: 'employee',
-          user_id: s.user_id,
-          user_name: s.name,
-          user_type: s.user_type || '员工',
-          token: 'token-' + Date.now(),
-          exp: Date.now()/1000 + 86400,
-        });
-        toast('登录成功！正在进入企业工作台...', 'success');
-        setTimeout(() => location.replace('/portal/employee-dashboard'), 600);
+        Auth.set({ role: 'employee', user_id: s.user_id, user_name: s.name,
+                   user_type: s.user_type || '员工',
+                   token: 'token-' + Date.now(), exp: Date.now()/1000 + 86400 });
+        location.href = '/portal/employee-dashboard';
       } else {
         toast(r.message || '用户名或密码不正确', 'error');
       }
     } catch (err) {
-      toast('登录失败：' + err.message, 'error');
+      toast('无法连接服务，请检查网络后重试', 'error');
     }
   });
 }
