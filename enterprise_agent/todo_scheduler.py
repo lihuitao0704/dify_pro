@@ -6,7 +6,6 @@ enterprise_agent/todo_scheduler.py — 主动待办推送
 """
 import logging
 import threading
-import time
 from datetime import datetime
 from enterprise_agent.database import SessionLocal
 from sqlalchemy import text
@@ -14,14 +13,23 @@ from sqlalchemy import text
 logger = logging.getLogger("enterprise_agent.scheduler")
 
 _check_interval = 300  # 默认每5分钟扫描一次
-_running = False
+_stop_event = threading.Event()
 _thread = None
+_scan_lock = threading.Lock()  # 防止后台线程与API线程并发扫描
 
 
 def scan_pending_todos():
-    """扫描所有待处理事项，返回按用户分组的待办统计"""
-    db = SessionLocal()
+    """
+    扫描所有待处理事项，返回按用户分组的待办统计。
+    使用线程锁防止后台调度与API请求并发执行导致连接池争抢。
+    """
+    if not _scan_lock.acquire(blocking=False):
+        logger.warning("待办扫描已在执行中，跳过本次扫描")
+        return []
+
+    db = None
     try:
+        db = SessionLocal()
         todos = []
 
         # 1. 待审批请假
@@ -31,7 +39,7 @@ def scan_pending_todos():
         if leaves and leaves.cnt > 0:
             todos.append({
                 "type": "leave_approval",
-                "title": f"待审批请假",
+                "title": "待审批请假",
                 "count": leaves.cnt,
                 "message": f"您有 {leaves.cnt} 条请假申请待审批",
                 "created_at": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
@@ -44,7 +52,7 @@ def scan_pending_todos():
         if complaints and complaints.cnt > 0:
             todos.append({
                 "type": "complaint",
-                "title": f"待处理投诉",
+                "title": "待处理投诉",
                 "count": complaints.cnt,
                 "message": f"有 {complaints.cnt} 条投诉待处理",
                 "created_at": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
@@ -57,7 +65,7 @@ def scan_pending_todos():
         if customers and customers.cnt > 0:
             todos.append({
                 "type": "customer_followup",
-                "title": f"待跟进客户",
+                "title": "待跟进客户",
                 "count": customers.cnt,
                 "message": f"有 {customers.cnt} 个意向客户待跟进",
                 "created_at": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
@@ -70,7 +78,7 @@ def scan_pending_todos():
         if in_progress and in_progress.cnt > 0:
             todos.append({
                 "type": "complaint_in_progress",
-                "title": f"处理中的投诉",
+                "title": "处理中的投诉",
                 "count": in_progress.cnt,
                 "message": f"有 {in_progress.cnt} 条投诉正在处理中，请关注进度",
                 "created_at": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
@@ -78,17 +86,18 @@ def scan_pending_todos():
 
         return todos
     except Exception as e:
-        logger.error(f"扫描待办失败: {e}")
+        logger.error("扫描待办失败: %s", e, exc_info=True)
         return []
     finally:
-        db.close()
+        if db:
+            db.close()
+        _scan_lock.release()
 
 
 def _scan_loop():
-    """后台扫描循环"""
-    global _running
+    """后台扫描循环（使用 Event.wait 实现实时停止）"""
     logger.info("待办推送调度器已启动，扫描间隔: %ds", _check_interval)
-    while _running:
+    while not _stop_event.is_set():
         try:
             todos = scan_pending_todos()
             if todos:
@@ -98,24 +107,28 @@ def _scan_loop():
                     logger.info("  - %s: %d 条", t["title"], t["count"])
         except Exception as e:
             logger.error("待办扫描异常: %s", e)
-        time.sleep(_check_interval)
+        # wait() 会在 _stop_event.set() 时立即返回，不等完整间隔
+        _stop_event.wait(_check_interval)
 
 
 def start_scheduler(interval: int = 300):
     """启动待办推送调度器"""
-    global _running, _thread, _check_interval
-    if _running:
+    global _thread, _check_interval
+    if _thread and _thread.is_alive():
+        logger.warning("待办推送调度器已在运行")
         return
+    _stop_event.clear()
     _check_interval = interval
-    _running = True
     _thread = threading.Thread(target=_scan_loop, daemon=True)
     _thread.start()
+    logger.info("待办推送调度器已启动")
 
 
 def stop_scheduler():
-    """停止调度器"""
-    global _running
-    _running = False
+    """停止调度器（Event 驱动，实时生效）"""
+    _stop_event.set()
+    if _thread:
+        _thread.join(timeout=3)
     logger.info("待办推送调度器已停止")
 
 

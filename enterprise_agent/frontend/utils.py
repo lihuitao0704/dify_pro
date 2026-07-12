@@ -11,6 +11,10 @@ API_BASE = "http://localhost:8001/api/agent"
 MAX_RETRIES = 2
 RETRY_DELAY = 0.5
 
+# 默认登录用户（前端测试用，生产环境从登录页获取）
+CURRENT_USER_ID = 1
+CURRENT_USER_TYPE = "管理者"
+
 
 def _request(method, path, params=None, body=None, user_id=None, user_type=None):
     """通用请求：带重试、超时、优雅降级"""

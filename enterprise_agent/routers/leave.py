@@ -7,19 +7,22 @@ GET    /api/agent/leave/todo           - 待审批列表
 """
 from fastapi import APIRouter, Depends, Query, HTTPException
 from sqlalchemy.orm import Session
-from datetime import datetime, date
+from datetime import datetime
 import logging
 
 from enterprise_agent.database import get_db
-from enterprise_agent.models import LeaveApplication, Account, Employee
+from enterprise_agent.models import LeaveApplication, Account
 from enterprise_agent.schemas import (
     ApiResponse, LeaveStudentRequest, LeaveEmployeeRequest,
     LeaveBatchApproveRequest
 )
-from enterprise_agent.utils import require_operator, is_manager
+from enterprise_agent.utils import require_operator, is_manager, parse_and_validate_dates
 
 logger = logging.getLogger("enterprise_agent.leave")
 router = APIRouter()
+
+# 合法请假类型（两处复用，提为常量避免不一致）
+VALID_LEAVE_TYPES = ("事假", "病假", "年假", "其他")
 
 
 # ==================== POST /api/agent/leave/student ====================
@@ -34,19 +37,14 @@ def leave_student(req: LeaveStudentRequest, db: Session = Depends(get_db)):
         require_operator(req.current_user_type)
 
         # 校验请假类型
-        valid_types = ("事假", "病假", "年假", "其他")
-        if req.leave_type not in valid_types:
-            return ApiResponse(code=400, msg=f"无效请假类型，可选：{', '.join(valid_types)}")
+        if req.leave_type not in VALID_LEAVE_TYPES:
+            return ApiResponse(code=400, msg=f"无效请假类型，可选：{', '.join(VALID_LEAVE_TYPES)}")
 
         # 校验日期
         try:
-            start = datetime.strptime(req.start_date, "%Y-%m-%d").date()
-            end = datetime.strptime(req.end_date, "%Y-%m-%d").date()
-        except ValueError:
-            return ApiResponse(code=400, msg="日期格式错误，请使用 YYYY-MM-DD 格式")
-
-        if end < start:
-            return ApiResponse(code=400, msg="结束日期不能早于开始日期")
+            start, end = parse_and_validate_dates(req.start_date, req.end_date)
+        except HTTPException as e:
+            return ApiResponse(code=400, msg=e.detail)
 
         leave = LeaveApplication(
             student_name=req.student_name.strip(),
@@ -62,6 +60,7 @@ def leave_student(req: LeaveStudentRequest, db: Session = Depends(get_db)):
         )
         db.add(leave)
         db.flush()
+        db.commit()
 
         logger.info(f"替学生请假成功: ID={leave.id}, 学生={req.student_name}")
         return ApiResponse(data={"leave_id": leave.id})
@@ -84,19 +83,14 @@ def leave_employee(req: LeaveEmployeeRequest, db: Session = Depends(get_db)):
         require_operator(req.current_user_type)
 
         # 校验请假类型
-        valid_types = ("事假", "病假", "年假", "其他")
-        if req.leave_type not in valid_types:
-            return ApiResponse(code=400, msg=f"无效请假类型，可选：{', '.join(valid_types)}")
+        if req.leave_type not in VALID_LEAVE_TYPES:
+            return ApiResponse(code=400, msg=f"无效请假类型，可选：{', '.join(VALID_LEAVE_TYPES)}")
 
         # 校验日期
         try:
-            start = datetime.strptime(req.start_date, "%Y-%m-%d").date()
-            end = datetime.strptime(req.end_date, "%Y-%m-%d").date()
-        except ValueError:
-            return ApiResponse(code=400, msg="日期格式错误，请使用 YYYY-MM-DD 格式")
-
-        if end < start:
-            return ApiResponse(code=400, msg="结束日期不能早于开始日期")
+            start, end = parse_and_validate_dates(req.start_date, req.end_date)
+        except HTTPException as e:
+            return ApiResponse(code=400, msg=e.detail)
 
         leave = LeaveApplication(
             leave_type=req.leave_type,
@@ -111,6 +105,7 @@ def leave_employee(req: LeaveEmployeeRequest, db: Session = Depends(get_db)):
         )
         db.add(leave)
         db.flush()
+        db.commit()
 
         logger.info(f"员工请假成功: ID={leave.id}, 用户ID={req.current_user_id}")
         return ApiResponse(data={"leave_id": leave.id})
@@ -130,7 +125,12 @@ def batch_approve_leave(req: LeaveBatchApproveRequest, db: Session = Depends(get
     action=approve 通过，action=reject 驳回
     """
     try:
-        if req.current_user_type != "管理者":
+        # 从数据库核实管理者身份（不信前端传参）
+        approver = db.query(Account).filter(
+            Account.user_id == req.current_user_id,
+            Account.status == 1,
+        ).first()
+        if not approver or approver.user_type != "管理者":
             return ApiResponse(code=403, msg="权限不足：仅管理者可审批")
 
         if not req.leave_ids:
@@ -145,14 +145,16 @@ def batch_approve_leave(req: LeaveBatchApproveRequest, db: Session = Depends(get
             LeaveApplication.status == 0,
         ).all()
 
-        if not leaves:
-            return ApiResponse(code=404, msg="未找到待审批的申请记录")
+        # 找出哪些ID不在待审批列表中（已被处理或不存在）
+        found_ids = {lv.id for lv in leaves}
+        skipped_ids = [i for i in req.leave_ids if i not in found_ids]
 
-        # 获取审批人姓名
-        approver_account = db.query(Account).filter(
-            Account.user_id == req.current_user_id
-        ).first()
-        approver_name = approver_account.real_name if approver_account else f"用户{req.current_user_id}"
+        if not leaves:
+            detail = "所有指定的请假ID均非待审批状态（可能已被处理）" if skipped_ids else "未找到待审批的申请记录"
+            return ApiResponse(code=409, msg=detail)
+
+        # 复用上面已查到的审批人信息
+        approver_name = approver.real_name or f"用户{req.current_user_id}"
 
         new_status = 1 if req.action == "approve" else 2
         action_label = "通过" if req.action == "approve" else "驳回"
@@ -165,12 +167,19 @@ def batch_approve_leave(req: LeaveBatchApproveRequest, db: Session = Depends(get
             leave.update_time = now
             approved_ids.append(leave.id)
 
-        logger.info(f"批量审批完成: {action_label}了 {len(approved_ids)} 条记录")
-        return ApiResponse(data={
+        db.commit()
+        logger.info("批量审批完成: %s了 %d 条记录", action_label, len(approved_ids))
+
+        result = {
             "action": action_label,
             "count": len(approved_ids),
             "leave_ids": approved_ids,
-        })
+        }
+        if skipped_ids:
+            result["skipped_ids"] = skipped_ids
+            result["warning"] = f"以下ID非待审批状态，已跳过: {skipped_ids}"
+
+        return ApiResponse(data=result)
 
     except HTTPException:
         raise

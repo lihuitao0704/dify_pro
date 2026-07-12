@@ -6,7 +6,7 @@ from fastapi import APIRouter, Depends, HTTPException
 import logging
 import re
 
-from enterprise_agent.database import get_db, execute_raw_sql
+from enterprise_agent.database import get_db, execute_raw_sql, validate_select_sql
 from enterprise_agent.schemas import ApiResponse, NL2SQLRequest
 from enterprise_agent.utils import require_operator
 from sqlalchemy.orm import Session
@@ -59,6 +59,25 @@ TABLE_META = {
         "comment": "账户表",
         "fields": ["user_id", "username", "real_name", "user_type", "dept_id", "phone", "email", "status"],
     },
+    "application_record": {
+        "comment": "留学申请记录表",
+        "fields": ["id", "student_id", "university", "program_name", "application_status",
+                    "submitted_date", "decision_date", "intake", "current_step"],
+    },
+    "appointment": {
+        "comment": "咨询预约记录表",
+        "fields": ["id", "student_id", "consultant_id", "appointment_type",
+                    "appointment_date", "status", "notes"],
+    },
+    "document_checklist": {
+        "comment": "申请材料清单表",
+        "fields": ["id", "application_id", "doc_name", "doc_type", "status", "deadline"],
+    },
+    "student_mental_alert": {
+        "comment": "学生心理预警表",
+        "fields": ["id", "student_id", "student_name", "risk_level", "trigger_reason",
+                    "follow_up_status", "created_at"],
+    },
 }
 
 
@@ -74,16 +93,16 @@ def nl2sql_generate(natural_query: str) -> str:
         return query
 
     # ===== 客户相关 =====
-    if any(kw in query for kw in ["客户", "意向客户"]):
+    if any(kw in query for kw in ["客户", "意向客户", "潜在客户", "客人", "线索", "leads", "准客户"]):
         conditions = []
-        if any(kw in query for kw in ["未签约"]):
-            conditions.append("current_status='未签约'")
-        if any(kw in query for kw in ["跟进中"]):
-            conditions.append("current_status='跟进中'")
-        if any(kw in query for kw in ["已流失"]):
+        if any(kw in query for kw in ["已签约", "签约"]):
+            conditions.append("current_status='已签约'")
+        if any(kw in query for kw in ["意向中", "跟进中", "跟进"]):
+            conditions.append("current_status='意向中'")
+        if any(kw in query for kw in ["已流失", "流失"]):
             conditions.append("current_status='已流失'")
 
-        if "所有" in query or "全部" in query or "所有客户" in query:
+        if "所有" in query or "全部" in query or "所有客户" in query or "全部客户" in query:
             sql = "SELECT * FROM intention_customer ORDER BY create_time DESC"
         elif conditions:
             sql = f"SELECT * FROM intention_customer WHERE {' AND '.join(conditions)} ORDER BY create_time DESC"
@@ -123,6 +142,54 @@ def nl2sql_generate(natural_query: str) -> str:
             return "SELECT * FROM student_score ORDER BY input_time DESC"
         else:
             return "SELECT * FROM student_score ORDER BY input_time DESC LIMIT 20"
+
+    # ===== 留学申请相关 =====
+    if any(kw in query for kw in ["申请", "留学申请", "申请进度", "offer", "录取"]):
+        student_id = None
+        m = re.search(r"学生[#\s]*(\d+)", query)
+        if m:
+            student_id = m.group(1)
+        if student_id:
+            return f"SELECT * FROM application_record WHERE student_id={student_id} ORDER BY updated_at DESC"
+        elif "所有" in query or "全部" in query:
+            return "SELECT id, student_id, university, program_name, application_status, intake, submitted_date FROM application_record ORDER BY updated_at DESC LIMIT 50"
+        else:
+            return "SELECT id, student_id, university, program_name, application_status, intake, submitted_date FROM application_record ORDER BY updated_at DESC LIMIT 20"
+
+    # ===== 预约/面谈相关 =====
+    if any(kw in query for kw in ["预约", "面谈", "咨询", "约谈", "见面"]):
+        student_id = None
+        m = re.search(r"学生[#\s]*(\d+)", query)
+        if m:
+            student_id = m.group(1)
+        if student_id:
+            return f"SELECT * FROM appointment WHERE student_id={student_id} ORDER BY appointment_date DESC"
+        elif "今天" in query or "今日" in query:
+            return "SELECT * FROM appointment WHERE DATE(appointment_date) = CURDATE() ORDER BY appointment_date"
+        else:
+            return "SELECT * FROM appointment ORDER BY appointment_date DESC LIMIT 20"
+
+    # ===== 材料/文档相关 =====
+    if any(kw in query for kw in ["材料", "文档", "文件", "资料", "文书"]):
+        app_id = None
+        m = re.search(r"申请[#\s]*(\d+)", query)
+        if m:
+            app_id = m.group(1)
+        if app_id:
+            return f"SELECT * FROM document_checklist WHERE application_id={app_id} ORDER BY deadline ASC"
+        elif "待提交" in query or "未交" in query or "pending" in query.lower():
+            return "SELECT * FROM document_checklist WHERE status='pending' ORDER BY deadline ASC"
+        else:
+            return "SELECT * FROM document_checklist ORDER BY deadline ASC LIMIT 20"
+
+    # ===== 心理预警相关 =====
+    if any(kw in query for kw in ["心理", "预警", "风险学生", "情绪"]):
+        if "高" in query or "high" in query.lower():
+            return "SELECT id, student_id, student_name, risk_level, trigger_reason, follow_up_status, created_at FROM student_mental_alert WHERE risk_level='high' ORDER BY created_at DESC"
+        elif "待处理" in query:
+            return "SELECT id, student_id, student_name, risk_level, trigger_reason, follow_up_status FROM student_mental_alert WHERE follow_up_status='待处理' ORDER BY created_at DESC"
+        else:
+            return "SELECT id, student_id, student_name, risk_level, trigger_reason, follow_up_status, created_at FROM student_mental_alert ORDER BY created_at DESC LIMIT 20"
 
     # ===== 投诉相关 =====
     if any(kw in query for kw in ["投诉", "抱怨", "不满"]):
@@ -196,14 +263,14 @@ def nl2sql_llm(natural_query: str) -> str:
         data = resp.json()
         sql = data["choices"][0]["message"]["content"].strip()
         sql = sql.strip().rstrip(";").strip()
-        # 清理markdown代码块
-        import re
+        # 清理markdown代码块（re已在顶部导入）
         sql = re.sub(r'^```(?:sql)?\s*', '', sql, flags=re.IGNORECASE)
         sql = re.sub(r'\s*```$', '', sql)
         if sql.upper().startswith("SELECT"):
             return sql
         return None
-    except Exception:
+    except Exception as e:
+        logger.warning("LLM NL2SQL 调用失败: %s", e)
         return None
 
 
@@ -234,8 +301,11 @@ def query_nl2sql(req: NL2SQLRequest, db: Session = Depends(get_db)):
             return ApiResponse(code=400, msg=f"无法理解您的查询：'{query_text}'。请尝试更清晰的描述，例如「查看所有客户」、「查看待审批的请假」、「查询学生成绩」等。")
 
         # 强制校验只允许 SELECT
-        if not sql.strip().upper().startswith("SELECT"):
-            return ApiResponse(code=400, msg="系统只允许执行 SELECT 查询")
+        try:
+            sql = validate_select_sql(sql)
+        except ValueError as e:
+            logger.warning("SQL 校验拦截: %s | 原始: %s", e, sql)
+            return ApiResponse(code=400, msg=f"查询安全校验未通过：{e}")
 
         logger.info(f"NL2SQL 生成的SQL: {sql}")
 

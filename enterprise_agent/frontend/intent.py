@@ -45,20 +45,23 @@ def recognize(text: str) -> dict:
                 "label": "👤 意向客户"}
 
     # ===== 请假 =====
-    leave_kw = ["请假", "休假", "休息", "请加", "休", "调休", "年休"]
+    leave_kw = ["请假", "休假", "休息", "休", "调休", "年休"]
     if any(kw in t for kw in leave_kw):
-        me_kw = ["我", "自己", "申请", "想请", "我要", "帮我请"]
-        if any(kw in t for kw in me_kw):
-            return {"action": "parse_leave_employee", "method": "PARSE", "params": {}, "body": {"text": t},
-                    "label": "📅 员工请假"}
-        student_kw = ["学生", "替", "帮", "代", "小明", "同学"]
-        if any(kw in t for kw in student_kw):
-            return {"action": "parse_leave_student", "method": "PARSE", "params": {}, "body": {"text": t},
-                    "label": "📅 替学生请假"}
+        # 审批关键词优先匹配（防止"我要审批请假"被 me_kw 抢走）
         approve_kw = ["审批", "通过", "驳回", "批准", "同意", "拒绝", "不批", "审核"]
         if any(kw in t for kw in approve_kw):
             return {"action": "get_leave_todo", "method": "GET", "params": {}, "body": None,
                     "label": "📅 请假审批"}
+        # 个人请假（含"我"、"申请"等）
+        me_kw = ["我", "自己", "想请", "我要", "帮我请"]
+        if any(kw in t for kw in me_kw):
+            return {"action": "parse_leave_employee", "method": "PARSE", "params": {}, "body": {"text": t},
+                    "label": "📅 员工请假"}
+        # 替学生请假
+        student_kw = ["学生", "替", "帮", "代", "小明", "同学"]
+        if any(kw in t for kw in student_kw):
+            return {"action": "parse_leave_student", "method": "PARSE", "params": {}, "body": {"text": t},
+                    "label": "📅 替学生请假"}
         return {"action": "get_leave_todo", "method": "GET", "params": {}, "body": None,
                 "label": "📅 请假管理"}
 
@@ -152,10 +155,11 @@ def parse_leave_type(text: str) -> str:
 def parse_student_name(text: str) -> Optional[str]:
     """从文本中提取学生姓名"""
     # 匹配"替【名字】请假" 或 "【名字】请假"
-    m = re.search(r"替[的]?([一-龥]{2,4})", text)
+    # 使用标准 CJK 统一表意文字区间 一-鿿
+    m = re.search(r"替[的]?([一-鿿]{2,4})", text)
     if m:
         return m.group(1)
-    m = re.search(r"学生[一-龥]{2,4}", text)
+    m = re.search(r"学生[一-鿿]{2,4}", text)
     if m:
         return m.group(0)[2:]
     return None
