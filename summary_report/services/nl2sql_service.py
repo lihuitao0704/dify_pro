@@ -188,9 +188,18 @@ def generate_sql(
 3. 涉及多表查询时使用 JOIN 关联，并写清楚 ON 条件
 4. 聚合查询使用 GROUP BY
 5. 如果有日期范围筛选，使用 BETWEEN 或 >= <=
-6. 如果有同环比计算，使用子查询或窗口函数
-7. 返回格式：["SELECT ... FROM ...", "SELECT ... FROM ..."]
-8. 如果用户的问题与数据库查询完全无关（如聊天、问候、天气、自我介绍、纯数字等），
+6. 相对时间词（本周/近一周/最近一周/本月/近一个月等）必须转换为确定的日期范围表达式，
+   禁止依赖 WEEKDAY() / YEARWEEK() / WEEK() 等"对齐到当前周起始"的函数生成筛选条件，
+   否则周一查询时会定位到当天所在的新空周而漏掉前一周数据。
+   推荐用法：
+   - "本周/近一周/最近一周" → create_time >= CURDATE() - INTERVAL 7 DAY
+   - "本月" → create_time >= DATE_FORMAT(CURDATE(), '%Y-%m-01')
+   - "上月" → create_time >= DATE_FORMAT(CURDATE() - INTERVAL 1 MONTH, '%Y-%m-01')
+               AND create_time < DATE_FORMAT(CURDATE(), '%Y-%m-01')
+   - "近N天" → create_time >= CURDATE() - INTERVAL N DAY
+7. 如果有同环比计算，使用子查询或窗口函数
+8. 返回格式：["SELECT ... FROM ...", "SELECT ... FROM ..."]
+9. 如果用户的问题与数据库查询完全无关（如聊天、问候、天气、自我介绍、纯数字等），
    请返回特殊标记：["__CHAT__"]
 
 JSON 格式示例：
@@ -255,6 +264,7 @@ def polish_report(
         润色后的报告文本。
     """
     formatted = _format_results_for_polish(all_results)
+    period_note = _current_week_period_note()
     prompt = f"""
 你是一个专业的数据分析师和报告撰写助手。根据用户的问题、查询的数据结果，生成一份专业、详细的分析报告。
 
@@ -266,18 +276,39 @@ def polish_report(
 数据查询结果：
 {formatted}
 
+当前时间：{period_note}
+
 要求：
 1. 用专业的报告格式回答，包含标题、分点、数据支撑
-2. 先给出核心结论（1-2句话概括）
-3. 然后分维度详细分析数据
-4. 对于有趋势的数据，指出变化方向和关键节点
-5. 对于有异常的数据，标注风险点和关注事项
-6. 最后给出可落地的建议
-7. 不要解释SQL语句或技术细节
-8. 字数控制在 {REPORT_MAX_CHARS} 字以内，保持简洁有力
-9. 如果有同环比数据，明确指出增长/下降幅度
+2. 报告中的"报告周期"必须使用上面给出的当前真实时间，严禁编造或猜测年份、日期
+3. 先给出核心结论（1-2句话概括）
+4. 然后分维度详细分析数据
+5. 对于有趋势的数据，指出变化方向和关键节点
+6. 对于有异常的数据，标注风险点和关注事项
+7. 最后给出可落地的建议
+8. 不要解释SQL语句或技术细节
+9. 字数控制在 {REPORT_MAX_CHARS} 字以内，保持简洁有力
+10. 如果有同环比数据，明确指出增长/下降幅度
 """
     return call_llm(prompt).strip()
+
+
+def _current_week_period_note() -> str:
+    """生成当前日期与本周时间范围的自然语言描述，供 prompt 注入使用。
+
+    示例返回：2026-07-13（周一），本周：2026年7月13日—2026年7月19日（周一到周日）
+    """
+    from datetime import date, timedelta
+
+    today = date.today()
+    monday = today - timedelta(days=today.weekday())
+    sunday = monday + timedelta(days=6)
+    weekday_names = ["周一", "周二", "周三", "周四", "周五", "周六", "周日"]
+    return (
+        f"{today.isoformat()}（{weekday_names[today.weekday()]}），"
+        f"本周：{monday.year}年{monday.month}月{monday.day}日—"
+        f"{sunday.year}年{sunday.month}月{sunday.day}日（周一到周日）"
+    )
 
 
 def _regenerate_sql_with_feedback(

@@ -21,6 +21,9 @@ class ChatWidget {
     this.sendBtn = document.querySelector(opts.sendBtn);
     this.onPreSend = opts.onPreSend || ((msg) => ({ message: msg }));
     this.onReply = opts.onReply || (() => {});
+    // 可选：自定义响应渲染（将服务端返回的 raw data 转为展示文本）
+    // 未设置时沿用 data.reply || data.answer || data.msg 的默认逻辑
+    this.formatResponse = opts.formatResponse || null;
     this.sessionId = null;
     this.isProcessing = false;
 
@@ -81,7 +84,10 @@ class ChatWidget {
 
       typingEl.remove();
 
-      const reply = data.reply || data.answer || data.msg || '(未收到回复)';
+      // 优先使用调用方自定义的响应渲染，否则沿用默认字段回退链
+      const reply = this.formatResponse
+        ? this.formatResponse(data)
+        : (data.reply || data.answer || data.msg || '(未收到回复)');
       this.sessionId = data.session_id || this.sessionId;
       this._addMsg(reply, 'bot', data.intents || []);
 
