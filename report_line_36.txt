@@ -1,0 +1,175 @@
+下面是"用户提问 → 最终输出"整条链路的代码流梳理，按调用顺序展开，附关键代码行引用。
+
+---
+
+## 一、入口层：HTTP → 主脑
+
+| 步骤 | 文件:行 | 作用 |
+|---|---|---|
+| FastAPI 暴露在 `main.py:118` `app = FastAPI(...)`，挂载 `chat_api.router` | `main.py:148` | 路由装配 |
+| `POST /chat` 端点 | `api/chat.py:39-73` `chat_endpoint` | 解析请求体（JSON / form 兼容，`_parse_chat_body` L16-36），取出 `message` / `session_id` / `conversation_id`（L55-59） |
+| 调用主脑 | `api/chat.py:61-65` | `process_message(message, session_id, conversation_id)` → 拿到 reply 后包成 JSON 返回（L66-73） |
+
+---
+
+## 二、主脑编排：`agent.py` `process_message`（L44-117）
+
+```
+用户消息 → process_message
+├─ Step 1 (L69-112): 优先续写锁定的多轮流程 (flow-first)
+│   └─ sess.has_active_flow() → 直接调对应 Handler
+└─ Step 2 (L114-117): 无锁定时走 _classify_and_dispatch
+```
+
+### Step 1 细节：多轮续写优先
+- `agent.py:69` `if sess.has_active_flow():` — 检查 session 是否被 `lock_intent` 锁定
+- `agent.py:70-86` 直接取 `INTENT_HANDLERS[locked]` 调用，把结果 `partial_replies` 合成后返回
+- 异常时解锁并回落到 Step 2（L86-89）
+
+### Step 2：`_classify_and_dispatch`（L120-184）
+
+| 子步骤 | 文件:行 | 说明 |
+|---|---|---|
+| 2a 意图识别 | `agent.py:126-131` → `intent.py:134` `classify_intent` | LLM 优先（`llm_chat_json_fn`），失败降级关键词 `_fallback`（intent.py L162-168） |
+| 2b 低置信过滤 | `intent.py:114-128` `filter_low_confidence` | 低于 `config.INTENT_CONFIDENCE_THRESHOLD`（默认 0.65，`config.py:84`）→ 降级为 chat |
+| 2c 短追问继承话题 | `agent.py:215-225` `_maybe_inherit_intent` | ≤15 字追问 + 疑问词 → 继承上一轮 `last_topic` |
+| 2d 循环调用各 Handler | `agent.py:139-153` | 依优先级遍历 `sorted_intents`，各自取 `INTENT_HANDLERS[intent]` 调用，收集 `partial_replies` |
+| 2e 合成最终回复 | `agent.py:156-158` → `agent.py:228-251` `_build_final_reply` | 单意图直接取 `partials[0]`；多意图融合走 LLM；无 partials 或纯 chat 也走 LLM（L233-239） |
+| 离线兜底 | `agent.py:161-162` → `agent.py:187-212` `_offline_fallback` | 所有路径生成空串时，FAQ 精确匹配 / 业务意图取知识库原文切片（L194-203） / 闲聊模板 |
+
+---
+
+## 三、LLM 调用层：`llm.py`
+
+| 函数 | 行 | 作用 |
+|---|---|---|
+| `agent_reply` | `llm.py:88-97` | **所有带人设回复的统一入口**。system = `CUSTOMER_SERVICE_PERSONA` + `extra_instruction`；取最近 10 轮 context + 当前 user_msg 拼接 messages（L95），调 `chat()` |
+| `chat` | `llm.py:35-52` | 真正调 OpenAI 兼容接口：`config.LLM_API_KEY` / `LLM_BASE_URL` / `LLM_MODEL`（L18-24）；`max_tokens=1024, temperature=0.7`（L46-48）；**失败返回空串**（L50-52，由调用方兜底） |
+| `is_online` | `llm.py:27-32` | 判断 API 是否配置（仅校验 key 非占位） |
+
+`agent_reply` 拼接 system prompt 的精确位置：`llm.py:91-94`
+```python
+from customer_agent.persona import CUSTOMER_SERVICE_PERSONA
+system = CUSTOMER_SERVICE_PERSONA
+if extra_instruction:
+    system += f"\n\n额外要求：{extra_instruction}"
+```
+
+---
+
+## 四、人设 / System Prompt：`persona.py`
+
+- `CUSTOMER_SERVICE_PERSONA`：`persona.py:10-45` — "粤教留学小助手"，规定称呼"同学/小伙伴"、emoji 限制（每条最多 2 个）、业务能力清单、禁止事项、风格示例。**没有"公司介绍改写"类全局指令**，默认语气风格即来源于此。
+- `CHAT_TEMPLATES`：`persona.py:51-112` — 按 `template_key` 分组的话术池（guide_menu / goodbye / conversion_pivot 等），由 `get_random(key)`（L115-119）随机取一条，仅用于**模板化兜底**（如无命中闲聊、无菜单引导）。
+
+---
+
+## 五、各 Handler 路径详解（`router.py`）— 关键：LLM vs 直接返回
+
+`INTENT_HANDLERS` 映射：`router.py:630-643`，`INTENT_PROCESSING_TYPE` 分类：`router.py:653-666`（rag/api/db/llm）。
+
+### 路径 A：**检索后必走 LLM** 的 RAG 路径
+
+| Handler | 行 | 检索方式 | 喂给 LLM 的方式 |
+|---|---|---|---|
+| `handle_company_info` | `router.py:67-86` | `kb.search_by_intent(message, "company_info", top_k=4)` (L70) | `llm.agent_reply(message, context, extra_instruction=instruction)` (L86)。**instruction 是在本函数内联拼的**（L74-85），明确要求"用自己的话重新组织"(L78)、"像聊天一样"(L78)、"不超过280字"(L79) |
+| `handle_company_service` | `router.py:92-123` | `search_by_intent(..., "company_service")` + 课程表 API 补充 (L94-111) | `llm.agent_reply` (L123)，instruction 内联 L113-122 |
+| `handle_study_policy` | `router.py:129-151` | `search_by_intent("study_policy")` (L132) | `llm.agent_reply` (L151)，instruction L140-150 |
+
+共同模式：`docs` → `"\n\n".join(docs)` → 拼成 `instruction` 传入 `extra_instruction`。**改写指令不来自 config/外部，是每个 handler 写死在代码里的字符串模板**。
+
+### 路径 B：**直接返回、不经 LLM** 的路径
+
+| Handler | 行 | 说明 |
+|---|---|---|
+| `handle_faq` 精确命中 | `router.py:536-538` | `kb.faq_match(message)` 命中时 `return ans + "\n\n还有疑问可以继续问我哈 💪"`，**完全绕过 LLM** |
+| `handle_faq` 无匹配兜底 | `router.py:557-559` | 材料也没命中时返回静态提示串 |
+| `handle_course_recommendation`（API 成功） | `router.py:262-330` | 必填三件套齐全后 `sa_recommend` 调外部 API (L262)，结果结构化拼装成 Markdown 字符串直接返回（L279-330），**LLM 只出现在异常降级分支 L264-277**（但那个分支也是字符串拼装） |
+| `handle_activity`（查询模式） | `router.py:354-375` | 调 `event_query` (L354)，取返回的 `polished` 字段直接输出 (L372-374)，**也不经 LLM** |
+| `handle_activity_register` | `router.py:412-509` | 写库的报名逻辑全程字符串拼装结果，不调 LLM |
+| LLM 离线 `_offline_fallback` | `agent.py:187-212` | 业务类意图离线时返回 `docs[0][:280]` 原文切片 (L201-203)；静态模板兜底 |
+
+### 路径 C：LLM + 多轮收集混合（`handle_faq` 语义搜分支）
+
+`router.py:541-554`：FAQ 精确未命中但 `search_by_intent("faq", top_k=3)` 有 docs → 构建 instruction → `llm.agent_reply`。
+
+### 路径 D：纯 LLM
+
+- `handle_chat`：`router.py:565-602` — 闲聊。情感维系（L570-578 走 `get_random`）、道别（L576-578）、菜单引导走模板；**其余情况**走 `llm.agent_reply(message, context, extra_instruction=instruction)`（L599-602），instruction 内联了"像朋友聊天一样自然"等约束（L588-597）。
+
+---
+
+## 六、知识库与 FAQ 检索：`knowledge.py`
+
+| 方法 | 行 | 用途 |
+|---|---|---|
+| `faq_match` | `knowledge.py:284-300` | **精确**(L287-289) → **模糊**(L291-300，关键词 overlap ≥ `config.FAQ_FUZZY_MIN_OVERLAP` 默认 2) |
+| `search_by_intent` | `knowledge.py:303-...` | 按意图过滤文档子集（`INTENT_TITLE_MAP`，L314-319）后再做标题+关键词+子串三重评分 |
+| `search` | `knowledge.py:245-281` | 无意图过滤的通用 RAG，离线兜底时使用（`agent.py:201` 直接取 `docs[0][:280]`） |
+
+---
+
+## 七、配置项：`config.py`（与检索/输出模式相关的开关）
+
+`Config` 类，实例化在 `config.py:92` `config = Config()`。
+
+| 配置 | 行 | 含义 |
+|---|---|---|
+| `KB_TOP_K` | `config.py:85` 默认 4 | 知识库默认返回条数 |
+| `FAQ_EXACT_MATCH_BONUS` | `config.py:86` 默认 1.2 | FAQ 精确匹配加权（代码中未直接使用到该值做乘数，有定义） |
+| `FAQ_FUZZY_MIN_OVERLAP` | `config.py:87` 默认 2 | FAQ 模糊匹配最少重合关键词数 |
+| `REPLY_MAX_CHARS` | `config.py:89` 默认 300 | 回复最大字数（**定义了但未在拦截代码中强制截断**，靠 instruction 软约束） |
+| `INTENT_CONFIDENCE_THRESHOLD` | `config.py:84` 默认 0.65 | 意图置信度门槛 |
+| `MAX_HISTORY_TURNS` | `config.py:83` 默认 10 | 多轮保留轮次 |
+
+### 关键结论：**config.py 里没有"是否强制改写"的开关**
+
+检索后是否改写由各 handler 的**内联 instruction** 决定：
+- `handle_company_info`（`router.py:74-85`）明确写"用自己的话重新组织成一段自然、简洁的回答"、"不要全部复述"；
+- `handle_faq` 精确匹配路径（`router.py:536-538`）**完全没有改写**，直接吐出 FAQ 原文 + 固定尾巴。
+
+也就是说：
+- 不存在名叫 `FORCE_REWRITE` / `REWRITE_COMPANY_INFO` 之类的布尔开关；
+- "公司介绍"类改写需求是通过 `handle_company_info`、`handle_company_service` 等 handler 在**拼 instruction 时硬编码**实现的（`router.py:74-85`、`router.py:113-122`）。要统一改成"直接返检索结果"需要逐个修改这些 inline instruction，没有配置项可一开关控。
+
+---
+
+## 八、一图总结（调用链）
+
+```
+POST /chat  (api/chat.py:39)
+  └─ process_message (agent.py:44)
+       ├─ 有锁定的多轮流程? ──→ 直接调对应 Handler → 合成 reply
+       └─ 否 → _classify_and_dispatch (agent.py:120)
+            ├─ classify_intent (intent.py:134)  ← LLM + 关键词降级
+            ├─ filter_low_confidence (intent.py:114)
+            ├─ 遍历 intents，调 INTENT_HANDLERS[intent]
+            │    ├─ handle_faq ──┬─ faq_match 命中 → 直接返回原文+尾巴 ❌无LLM
+            │    │                ├─ search_by_intent → +instruction → llm.agent_reply ✅
+            │    │                └─ 无匹配 → 静态兜底串 ❌
+            │    ├─ handle_company_info / _service / study_policy
+            │    │     → search_by_intent → 内联 instruction → llm.agent_reply ✅
+            │    ├─ handle_chat → 条件走 get_random 模板 / 否则 llm.agent_reply ✅/❌
+            │    ├─ handle_course_recommendation → sa_recommend → 字符串拼装 ❌(降级分支也❌)
+            │    ├─ handle_activity → event_query.polished → 直接返回 ❌
+            │    └─ handle_activity_register → DB 读写 → 拼装字符串 ❌
+            ├─ _build_final_reply (agent.py:228)  ← 多意图时额外一次 llm.agent_reply
+            └─ 空串兜底 → _offline_fallback (agent.py:187)
+                 ├─ faq_match 原文切片
+                 ├─ company/policy/faq → docs[0][:280] 原文
+                 └─ 否则 get_random("guide_menu")
+```
+
+✅ = 经过 LLM；❌ = 不经过 LLM / 直接返回检索或模板结果。
+
+---
+
+## 回答你的 4 个问题
+
+1. **步骤与最终输出**：用户消息 → `process_message`（agent.py:44）→ flow-first 检查 → `_classify_and_dispatch`（agent.py:120）→ `classify_intent` 意图识别（intent.py:134）→ 循环调 `INTENT_HANDLERS`（router.py:630）收集 `partial_replies` → `_build_final_reply`（agent.py:228）合成 → 空串兜底 `_offline_fallback`（agent.py:187）。最终 reply 在 `_build_final_reply` 或其上游 handler 中产生。
+
+2. **FAQ 是否一定过 LLM**：**否**。`handle_faq` 精确命中（router.py:536-538）直接返回答案，**完全绕过 LLM**；语义搜分支（router.py:541-554）和离线兜底 `_offline_fallback` 的原文切片分支（agent.py:201-203）同样不经 LLM。
+
+3. **"公司介绍"改写指令 / 输出风格控制**：不存在独立的"公司介绍改写" prompt；改写指令是每个 RAG handler 在函数**内部**拼接 `instruction` 写入 `extra_instruction` 参数实现的（router.py:74-85、router.py:113-122、router.py:140-150）。整体输出风格由 `persona.py:10-45` `CUSTOMER_SERVICE_PERSONA` 这一全局 system prompt 控制（通过 `llm.agent_reply` 注入，llm.py:91）。
+
+4. **config.py 里有没有"强制改写"开关**：**没有**。`config.py` 只定义了检索条数（KB_TOP_K L85）、FAQ 匹配参数（L86-87）、字数上限（REPLY_MAX_CHARS L89 软约束）等，没有任何 `FORCE_REWRITE` 类布尔开关。改写行为写死在 router.py 各 handler 的内联 instruction 中。

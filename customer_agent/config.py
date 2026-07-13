@@ -61,7 +61,9 @@ class Config:
         "LONGCAT_BASE_URL", "https://api.longcat.chat/openai"
     )
     LLM_MODEL = os.getenv("LONGCAT_MODEL", "LongCat-2.0")
-    LLM_TIMEOUT = float(os.getenv("LLM_TIMEOUT", "8"))  # 秒，超时走规则降级
+    # 秒，超时走规则降级。LongCat-2.0 实测 6-7s，原 8s 容易超时，
+    # 配合 max_retries=0 单轮快失败，避免 8s×3=25s 的卡顿。
+    LLM_TIMEOUT = float(os.getenv("LLM_TIMEOUT", "20"))
 
     # ============================================
     # 桥接服务地址
@@ -87,6 +89,8 @@ class Config:
     FAQ_FUZZY_MIN_OVERLAP = 2       # FAQ模糊匹配最少重合关键词数
     MAX_FOLLOWUP_ROUNDS = 3         # 多轮追问最大轮次
     REPLY_MAX_CHARS = 300           # 回复最大字数
+    # 是否强制 LLM 实时改写所有检索结果（默认开启）；False 时直接返回原文（运营回退用）
+    FORCE_REWRITE = os.getenv("FORCE_REWRITE", "1").lower() in ("1", "true", "yes")
 
 
 config = Config()

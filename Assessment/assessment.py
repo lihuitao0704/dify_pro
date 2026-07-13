@@ -13,8 +13,10 @@ import json
 import hashlib
 import logging
 import re
+import ssl
 from typing import Optional
 
+import httpx
 import pymysql
 from pymysql.cursors import DictCursor
 from openai import OpenAI
@@ -30,8 +32,8 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 DB_CONFIG = {
-    "host": os.getenv("DB_HOST", "192.168.48.121"),
-    # "host": os.getenv("DB_HOST", "127.0.0.1"),
+    # "host": os.getenv("DB_HOST", "192.168.48.121"),
+    "host": os.getenv("DB_HOST", "127.0.0.1"),
     "port": int(os.getenv("DB_PORT", 3306)),
     "user": os.getenv("DB_USER", "offer"),
     "password": os.getenv("DB_PASSWORD", "123456"),
@@ -55,6 +57,10 @@ def get_conn():
 
 _client: Optional[OpenAI] = None
 
+# 强制 HTTP/1.1 ALPN：本机中间设备对 h2 ALPN 协商处理异常会导致 SSL EOF
+_ssl_ctx = ssl.create_default_context()
+_ssl_ctx.set_alpn_protocols(["http/1.1"])
+
 
 def _get_client() -> OpenAI:
     global _client
@@ -62,7 +68,11 @@ def _get_client() -> OpenAI:
         api_key = os.getenv("DASHSCOPE_API_KEY", DASHSCOPE_API_KEY)
         if not api_key:
             raise RuntimeError("DASHSCOPE_API_KEY 未设置")
-        _client = OpenAI(api_key=api_key, base_url=LLM_BASE_URL)
+        _client = OpenAI(
+            api_key=api_key,
+            base_url=LLM_BASE_URL,
+            http_client=httpx.Client(transport=httpx.HTTPTransport(verify=_ssl_ctx)),
+        )
     return _client
 
 
@@ -173,6 +183,9 @@ def _build_project_scoring_prompt(rules, project_id):
     lines.append('4. THEN 后面只写数字如 15, 8, 0')
     lines.append('5. 满分 = {} 分，>= {} 分视为通过'.format(total_max, PASS_SCORE))
     lines.append('6. THEN 后面绝对不要写 2+2 这类算式')
+    lines.append('7. **CASE WHEN 分支顺序很重要**：含特殊条件（如 LIKE 含特定关键词）的分支放在年龄段兜底分支之前，避免被宽泛条件先拦截')
+    lines.append('   示例：把 WHEN age>=17 AND (major LIKE \'%创业%\') THEN 15 放在 WHEN age>=20 THEN 0 之前')
+    lines.append('8. 如果 score_desc 中写了 ">= 某个年龄无匹配项目给 0"，必须作为**最后一个** ELSE 或最后兜底 WHEN，避免拦截特殊加分分支')
     lines.append('')
     lines.append('【返回格式】严格输出 JSON：')
     lines.append('{"expression": "(CASE WHEN ... THEN 15 ELSE 0 END + CASE WHEN ... END)", "max_score": ' + str(total_max) + ', "rule_expressions": {"规则key": "CASE WHEN ... THEN 15 ELSE 0 END"}}')
@@ -276,9 +289,115 @@ def generate_project_expression(rules: list[dict], project_id: int) -> dict:
     if bad:
         raise ValueError(f"project {project_id} 表达式引用了不存在的字段: {bad}")
 
+    # 修复 rule_expressions 的 key：必须使用数据库真实的 rule_key
+    # LLM 经常发明自己的 key（如 education_match），导致后端 _build_detail_view 查不到 score_max
+    real_keys = [r['rule_key'] for r in rules]
+    llm_re = data.get("rule_expressions", {})
+    if llm_re:
+        llm_keys = list(llm_re.keys())
+        # 检查 key 是否完全匹配
+        if set(llm_keys) != set(real_keys):
+            # LLM 发明了新 key → 按位置（sort_order）重映射回真实 key
+            fixed = {}
+            for i, rk in enumerate(real_keys):
+                if i < len(llm_keys):
+                    fixed[rk] = llm_re[llm_keys[i]]
+                else:
+                    fixed[rk] = "0"
+            logger.warning(
+                "project %d rule_expressions key  mismatch: LLM=%s  DB=%s → fixed",
+                project_id, llm_keys, real_keys,
+            )
+            data["rule_expressions"] = fixed
+
+    # 防 LLM 把 2+2（双元制项目名）当成数学表达式：把 THEN 后面的 "数字+数字" 改成该规则满分
+    # rule_value 里的 "2+2" / "0.5+1+2" 等是项目名，严禁在 SQL 里求值
+    _sanitize_expr(data.get("expression", ""), data, rules)
+
     # 写入缓存
     _set_cached_expression(project_id, rules, data)
     return data
+
+
+# 2+2 等项目名防计算：把 expression / rule_expressions 中 THEN 后面的 "数字+数字" 模式清除
+_THEN_NUM_PLUS_NUM = re.compile(r'(THEN\s+)\d+(\+\d+)+')
+
+
+def _reorder_age_branches(expr: str) -> str:
+    """
+    修复 LLM 生成的 CASE WHEN 顺序 bug：
+    把 "宽泛兜底THEN 0"（如 WHEN age>=20 THEN 0）移到含特殊 LIKE 加分分支之后，避免拦截创业/特招等加分项。
+    """
+    if 'age' not in expr.lower():
+        return expr
+
+    # 按顶层 WHEN ... THEN ... END 切分
+    pattern = re.compile(r'(WHEN\s+.*?)(THEN\s+\d+)', re.IGNORECASE)
+    branches = pattern.findall(expr)
+    if not branches:
+        return expr
+
+    # 区分"特殊加分分支"与"兜底0分分支"
+    special = []  # 含 LIKE 或其他非纯 age 条件的 WHEN
+    fallback0 = []  # age>=X THEN 0 兜底
+    for when, then in branches:
+        is_fallback0 = (
+            re.search(r'age\s*>=', when)
+            and re.search(r'then\s+0', then.lower())
+            and 'like' not in when.lower()
+        )
+        if is_fallback0:
+            fallback0.append((when, then))
+        else:
+            special.append((when, then))
+
+    if not fallback0 or not special:
+        return expr  # 无需重排
+
+    # 判断是否已有合理顺序（所有 0 分兜底在特殊分支之后）
+    flat = [(when, then) for when, then in branches]
+    last_special = max(i for i, (w, t) in enumerate(flat) if (w, t) in special)
+    first_fallback = min(i for i, (w, t) in enumerate(flat) if (w, t) in fallback0)
+    if first_fallback > last_special:
+        return expr  # 已经正确
+
+    # 重排：特殊分支 + 兜底分支
+    reordered = special + fallback0
+    new_expr = expr
+    # 重建含 age 的 CASE WHEN ... END 块
+    case_pattern = re.compile(r'(CASE)(\s+WHEN\s+.*?)(\s+ELSE\s+\d+\s+END)', re.IGNORECASE | re.DOTALL)
+    m = case_pattern.search(new_expr)
+    if not m:
+        return expr
+    rebuilt = m.group(1) + ''.join(f' {w} {t}' for w, t in reordered) + m.group(3)
+    new_expr = new_expr[:m.start()] + rebuilt + new_expr[m.end():]
+    logger.warning("age 分支重排: 原=%s → 新=%s", expr, new_expr)
+    return new_expr
+
+
+def _sanitize_expr(expr: str, data: dict, rules: list[dict]) -> None:
+    """LLM 偶尔会把 2+2 项目名当算式生成 THEN 2+2 → 改为该规则满分"""
+    score_map = {r['rule_key']: r['score_max'] for r in rules}
+
+    def _fix_one(e: str, rk: str) -> str:
+        m = _THEN_NUM_PLUS_NUM.search(e)
+        if not m:
+            return e
+        correct = score_map.get(rk, 0)
+        e_new = _THEN_NUM_PLUS_NUM.sub(r'\g<1>' + str(correct), e)
+        logger.warning(
+            "SQL 表达式 %s 修复 THEN 2+2 算式 → THEN %d (项目名不可求值): %s → %s",
+            rk, correct, e, e_new,
+        )
+        return e_new
+
+    if data.get("expression"):
+        data["expression"] = _fix_one(data["expression"], "<总分>")
+        data["expression"] = _reorder_age_branches(data["expression"])
+
+    for rk, sub_expr in (data.get("rule_expressions") or {}).items():
+        data["rule_expressions"][rk] = _fix_one(sub_expr, rk)
+        data["rule_expressions"][rk] = _reorder_age_branches(data["rule_expressions"][rk])
 
 
 # ────────────────────────────────────────────────────────────
@@ -1086,29 +1205,28 @@ def run_targeted_assessment(sql_filter: str, student_view: bool = False, detail_
                 failed_best[uid] = r
         failed_diagnoses_unique = list(failed_best.values())
 
-        # ── 数据库写入阶段 ──
-        # 1. 通过的用户：insert intention_diagnosis（每个通过的 project 都记）
-        passed_diagnoses = []
-        for r in all_results:
-            if r["is_pass"]:
-                uid = r["user_id"]
-                uname = r["user_name"]
-                proj_id = r["project_id"]
-                cur.execute(
-                    # 注意：intention_diagnosis 表没有 user_name 列，只写 user_id
-                    "INSERT INTO intention_diagnosis (user_id, project_id, score, rule_details) "
-                    "VALUES (%s, %s, %s, %s)",
-                    (uid, proj_id, r["score"], json.dumps(r["rule_scores"], ensure_ascii=False))
-                )
-                passed_diagnoses.append(r)
+        # ── 数据库写入阶段（使用新 cursor，避免复用已关闭的 cur）──
+        with conn.cursor() as cur:
+            # 1. 通过的用户：insert intention_diagnosis（每个通过的 project 都记）
+            passed_diagnoses = []
+            for r in all_results:
+                if r["is_pass"]:
+                    uid = r["user_id"]
+                    proj_id = r["project_id"]
+                    cur.execute(
+                        "INSERT INTO intention_diagnosis (user_id, project_id, score, rule_details) "
+                        "VALUES (%s, %s, %s, %s)",
+                        (uid, proj_id, r["score"], json.dumps(r["rule_scores"], ensure_ascii=False))
+                    )
+                    passed_diagnoses.append(r)
 
-        # 2. 未通过全部 project 的用户：assess 改为 '已研判'
-        for uid in failed_user_ids:
-            conn.cursor().execute(
-                "UPDATE user_profiles SET assess = '已研判' WHERE id = %s "
-                "AND (assess IS NULL OR assess != '已研判')",
-                (uid,)
-            )
+            # 2. 未通过全部 project 的用户：assess 改为 '已研判'
+            for uid in failed_user_ids:
+                cur.execute(
+                    "UPDATE user_profiles SET assess = '已研判' WHERE id = %s "
+                    "AND (assess IS NULL OR assess != '已研判')",
+                    (uid,)
+                )
 
         conn.commit()
 
@@ -1118,9 +1236,8 @@ def run_targeted_assessment(sql_filter: str, student_view: bool = False, detail_
             try:
                 for uid in passed_uids:
                     user = high_users[uid]
-                    best = user_best_pass[uid]  # 已通过验证存在
+                    best = user_best_pass[uid]
                     new_cid = insert_intention_customer(user, best["project_id"], best["score"], conn)
-                    # 验证插入成功
                     with conn.cursor() as cur:
                         cur.execute(
                             "SELECT customer_id FROM intention_customer WHERE customer_id = %s",
@@ -1131,7 +1248,6 @@ def run_targeted_assessment(sql_filter: str, student_view: bool = False, detail_
                                 f"意向客户表插入验证失败：用户 {user['name']}（ID {uid}）"
                             )
 
-                # 全部验证通过后才删除 user_profiles
                 del_ids = ", ".join(str(uid) for uid in passed_uids)
                 with conn.cursor() as cur:
                     cur.execute("DELETE FROM user_profiles WHERE id IN (" + del_ids + ")")

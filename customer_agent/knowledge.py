@@ -389,4 +389,7 @@ def reload_kb():
     global _kb
     _kb = KnowledgeBase()
     _kb.load_all()
+    # 知识库内容变了，旧的改写缓存基于过期材料，必须清除
+    from customer_agent.llm import clear_rewrite_cache
+    clear_rewrite_cache()
     return _kb

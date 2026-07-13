@@ -7,10 +7,13 @@
 
 import os
 import sys
+import logging
 from pathlib import Path
 from typing import Optional
 import json
 import traceback
+
+logger = logging.getLogger(__name__)
 import pymysql
 from pymysql.cursors import DictCursor
 from fastapi import APIRouter, FastAPI, UploadFile, File, Form
@@ -62,24 +65,34 @@ def add_resume(req: ResumeRequest):
     3. 返回自然语言研判结论
     """
     d = req.dict()
+    new_user_id = None
     conn = pymysql.connect(**DB_CONFIG, cursorclass=DictCursor)
     try:
-        with conn.cursor() as cur:
-            cur.execute("""
-                INSERT INTO user_profiles
-                (name, age, major, education, target_major, language_score,
-                 target_country, gpa, budget, phone, development, abilities,
-                 `is_Closed_loop`, wechat, email, assess)
-                VALUES
-                (%(name)s, %(age)s, %(major)s, %(education)s, %(target_major)s,
-                 %(language_score)s, %(target_country)s, %(gpa)s, %(budget)s,
-                 %(phone)s, %(development)s, %(abilities)s, %(is_Closed_loop)s,
-                 %(wechat)s, %(email)s, '待研判')
-            """, d)
-            conn.commit()
-            new_user_id = cur.lastrowid
+        cur = conn.cursor()
+        cur.execute("""
+            INSERT INTO user_profiles
+            (name, age, major, education, target_major, language_score,
+             target_country, gpa, budget, phone, development, abilities,
+             `is_Closed_loop`, wechat, email, assess)
+            VALUES
+            (%(name)s, %(age)s, %(major)s, %(education)s, %(target_major)s,
+             %(language_score)s, %(target_country)s, %(gpa)s, %(budget)s,
+             %(phone)s, %(development)s, %(abilities)s, %(is_Closed_loop)s,
+             %(wechat)s, %(email)s, '待研判')
+        """, d)
+        conn.commit()
+        new_user_id = cur.lastrowid
+        cur.close()
     finally:
-        conn.close()
+        try:
+            conn.close()
+        except Exception:
+            pass
+
+    if new_user_id is None:
+        return JSONResponse(status_code=500, content={
+            "code": 500, "msg": "用户信息入库失败: 未获取到新用户 ID", "data": None
+        })
 
     # 按 ID 精准触发研判（只研判这一个新用户）
     sql_filter = "`id` = %s" % int(new_user_id)
@@ -122,14 +135,22 @@ def _get_openai_client():
         return _openai_client
     except Exception:
         pass
-    # 备用：自行初始化
+    # 备用：自行初始化（强制 HTTP/1.1 ALPN，避开中间设备对 h2 的异常处理）
+    import ssl as _ssl
+    import httpx as _httpx
     from openai import OpenAI
     api_key = os.getenv("DASHSCOPE_API_KEY", "")
     base_url = os.getenv(
         "LLM_BASE_URL",
-        "https://ws-80gz91pjbhgouudd.cn-beijing.maas.aliyuncs.com/compatible-mode/v1"
+        "https://dashscope.aliyuncs.com/compatible-mode/v1"
     )
-    _openai_client = OpenAI(api_key=api_key, base_url=base_url)
+    _ssl_ctx = _ssl.create_default_context()
+    _ssl_ctx.set_alpn_protocols(["http/1.1"])
+    _openai_client = OpenAI(
+        api_key=api_key,
+        base_url=base_url,
+        http_client=_httpx.Client(transport=_httpx.HTTPTransport(verify=_ssl_ctx)),
+    )
     return _openai_client
 
 
@@ -174,7 +195,11 @@ def _extract_text_from_file(filename: str, content: bytes) -> str:
 def _extract_fields_from_resume(resume_text: str) -> dict:
     """
     调用 LLM 从简历文本中提取结构化字段。
+    内置 3 次重试（指数退避），应对通义千问 SSL 偶发断连。
     """
+    import time
+    from openai import APIConnectionError
+
     client = _get_openai_client()
     model = os.getenv("LLM_MODEL", "qwen-plus")
 
@@ -205,18 +230,35 @@ def _extract_fields_from_resume(resume_text: str) -> dict:
 严格输出 JSON 对象，不要 markdown 代码块，不要其他文字：
 {{"name":"张三","age":22,"major":"车辆工程","education":"本科","target_major":"人工智能","language_score":"雅思 7.0","target_country":"新加坡","gpa":3.5,"budget":200000,"phone":"138xxxx","is_Closed_loop":"否","wechat":null,"email":"<EMAIL>":"希望从事 AI 行业的技术研发工作，在硕士阶段深入学习机器学习方向","abilities":"具备扎实的编程基础，熟练掌握 Python 和 C++，曾在互联网公司实习，具有良好的团队协作能力和自主学习能力"}}
 """
-    resp = client.chat.completions.create(
-        model=model,
-        messages=[
-            {"role": "system", "content": "你是一名资深留学顾问，擅长从中国学生的简历中提取结构化信息。"},
-            {"role": "user", "content": prompt},
-        ],
-        temperature=0.1,
-    )
-    raw = (resp.choices[0].message.content or "").strip()
-    # 清理 markdown 代码块
-    raw = raw.strip("`").removeprefix("json").removeprefix("JSON").strip()
-    return json.loads(raw)
+
+    max_retries = 3
+    last_err = None
+    for attempt in range(1, max_retries + 1):
+        try:
+            resp = client.chat.completions.create(
+                model=model,
+                messages=[
+                    {"role": "system", "content": "你是一名资深留学顾问，擅长从中国学生的简历中提取结构化信息。"},
+                    {"role": "user", "content": prompt},
+                ],
+                temperature=0.1,
+                timeout=60,
+            )
+            raw = (resp.choices[0].message.content or "").strip()
+            # 清理 markdown 代码块
+            raw = raw.strip("`").removeprefix("json").removeprefix("JSON").strip()
+            return json.loads(raw)
+        except APIConnectionError as e:
+            last_err = e
+            logger.warning("LLM 连接失败 (第 %d/%d 次): %s", attempt, max_retries, e)
+            if attempt < max_retries:
+                time.sleep(2 * attempt)  # 2s, 4s 退避
+            # 重建客户端（清掉可能损坏的连接池）
+            global _openai_client
+            _openai_client = None
+            client = _get_openai_client()
+
+    raise RuntimeError(f"LLM 调用失败（已重试 {max_retries} 次）: {last_err}")
 
 
 @router.post("/resume/upload")
@@ -277,24 +319,42 @@ async def upload_resume(file: UploadFile = File(...)):
             else:
                 clean_fields[k] = v
 
+        new_user_id = None
         conn = pymysql.connect(**DB_CONFIG, cursorclass=DictCursor)
         try:
-            with conn.cursor() as cur:
-                cur.execute("""
-                    INSERT INTO user_profiles
-                    (name, age, major, education, target_major, language_score,
-                     target_country, gpa, budget, phone, development, abilities,
-                     `is_Closed_loop`, wechat, email, assess)
-                    VALUES
-                    (%(name)s, %(age)s, %(major)s, %(education)s, %(target_major)s,
-                     %(language_score)s, %(target_country)s, %(gpa)s, %(budget)s,
-                     %(phone)s, %(development)s, %(abilities)s, %(is_Closed_loop)s,
-                     %(wechat)s, %(email)s, '待研判')
-                """, clean_fields)
-                conn.commit()
-                new_user_id = cur.lastrowid
+            cur = conn.cursor()
+            cur.execute("""
+                INSERT INTO user_profiles
+                (name, age, major, education, target_major, language_score,
+                 target_country, gpa, budget, phone, development, abilities,
+                 `is_Closed_loop`, wechat, email, assess)
+                VALUES
+                (%(name)s, %(age)s, %(major)s, %(education)s, %(target_major)s,
+                 %(language_score)s, %(target_country)s, %(gpa)s, %(budget)s,
+                 %(phone)s, %(development)s, %(abilities)s, %(is_Closed_loop)s,
+                 %(wechat)s, %(email)s, '待研判')
+            """, clean_fields)
+            conn.commit()
+            new_user_id = cur.lastrowid
+            cur.close()
+        except Exception as e:
+            try:
+                conn.close()
+            except Exception:
+                pass
+            return JSONResponse(status_code=500, content={
+                "code": 500, "msg": "用户信息入库失败: %s" % str(e), "data": None
+            })
         finally:
-            conn.close()
+            try:
+                conn.close()
+            except Exception:
+                pass
+
+        if new_user_id is None:
+            return JSONResponse(status_code=500, content={
+                "code": 500, "msg": "用户信息入库失败: 未获取到新用户 ID", "data": None
+            })
 
         # 5. 触发研判
         sql_filter = "`id` = %s" % int(new_user_id)
@@ -451,25 +511,30 @@ def _evaluation_by_form(fields: dict, student_view: bool):
             "code": 400, "msg": "name 不能为空", "data": None
         })
 
-    # 2. 写入 user_profiles
+    # 2. 写入 user_profiles — 独立连接，用完即关，避免与研判阶段连接状态冲突
+    new_user_id = None
     conn = pymysql.connect(**DB_CONFIG, cursorclass=DictCursor)
     try:
-        with conn.cursor() as cur:
-            cur.execute("""
-                INSERT INTO user_profiles
-                (name, age, major, education, target_major, language_score,
-                 target_country, gpa, budget, phone, development, abilities,
-                 `is_Closed_loop`, wechat, email, assess)
-                VALUES
-                (%(name)s, %(age)s, %(major)s, %(education)s, %(target_major)s,
-                 %(language_score)s, %(target_country)s, %(gpa)s, %(budget)s,
-                 %(phone)s, %(development)s, %(abilities)s, %(is_Closed_loop)s,
-                 %(wechat)s, %(email)s, '待研判')
-            """, clean)
-            conn.commit()
-            new_user_id = cur.lastrowid
+        cur = conn.cursor()
+        cur.execute("""
+            INSERT INTO user_profiles
+            (name, age, major, education, target_major, language_score,
+             target_country, gpa, budget, phone, development, abilities,
+             `is_Closed_loop`, wechat, email, assess)
+            VALUES
+            (%(name)s, %(age)s, %(major)s, %(education)s, %(target_major)s,
+             %(language_score)s, %(target_country)s, %(gpa)s, %(budget)s,
+             %(phone)s, %(development)s, %(abilities)s, %(is_Closed_loop)s,
+             %(wechat)s, %(email)s, '待研判')
+        """, clean)
+        conn.commit()
+        new_user_id = cur.lastrowid
+        cur.close()
     except Exception as e:
-        conn.close()
+        try:
+            conn.close()
+        except Exception:
+            pass
         return JSONResponse(status_code=500, content={
             "code": 500, "msg": "用户信息入库失败: %s" % str(e), "data": None
         })
@@ -478,6 +543,11 @@ def _evaluation_by_form(fields: dict, student_view: bool):
             conn.close()
         except Exception:
             pass
+
+    if new_user_id is None:
+        return JSONResponse(status_code=500, content={
+            "code": 500, "msg": "用户信息入库失败: 未获取到新用户 ID", "data": None
+        })
 
     # 3. 触发研判（结构化）
     sql_filter = "`id` = %s" % int(new_user_id)
@@ -564,24 +634,42 @@ async def _evaluation_by_file(file: UploadFile, student_view: bool):
             else:
                 clean[k] = v
 
+        new_user_id = None
         conn = pymysql.connect(**DB_CONFIG, cursorclass=DictCursor)
         try:
-            with conn.cursor() as cur:
-                cur.execute("""
-                    INSERT INTO user_profiles
-                    (name, age, major, education, target_major, language_score,
-                     target_country, gpa, budget, phone, development, abilities,
-                     `is_Closed_loop`, wechat, email, assess)
-                    VALUES
-                    (%(name)s, %(age)s, %(major)s, %(education)s, %(target_major)s,
-                     %(language_score)s, %(target_country)s, %(gpa)s, %(budget)s,
-                     %(phone)s, %(development)s, %(abilities)s, %(is_Closed_loop)s,
-                     %(wechat)s, %(email)s, '待研判')
-                """, clean)
-                conn.commit()
-                new_user_id = cur.lastrowid
+            cur = conn.cursor()
+            cur.execute("""
+                INSERT INTO user_profiles
+                (name, age, major, education, target_major, language_score,
+                 target_country, gpa, budget, phone, development, abilities,
+                 `is_Closed_loop`, wechat, email, assess)
+                VALUES
+                (%(name)s, %(age)s, %(major)s, %(education)s, %(target_major)s,
+                 %(language_score)s, %(target_country)s, %(gpa)s, %(budget)s,
+                 %(phone)s, %(development)s, %(abilities)s, %(is_Closed_loop)s,
+                 %(wechat)s, %(email)s, '待研判')
+            """, clean)
+            conn.commit()
+            new_user_id = cur.lastrowid
+            cur.close()
+        except Exception as e:
+            try:
+                conn.close()
+            except Exception:
+                pass
+            return JSONResponse(status_code=500, content={
+                "code": 500, "msg": "用户信息入库失败: %s" % str(e), "data": None
+            })
         finally:
-            conn.close()
+            try:
+                conn.close()
+            except Exception:
+                pass
+
+        if new_user_id is None:
+            return JSONResponse(status_code=500, content={
+                "code": 500, "msg": "用户信息入库失败: 未获取到新用户 ID", "data": None
+            })
 
         # 5. 结构化研判
         sql_filter = "`id` = %s" % int(new_user_id)

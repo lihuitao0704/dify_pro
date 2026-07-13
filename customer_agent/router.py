@@ -14,6 +14,7 @@
 import re
 
 from customer_agent import llm
+from customer_agent.config import config
 from customer_agent.knowledge import get_kb
 
 # user_profiles 表实际存在的、画像流程可写的列（对齐 DB schema）
@@ -28,7 +29,7 @@ _USER_PROFILE_COLS = {
 def _coerce_profile_value(field, val):
     """
     把 CourseRecommendationState 里字符串形式的值转成 DB 列类型。
-    gpa → float, budget（"30万"）→ int(元)，其余保持字符串。
+    gpa → float, budget（"30万"）→ int(元), age → int，其余保持字符串。
     返回 None 表示"无效值、应跳过"。
     """
     if val is None or val == "":
@@ -44,6 +45,11 @@ def _coerce_profile_value(field, val):
             return None
         num = float(m.group(1))
         return int(num * 10000) if "万" in str(val) else int(num)
+    if field == "age":
+        try:
+            return int(val)
+        except (ValueError, TypeError):
+            return None
     return val
 from customer_agent.services import (
     sa_recommend, sa_get_courses, sa_save_profile,
@@ -62,6 +68,91 @@ HandlerFn = None  # 类型标注用
 
 
 # ============================================================
+# 统一 LLM 改写层
+# 所有检索结果(FAQ/Knowledge)都经此函数 LLM 改写后再输出
+# ============================================================
+def _rewrite_with_llm(message: str, context: list, docs: list,
+                      intent: str, sess, conv_id: str,
+                      *, fallback: str = "") -> str:
+    """检索结果统一经 LLM 改写后再输出,避免机械直出原文。
+
+    Args:
+        message: 用户原始问题
+        context: 对话历史 (agent_reply 需要)
+        docs:   检索得到的原文片段列表
+        intent: 改写风格, 决定 instruction 模板
+                "company_info"   公司介绍, 融合为有温度的概览段
+                "company_service" 业务咨询, 具体说明服务项目
+                "study_policy"   政策解读, 按维度分点
+                "faq"            FAQ, 直接准确回答
+        sess / conv_id: 保留扩展用
+        fallback: LLM 离线/失败时的降级文本
+
+    Returns:
+        LLM 改写后的自然语言; LLM 不可用返回 fallback
+    """
+    # 配置开关: 关闭则直接拼接旧文 (运营回退用)
+    if not config.FORCE_REWRITE:
+        return fallback if fallback else "\n\n".join(docs)
+
+    if not docs:
+        if fallback:
+            return fallback
+        return get_random("guide_menu")
+
+    # 拼接检索材料作为 instruction 的上下文
+    ctx_text = "\n\n".join(docs)
+
+    # 按意图选择改写模板
+    if intent == "company_info":
+        style_rules = (
+            "1. 理解用户想了解什么(规模/历史/口碑/校区/团队/联系...),只提取直接相关的内容\n"
+            "2. 把分散的材料融合成一段有温度的公司介绍,像聊天一样自然\n"
+            "3. 2 条以内直接说;3 条以上用「· 」分点,每点一行\n"
+            "4. 不超过 280 字,不说空话套话,不编造材料中没有的信息\n"
+            "5. 材料中没有用户想要的细节时,诚实说「更详细的资料可以联系顾问获取」\n"
+            "6. 语气亲切温暖,称呼用户为「同学」或「小伙伴」"
+        )
+    elif intent == "company_service":
+        style_rules = (
+            "1. 具体说明提供什么服务(留学申请/语培/背景提升/文书/签证等)\n"
+            "2. 如果材料区分了不同业务线,先做简洁分类再展开\n"
+            "3. 用具体信息(业务名、适合人群、价格区间)增加说服力,不要只讲空话\n"
+            "4. 材料不足时补充一句「更详细的课程大纲/服务清单可以联系顾问获取」\n"
+            "5. 不超过 280 字,不编造,语气专业温暖"
+        )
+    elif intent == "study_policy":
+        style_rules = (
+            "1. 理解用户想了解哪方面(语言要求? GPA? 签证流程? 就业政策?)\n"
+            "2. 从材料中提取直接相关信息,用自己的话重新组织\n"
+            "3. 按维度分点(语言要求/院校门槛/签证流程/就业/移民),每个维度一行\n"
+            "4. 材料中没有确切数字的绝不能编造;可以说「建议上官网确认最新要求」\n"
+            "5. 政策容易过时,务必加一句「具体以官方最新公告为准」或建议查询渠道\n"
+            "6. 不超过 280 字,语气专业、不瞎承诺"
+        )
+    else:  # faq
+        style_rules = (
+            "1. FAQ 要答得直接、准确,开头就回答结论\n"
+            "2. 用材料中的信息回答,不要照搬原文,用自己的话说清楚\n"
+            "3. 涉及金额、时间、材料清单等,必须精确到材料中的数字,没有就不写\n"
+            "4. 材料不够覆盖问题时,诚实告知详细情况可联系顾问,不要编造流程/价格\n"
+            "5. 不超过 280 字,语气简洁专业"
+        )
+
+    instruction = (
+        f"以下是参考材料(多段,可能来自不同文件):\n\n{ctx_text}\n\n"
+        f"用户问题:「{message}」\n\n"
+        f"★★★ 回答要求 ★★★\n{style_rules}"
+    )
+
+    # 优先走轻量改写（无人设 prompt，快 3-4 倍）；失败再回退到带人设的 agent_reply。
+    reply = llm.rewrite_retrieval(message, docs, style=intent)
+    if not reply:
+        reply = llm.agent_reply(message, context, extra_instruction=instruction)
+    return reply if reply else fallback
+
+
+# ============================================================
 # Handler: 公司信息咨询 → RAG(公司信息)
 # ============================================================
 def handle_company_info(message: str, params: dict, context: list,
@@ -70,20 +161,7 @@ def handle_company_info(message: str, params: dict, context: list,
     docs = kb.search_by_intent(message, "company_info", top_k=4)
     if not docs:
         return get_random("guide_menu")
-    ctx_text = "\n\n".join(docs)
-    instruction = (
-        f"以下是关于公司信息的参考材料（多段，可能来自不同文件）：\n\n{ctx_text}\n\n"
-        f"用户问题：「{message}」\n\n"
-        f"★★★ 回答要求 ★★★\n"
-        f"1. 先理解用户到底想了解什么（如：规模？历史？口碑？校区？团队？）\n"
-        f"2. 从材料中只提取与用户问题直接相关的内容，不要全部复述\n"
-        f"3. 用自己的话重新组织成一段自然、简洁的回答，像聊天一样\n"
-        f"4. 2 条以内直接说；3 条以上用「· 」分点，每点一行\n"
-        f"5. 不超过 280 字，不说空话套话，不编造材料中没有的信息\n"
-        f"6. 材料中没有用户想要的细节时，诚实说「更详细的资料可以联系顾问获取」\n"
-        f"7. 语气亲切温暖，称呼用户为「同学」或「小伙伴」"
-    )
-    return llm.agent_reply(message, context, extra_instruction=instruction)
+    return _rewrite_with_llm(message, context, docs, "company_info", sess, conv_id)
 
 
 # ============================================================
@@ -93,34 +171,25 @@ def handle_company_service(message: str, params: dict, context: list,
                            sess: SessionState, conv_id: str) -> str:
     kb = get_kb()
     docs = kb.search_by_intent(message, "company_service", top_k=4)
-    ctx_text = "\n\n".join(docs) if docs else ""
+    if not docs:
+        return get_random("guide_menu")
 
-    # 同时查课程表补充信息
+    # 同时查课程表补充信息,作为追加检索材料一起送 LLM 改写
     country = _extract_country(message)
-    extra = ""
     if country:
         data = sa_get_courses(country=country, limit=5)
         if data.get("code") == 0 and data.get("data"):
             courses = data["data"]
-            extra = "\n\n课程体系：\n" + "\n".join(
+            extra = "课程体系：\n" + "\n".join(
                 f"· {c.get('course_name','')} ({c.get('category','')}) "
                 f"- {c.get('target_education','')} | "
                 f"{c.get('language_requirement','无语言要求')} | "
                 f"¥{c.get('price',0):,.0f}"
                 for c in courses[:5]
             )
+            docs = list(docs) + [extra]
 
-    instruction = (
-        f"以下是本公司业务与服务的参考材料：\n\n{ctx_text}{extra}\n\n"
-        f"用户问题：「{message}」\n\n"
-        f"★★★ 回答要求 ★★★\n"
-        f"1. 用户问的是'服务内容'：要具体说明提供什么服务（留学申请/语培/背景提升/文书/签证等）\n"
-        f"2. 如果材料区分了不同业务线（如留学申请 vs 语言培训），先做简洁分类再展开\n"
-        f"3. 用具体信息（如具体业务名、适合人群、价格区间）增加说服力，不要只讲空话\n"
-        f"4. 材料不足时停在这里，补充一句「更详细的课程大纲/服务清单可以联系顾问获取」\n"
-        f"5. 不超过 280 字，不编造，语气专业温暖"
-    )
-    return llm.agent_reply(message, context, extra_instruction=instruction)
+    return _rewrite_with_llm(message, context, docs, "company_service", sess, conv_id)
 
 
 # ============================================================
@@ -134,21 +203,7 @@ def handle_study_policy(message: str, params: dict, context: list,
         return ("关于留学政策我会尽可能回答。目前信息库还没收录这个子话题，"
                 "建议你把具体问题说得再细一些，我帮你定位答案～")
 
-    country = _extract_country(message)
-    ctx_text = "\n\n".join(docs)
-    hint = f"目标国家：{country}" if country else "目标国家未明确"
-    instruction = (
-        f"以下是留学政策的参考材料（{country or '多个国家'}）：\n\n{ctx_text}\n\n"
-        f"用户问题：「{message}」\n\n"
-        f"★★★ 回答要求 ★★★\n"
-        f"1. 理解用户想了解哪方面（语言要求？GPA？签证流程？就业政策？）\n"
-        f"2. 从材料中提取直接相关信息，用自己的话重新组织\n"
-        f"3. 一定要人为区分维度分点（语言要求/院校门槛/签证流程/就业/移民），每个维度一行\n"
-        f"4. 材料中没有确切数字的，绝不能编造；可以说'这块建议上官网确认最新要求'\n"
-        f"5. 政策类问题容易过时，务必加一句'具体以官方最新公告为准'或建议查询渠道\n"
-        f"6. 不超过 280 字，语气专业、不瞎承诺"
-    )
-    return llm.agent_reply(message, context, extra_instruction=instruction)
+    return _rewrite_with_llm(message, context, docs, "study_policy", sess, conv_id)
 
 
 # ============================================================
@@ -156,7 +211,10 @@ def handle_study_policy(message: str, params: dict, context: list,
 # ============================================================
 def handle_course_recommendation(message: str, params: dict, context: list,
                                  sess: SessionState, conv_id: str) -> str:
-    """推荐流程：逐步收集参数 + 逐步写库，三件套齐全后调 API
+    """推荐流程：逐步收集画像参数，全部齐全后再调推荐 API
+
+    收集顺序（一次问一个字段，flow-first 锁定直至齐全）：
+      必填三件套 → 国家 → GPA → 预算 → 入学时间 → 工作/实习 → 年龄 → 微信
 
     逐步写入策略：
       - diff_new_fields 提取这一步新增的字段 → 立即 profile_upsert 写库
@@ -175,7 +233,7 @@ def handle_course_recommendation(message: str, params: dict, context: list,
 
     # 🆕 每提取一个新字段，立即写入画像（失败则降级为纯内存）
     # 字段名映射：state 内部名 → user_profiles 列名
-    # 注意：state.py 中该字段已改名为 target_major（对齐 DB 列名），此处直接透传
+    # state 内部字段名 → user_profiles 列名 映射
     _FIELD_MAP = {
         "education": "education",
         "target_major": "target_major",
@@ -183,8 +241,10 @@ def handle_course_recommendation(message: str, params: dict, context: list,
         "country": "target_country",
         "gpa": "gpa",
         "budget": "budget",
-        "intake": "intake",
-        "work_experience": "work_experience",
+        "intake": "intake",                   # 不在 user_profiles，仅保留内存
+        "work_experience": "work_experience", # 不在 user_profiles，仅保留内存
+        "age": "age",
+        "wechat": "wechat",
     }
     if new_fields:
         mapped = {_FIELD_MAP.get(k, k): v for k, v in new_fields.items()}
@@ -201,25 +261,42 @@ def handle_course_recommendation(message: str, params: dict, context: list,
                 sess._dirty_profile_fields.add(k)
                 sess._saved_profile_fields.add(k)
 
-    # ── Phase 1: 收集必填三件套 ────────────────────────────────
-    if not rec.is_ready():
-        rec.phase = "required"
+    # ── Phase 1: 逐步追问，直到所有画像字段都收集齐 ────────────
+    # 顺序：必填三件套 → 国家 → GPA → 预算 → 入学时间 → 工作/实习 → 年龄 → 微信
+    # 每轮只追问一个字段，用户回复后回到这里继续下一个（flow-first 锁定）。
+    missing = rec.next_missing_field()
+    if missing:
+        rec.phase = "required" if missing in rec._REQUIRED_FIELDS else "enrichment"
         sess.lock_intent("course_recommendation")
-        missing = rec.next_missing_field()
-        if missing:
-            feedback = sess.saved_profile_summary()
-            question = rec.get_question(missing)
-            head = (
-                "好的！为了给你推荐最合适的留学项目，我需要了解几个信息：\n\n"
-                if not feedback else ""
-            )
-            tail = "\n\n也可以直接告诉我你的完整背景哦～"
-            return ((feedback + "\n\n" if feedback else "")
-                    + head + question + tail)
+        feedback = sess.saved_profile_summary()
+        question = rec.get_question(missing)
+        # 首条引导语（无任何已收集信息时出现一次）
+        head = (
+            "好的！为了给你推荐最合适的留学项目，我需要了解几个信息：\n\n"
+            if not feedback else ""
+        )
+        tail = "\n\n也可以直接告诉我你的完整背景哦～"
+        return ((feedback + "\n\n" if feedback else "")
+                + head + question + tail)
 
-    # ── 必填齐 → 直接调推荐 API（诉求 1）──────────────────────
+    # ── 所有字段齐全 → 调推荐 API（诉求 1）────────────────────
+    # 已经展示过推荐结果（phase 已是 recommend）则不再重复调 API，
+    # 直接把用户回复当作对推荐结果的回应（提取新参数 / 回答追问）。
+    if rec.phase == "recommend":
+        # 推荐已展示过，本轮只提取用户回复中的新参数写库，然后保持锁定。
+        sess.lock_intent("course_recommendation")
+        # 可以给一个简短确认 + 引导留联系方式（如果还没有）
+        if not rec.name or not rec.phone:
+            from customer_agent.persona import get_random
+            return ("收到！已更新你的信息 ✅\n"
+                    "有感兴趣的项目可以继续问我，或者留下[姓名 手机号]，"
+                    "稍后专属顾问为你定制方案并回电 📞\n\n"
+                    + get_random("after_recommend"))
+        return "好的，已记住你的更新 ✅ 还有想了解的吗？"
+
     rec.phase = "recommend"
-    sess.unlock_intent()
+    # 注意：此处不解锁。推荐结果出来后若需要追问（≥3门课），
+    # 必须保持 flow 锁定，否则下一轮用户回复无法路由回这里继续收集。
 
     # 最终把完整参数同步到会话级 profile_slots（统一由 agent.py sync 写库）
     # 注意：rec.gpa/rec.budget 是字符串形式，需转成 DB 列类型（gpa=decimal, budget=int元）
@@ -241,9 +318,14 @@ def handle_course_recommendation(message: str, params: dict, context: list,
         "target_country": rec.country,
         "gpa": _gpa,
         "budget": _budget,
+        "age": rec.age,
+        "wechat": rec.wechat,
     }
     for k, v in _final_map.items():
         if v is not None and k not in sess.profile_slots:
+            # 跳过 DB 中不存在的列（intake / work_experience 不在 user_profiles）
+            if k not in _USER_PROFILE_COLS:
+                continue
             sess.profile_slots[k] = v
             sess._dirty_profile_fields.add(k)
     sess._saved_profile_fields.update(k for k, v in _final_map.items() if v is not None)
@@ -257,11 +339,14 @@ def handle_course_recommendation(message: str, params: dict, context: list,
         "target_country": rec.country,
         "gpa": rec.gpa,
         "budget": rec.budget,
+        "age": rec.age,
+        "wechat": rec.wechat,
     })
 
     rec_result = sa_recommend(conv_id)
     if rec_result.get("code") != 0 or not rec_result.get("data"):
-        # 降级：直接查课程
+        # API 失败/无数据 → 降级为直接查课程 → 流程结束，解锁
+        sess.unlock_intent()
         courses = sa_get_courses(country=rec.country, limit=5)
         if courses.get("data"):
             lines = ["基于你的背景，目前匹配到的课程有：\n"]
@@ -278,6 +363,8 @@ def handle_course_recommendation(message: str, params: dict, context: list,
 
     recs = rec_result["data"].get("recommendations", [])[:5]
     if not recs:
+        # API 返回空推荐 → 流程结束，解锁
+        sess.unlock_intent()
         return "目前没有完全匹配你背景的项目，建议直接咨询顾问定制～"
 
     lines = ["🎯 基于你的背景，为你推荐以下项目：\n"]
@@ -293,6 +380,7 @@ def handle_course_recommendation(message: str, params: dict, context: list,
         lines.append("")
 
     # ── 推荐课程多时 → 主动追问细化 OR 收集联系方式（诉求 2）──
+    has_followup = False  # 本轮是否抛出了追问（决定后续是否保持流锁定）
     if len(recs) >= 3:
         # 从当前消息里尝试提取姓名/手机
         if not rec.name:
@@ -309,14 +397,15 @@ def handle_course_recommendation(message: str, params: dict, context: list,
                 sess._dirty_profile_fields.add("phone")
 
         if rec.name or rec.phone:
-            # 已拿到联系方式 → 提示专人服务
+            # 已拿到联系方式 → 提示专人服务 → 流程结束
             tip = "\n📞 稍后我们会有专属顾问根据您的背景为您定制方案"
             if rec.phone:
                 tip += f"并回电 {rec.phone}"
             tip += "，请保持手机畅通～"
             lines.append(tip)
         else:
-            # 没联系方式 → 引导留信息
+            # 没联系方式 → 追问 GPA/预算/联系方式 →【保持流锁定】
+            has_followup = True
             lines.append(
                 "\n项目比较多，为了给您精准推荐，可以补充一下：\n"
                 "• GPA 或均分是多少？\n"
@@ -326,6 +415,14 @@ def handle_course_recommendation(message: str, params: dict, context: list,
     else:
         # 少量课程时的普通转化尾巴
         lines.append("\n感兴趣的可以继续详细了解，或者预约留学顾问一对一深度咨询 🎓")
+
+    # ── 流程收尾：有追问则保持锁定（等用户回复），否则解锁 ──────
+    if has_followup:
+        # 保持 course_recommendation 锁定 + state 存活，
+        # agent.py flow-first 会把下一轮用户消息继续路由到这里。
+        sess.lock_intent("course_recommendation")
+    else:
+        sess.unlock_intent()
 
     return "\n".join(lines)
 
@@ -347,8 +444,12 @@ def handle_activity(message: str, params: dict, context: list,
                               ["报名", "预约", "我要", "register"])
 
     if is_register_intent and sess.last_activity_results:
-        # 有缓存结果 + 用户想报名 → 直接转入报名流程
-        return _enter_activity_register_from_cached(message, sess)
+        # 有缓存结果 + 用户想报名 + 已指定具体活动 → 直接转入报名流程
+        if _resolve_activity(message, sess.last_activity_results):
+            return _enter_activity_register_from_cached(message, sess)
+        # 有缓存 + 想报名但没指定哪条 → 展示缓存列表引导选择
+        return (_format_cached_activities(sess.last_activity_results) +
+                "\n\n想报名哪条呢？告诉我序号（如「第一个」）或活动名就行～")
 
     # ── 查询模式 ──
     result = event_query(f"查询 {_build_event_filter(message)} 活动和讲座")
@@ -369,6 +470,14 @@ def handle_activity(message: str, params: dict, context: list,
     else:
         sess.last_activity_results = []
 
+    # 查到结果 + 用户想报名：仅当消息中已指定具体活动时才一步进入报名，
+    # 否则先展示列表让用户选（避免把下一句姓名误当活动）
+    if sess.last_activity_results and is_register_intent:
+        if _resolve_activity(message, sess.last_activity_results):
+            return _enter_activity_register_from_cached(message, sess)
+        return (polished +
+                "\n\n想报名哪条呢？告诉我序号（如「第一个」）或活动名就行～")
+
     if polished:
         return (polished +
                 "\n\n感兴趣的话告诉我就行，比如「报名第一个 姓名 手机号」📅")
@@ -383,17 +492,45 @@ def _enter_activity_register_from_cached(message: str, sess: SessionState) -> st
     reg = sess.activity_register_state
     # 注入 register_kind（根据缓存结果的 key 区分 lecture / activity）
     sess.register_kind = _detect_register_kind(sess.last_activity_results)
+    # 关键：先把缓存结果注入 reg，否则 resolve_index / resolve_name 无从映射
+    reg.last_query_results = sess.last_activity_results
     # 尝试解析"第N个"
     reg.resolve_index(message)
     if not reg.activity_id and not reg.activity_name:
         # 尝试用活动名匹配
         reg.resolve_name(message)
-    # 把 last_query_results 注入（resolve_index / resolve_name 需要使用）
-    reg.last_query_results = sess.last_activity_results
 
     # 把报名意愿也带入后续收集（conv_id 从会话状态取，不再写死 "0"）
     return handle_activity_register(message, {}, sess.get_context(),
                                      sess, sess.conversation_id)
+
+
+def _resolve_activity(message: str, last_results: list) -> bool:
+    """试探消息是否能在 last_results 中匹配到具体活动（序号或活动名）。"""
+    if not last_results:
+        return False
+    probe = ActivityRegisterState()
+    probe.last_query_results = last_results
+    probe.resolve_index(message)
+    if probe.activity_id or probe.activity_name:
+        return True
+    probe.resolve_name(message)
+    return bool(probe.activity_id or probe.activity_name)
+
+
+def _format_cached_activities(last_results: list) -> str:
+    """把缓存的活动/讲座列表拼成可读文本（复用直查结果的展示格式）。"""
+    if not last_results:
+        return "暂时查不到活动信息，请稍后重试"
+    lines = ["为您找到以下活动和讲座：\n"]
+    for i, r in enumerate(last_results, 1):
+        kind = "讲座" if r.get("kind") == "lecture" else "活动"
+        lines.append(
+            f"{i}. 【{kind}】{r.get('title', '')}\n"
+            f"   时间: {r.get('event_time', '待定')} | 地点: {r.get('location', '待定')}"
+            + (f" | 主讲: {r['speaker']}" if r.get("speaker") else "")
+        )
+    return "\n".join(lines)
 
 
 def _detect_register_kind(last_results: list) -> str:
@@ -482,10 +619,7 @@ def handle_activity_register(message: str, params: dict, context: list,
             return _fallback_nl2sql_register(reg, sess)
 
         if result["ok"]:
-            return (f"报名成功！✅\n"
-                    f"活动：{reg.activity_name}\n"
-                    f"姓名：{reg.name}  手机：{reg.phone}\n\n"
-                    f"期待你的参与～有任何变动随时联系我 😊")
+            return _build_register_success(reg)
         if result.get("reason") == "duplicate":
             return (f"你已报名过这项活动啦，无需重复报名～\n"
                     f"（{reg.name} / {reg.phone}）")
@@ -526,32 +660,52 @@ def _fallback_nl2sql_register(reg: ActivityRegisterState,
             f"期待你的参与～有任何变动随时联系我哦 😊")
 
 
+def _build_register_success(reg: ActivityRegisterState) -> str:
+    """拼接报名成功页：活动详情 + 报名人信息，给用户一个完整结果。"""
+    kind_label = "讲座" if reg.kind == "lecture" else "活动"
+    lines = [
+        f"🎉 报名成功！✅\n",
+        f"📌 {kind_label}：{reg.activity_name}",
+    ]
+    if reg.event_time:
+        lines.append(f"🕒 时间：{reg.event_time}")
+    if reg.location:
+        lines.append(f"📍 地点：{reg.location}")
+    if reg.speaker:
+        lines.append(f"🎤 主讲：{reg.speaker}")
+    lines.append(f"\n👤 姓名：{reg.name}")
+    lines.append(f"📱 手机：{reg.phone}")
+    lines.append(f"\n期待你的参与～有任何变动随时联系我 😊")
+    return "\n".join(lines)
+
+
 # ============================================================
 # Handler: FAQ → RAG(高频问题FAQ)
 # ============================================================
 def handle_faq(message: str, params: dict, context: list,
                sess: SessionState, conv_id: str) -> str:
+    # 安全兜底：如果消息明确问的是课程/活动，FAQ 知识库里没有这些实时数据，
+    # 直接转到对应接口处理，避免检索 FAQ 得到无关内容。
+    from customer_agent.intent import _COURSE_KW, _ACTIVITY_KW
+    _msg = message
+    if any(kw in _msg for kw in _COURSE_KW):
+        return handle_course_recommendation(message, params, context, sess, conv_id)
+    if any(kw in _msg for kw in _ACTIVITY_KW):
+        return handle_activity(message, params, context, sess, conv_id)
+
     kb = get_kb()
-    # FAQ 精确匹配（优先）
+    # FAQ 精确匹配（优先）→ 统一走 LLM 改写, 不再原样输出
     ans = kb.faq_match(message)
     if ans:
-        return ans + "\n\n还有疑问可以继续问我哈 💪"
+        return _rewrite_with_llm(
+            message, context, [ans], "faq", sess, conv_id,
+            fallback=ans + "\n\n还有疑问可以继续问我哈 💪"
+        )
 
-    # FAQ 语义搜
+    # FAQ 语义搜 → 统一走 LLM 改写
     docs = kb.search_by_intent(message, "faq", top_k=3)
     if docs:
-        ctx_text = "\n\n".join(docs)
-        instruction = (
-            f"以下是 FAQ 参考材料：\n\n{ctx_text}\n\n"
-            f"用户问题：「{message}」\n\n"
-            f"★★★ 回答要求 ★★★\n"
-            f"1. FAQ 问题要答得直接、准确，开头就回答结论\n"
-            f"2. 用材料中的信息回答，不要照搬原文，用自己的话说清楚\n"
-            f"3. 涉及金额、时间、材料清单等，必须精确到材料中的数字，没有就不写\n"
-            f"4. 材料不够覆盖问题时，诚实告知详细情况可联系顾问，不要编造流程/价格\n"
-            f"5. 不超过 280 字，语气简洁专业"
-        )
-        return llm.agent_reply(message, context, extra_instruction=instruction)
+        return _rewrite_with_llm(message, context, docs, "faq", sess, conv_id)
 
     # 材料搜索也没命中
     return ("这个问题我不太确定最准确的答案。建议你：\n"

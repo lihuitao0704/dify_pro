@@ -26,56 +26,53 @@ from dataclasses import dataclass, field
 @dataclass
 class CourseRecommendationState:
     """课程推荐的多轮参数收集状态"""
+    # ── 必填三件套（推荐 API 最低要求）──
     education: str = ""            # 学历（必须）
-    target_major: str = ""                # 意向专业（必须）
+    target_major: str = ""         # 意向专业（必须）
     language_score: str = ""       # 语言成绩（必须）
-    country: str = ""              # 意向国家（可选）
-    gpa: str = ""                  # GPA（可选）
-    budget: str = ""               # 预算（可选）
-    intake: str = ""               # 入学时间（可选）
-    work_experience: str = ""      # 工作经验（可选）
-    asked_fields: list = field(default_factory=list)  # 已追问过的可选字段
-    # 🆕 推荐流程阶段：required → enrichment → contact → done
-    phase: str = "required"
-    enrichment_asked: list = field(default_factory=list)  # 已追问的可选字段
+    # ── 画像补充字段（enrichment 阶段逐步追问，补齐 user_profiles）──
+    country: str = ""              # 意向国家
+    gpa: str = ""                  # GPA
+    budget: str = ""               # 预算
+    intake: str = ""               # 入学时间
+    work_experience: str = ""      # 工作经验
+    age: str = ""                  # 年龄
+    wechat: str = ""               # 微信
+    # ── 追问追踪 ──
+    asked_fields: list = field(default_factory=list)  # 已追问过的字段（含必填+补充）
+    phase: str = "required"        # required → enrichment → recommend
+    # ── 推荐后转化收集 ──
     name: str = ""                 # 收集姓名（推荐后转化用）
     phone: str = ""                # 收集手机号
 
+    # 所有需要逐步追问的字段（必填优先，随后是补充）
+    _ALL_FIELDS = [
+        "education", "target_major", "language_score",
+        "country", "gpa", "budget", "intake", "work_experience",
+        "age", "wechat",
+    ]
+    # 其中前 3 个是必填（API 硬性要求），其余是补充
+    _REQUIRED_FIELDS = ["education", "target_major", "language_score"]
+
     def is_ready(self) -> bool:
-        """三个核心参数是否齐全"""
+        """三个核心参数是否齐全（才允许调推荐 API）"""
         return bool(self.education and self.target_major and self.language_score)
 
+    def has_all_fields(self) -> bool:
+        """所有字段是否都已收集（必填 + 补充）"""
+        return all(getattr(self, f) for f in self._ALL_FIELDS)
+
     def next_missing_field(self) -> Optional[str]:
-        """返回下一个需要追问的字段（按优先级：必填 → 可选）"""
-        # 必填三件套优先
-        for f in ["education", "target_major", "language_score"]:
+        """返回下一个需要追问的字段。
+        顺序：必填三件套 → 画像补充字段（国家/GPA/预算/入学/工作/年龄/微信）→ None。
+        全部补齐后返回 None，主流程才会调推荐 API。
+        """
+        for f in self._ALL_FIELDS:
             if not getattr(self, f):
                 if f not in self.asked_fields:
                     self.asked_fields.append(f)
                 return f
         return None
-
-    # ── 新增：可选字段追问（enrichment 阶段）──────────────────────
-    _ENRICHMENT_FIELDS = ["country", "gpa", "budget", "intake", "work_experience"]
-
-    def next_enrichment_field(self) -> Optional[str]:
-        """返回下一个要追问的可选字段，全部问完返回 None"""
-        for f in self._ENRICHMENT_FIELDS:
-            if f not in self.enrichment_asked:
-                self.enrichment_asked.append(f)
-                return f
-        return None
-
-    def get_enrichment_question(self, field: str) -> str:
-        """enrichment 阶段的追问话术"""
-        questions = {
-            "country":        "您有倾向的留学国家吗？我们主要做德国和新加坡～",
-            "gpa":            "方便说一下您的GPA或均分吗？（例如 3.2/4.0 或 82/100）",
-            "budget":         "您的留学预算大概在什么范围？（例如 15 万/年、总预算 30 万）",
-            "intake":         "计划什么时间入学呢？（如 2027 秋季）",
-            "work_experience": "有没有相关的工作或实习经验？",
-        }
-        return questions.get(field, f"请补充一下：{field}")
 
     def fill_from_message(self, msg: str):
         """从用户消息提取推荐参数到自身（正则 + 关键词）"""
@@ -145,19 +142,36 @@ class CourseRecommendationState:
             if m:
                 self.intake = m.group(0)
 
-        # 工作经验
+        # 工作经验（支持 "工作2年"、"2年工作经验"、"1年实习" 等表述）
         if not self.work_experience:
-            if re.search(r"(工作|实习).*(\d+)年", msg):
-                self.work_experience = re.search(r"(\d+)年", msg).group(0)
+            m = re.search(r"(\d+)\s*年.*?(工作|实习)|(工作|实习).*?(\d+)\s*年", msg)
+            if m:
+                # 取匹配到的数字组（两种顺序必有一组非 None）
+                num = m.group(1) or m.group(4)
+                kind = m.group(2) or m.group(3)
+                self.work_experience = f"{num}年{kind}"
+
+        # 年龄
+        if not self.age:
+            m = re.search(r"(?:年龄|年纪|岁数)[^\d]*(\d{1,3})", msg, re.I)
+            if m:
+                self.age = m.group(1)
+            elif re.search(r"(\d{1,3})\s*岁", msg):
+                self.age = re.search(r"(\d{1,3})\s*岁", msg).group(1)
+
+        # 微信（支持 "微信xxx"、"wechat:xxx"、"wx-xxx" 等格式）
+        if not self.wechat:
+            m = re.search(r"(?:微信|wechat|wx)[：:\s_-]*([a-zA-Z0-9_-]{2,20})", msg, re.I)
+            if m:
+                self.wechat = m.group(1)
 
     def diff_new_fields(self, msg: str) -> dict:
         """
         执行 fill_from_message 前后对比，返回这一步新提取的字段。
         只返回"之前为空、现在非空"的字段。 router.py 据此判断是否有新信息写库。
-        例：用户说"我的专业是计算机" → {"major": "计算机"}
+        例：用户说"我的专业是计算机" → {"target_major": "计算机"}
         """
-        _FIELDS = ["education", "target_major", "language_score", "country",
-                   "gpa", "budget", "intake", "work_experience"]
+        _FIELDS = self._ALL_FIELDS  # 全量字段统一 diff
         before = {f: getattr(self, f) for f in _FIELDS}
         self.fill_from_message(msg)
         new_fields = {}
@@ -168,18 +182,19 @@ class CourseRecommendationState:
         return new_fields
 
     def get_question(self, field: str) -> str:
-        """获取对应字段的追问话术"""
+        """获取对应字段的追问话术（覆盖全部字段）"""
         questions = {
-            "education":      "请问您目前是什么学历呢？（高中/本科/硕士/博士）",
-            "target_major":          "请问您希望申请什么专业方向呢？（如计算机、商科、机械等）",
-            "language_score": "目前有雅思、托福或德语成绩吗？大概多少分呢？",
-            "country":        "您有倾向的留学国家吗？我们主要做德国和新加坡～",
-            "gpa":            "方便说一下您的GPA或均分吗？",
-            "budget":         "您的留学预算大概是多少呢？",
-            "intake":         "您计划什么时间入学呢？（如2026年秋季）",
-            "work_experience": "您有相关的工作经验吗？",
+            "education":       "请问您目前是什么学历呢？（高中/本科/硕士/博士）",
+            "target_major":    "请问您希望申请什么专业方向呢？（如计算机、商科、机械等）",
+            "language_score":  "目前有雅思、托福或德语成绩吗？大概多少分呢？",
+            "country":         "您有倾向的留学国家吗？我们主要做德国和新加坡～",
+            "gpa":             "方便说一下您的GPA或均分吗？（例如 3.2/4.0 或 82/100）",
+            "budget":          "您的留学预算大概在什么范围？（例如 15 万/年、总预算 30 万）",
+            "intake":          "计划什么时间入学呢？（如 2027 秋季）",
+            "work_experience": "有没有相关的工作或实习经验？",
+            "age":             "方便告诉我您的年龄吗？（用于匹配学制和签证方案）",
+            "wechat":          "可以留一个微信吗？后续顾问可以直接加您同步方案～",
         }
-        # 末尾追加"边聊边记住"提示，让用户明确知道会逐步存
         q = questions.get(field, f"请补充一下：{field}")
         return q + "\n（边聊边记住你的信息哦～）"
 
@@ -197,6 +212,11 @@ class ActivityRegisterState:
     phone: str = ""                # 报名人手机号（必填）
     asked_fields: list = field(default_factory=list)  # 已追问过的字段
     last_query_results: list = field(default_factory=list)  # 缓存最近查询结果
+    # 🆕 活动详情（resolve_index/resolve_name 时从缓存拷贝，用于报名成功页展示）
+    event_time: str = ""           # 活动时间
+    location: str = ""             # 活动地点
+    speaker: str = ""              # 主讲人
+    kind: str = ""                 # 类型: lecture / activity
 
     def is_ready(self) -> bool:
         """姓名 + 手机号 + 活动(三选一) 齐全才算 ready"""
@@ -303,6 +323,8 @@ class ActivityRegisterState:
                 self.activity_id = str(item.get("id", item.get("activity_id", "")))
                 self.activity_name = item.get("name", item.get("activity_name",
                                                              item.get("title", "")))
+                # 同步活动详情，供报名成功页展示
+                self._fill_event_detail(item)
                 return True
         return False
 
@@ -316,8 +338,17 @@ class ActivityRegisterState:
                 self.activity_index = i
                 self.activity_id = str(item.get("id", item.get("activity_id", "")))
                 self.activity_name = name
+                # 同步活动详情，供报名成功页展示
+                self._fill_event_detail(item)
                 return True
         return False
+
+    def _fill_event_detail(self, item: dict):
+        """从缓存结果 item 拷贝活动详情字段。"""
+        self.event_time = str(item.get("event_time", ""))
+        self.location = item.get("location", "")
+        self.speaker = item.get("speaker", "")
+        self.kind = item.get("kind", "activity")
 
     def get_question(self, field: str) -> str:
         """获取对应字段的追问话术"""

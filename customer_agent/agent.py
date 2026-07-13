@@ -185,22 +185,34 @@ def _classify_and_dispatch(message, session_id, context, sess, conversation_id):
 
 
 def _offline_fallback(message: str, intents: list, sess) -> str:
-    """LLM离线时的规则兜底回复（优先取知识库原文片段）"""
+    """LLM 离线时的规则兜底回复。
+
+    优先尝试 LLM 改写(若 LLM 实际可用); LLM 真不可用时降级为知识库原文片段 + 标记。
+    """
     primary = intents[0]["intent"] if intents else "chat"
 
     kb = get_kb()
 
-    # FAQ 优先精确匹配
+    # FAQ 优先精确匹配 → 尝试 LLM 改写, 失败则降级原文
     if primary == "faq":
         ans = kb.faq_match(message)
         if ans:
-            return ans + "\n\n还有其他问题可以继续问我哈~"
+            from customer_agent.router import _rewrite_with_llm
+            return _rewrite_with_llm(
+                message, [], [ans], "faq", sess, "",
+                fallback=ans + "\n\n还有其他问题可以继续问我哈~"
+            )
 
-    # 业务类意图：先从知识库检索原文片段返回（离线也能答）
+    # 业务类意图：LLM 可用时改写, 不可用时才降级原文片段
     if primary in ("company_info", "company_service", "study_policy", "faq"):
         docs = kb.search(message, top_k=2)
         if docs:
-            return docs[0][:280] + "\n\n（当前为知识库原文参考，如需更详细解答可稍后重试在线模式）"
+            from customer_agent.router import _rewrite_with_llm
+            return _rewrite_with_llm(
+                message, [], docs, primary, sess, "",
+                fallback=(docs[0][:280]
+                          + "\n\n（当前为知识库原文参考，如需更详细解答可稍后重试在线模式）")
+            )
 
     # 活动服务未启动
     if primary in ("activity", "activity_register"):
