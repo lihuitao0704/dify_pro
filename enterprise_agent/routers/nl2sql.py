@@ -42,10 +42,11 @@ TABLE_META = {
         "fields": ["id", "student_id", "complaint_detail", "complaint_type",
                     "handle_status", "handler_user_id", "create_time"],
     },
-    "student": {
-        "comment": "学生表",
-        "fields": ["id", "name", "phone", "email", "education", "major", "school",
-                    "target_country", "target_degree", "contract_status"],
+    "student_info": {
+        "comment": "学生信息表（已签约学员）",
+        "fields": ["id", "name", "phone", "email", "education", "school", "major",
+                    "project_name", "status", "language_exam", "language_score",
+                    "consultant_id", "enroll_date", "student_no"],
     },
     "employee": {
         "comment": "员工表",
@@ -156,19 +157,6 @@ def nl2sql_generate(natural_query: str) -> str:
         else:
             return "SELECT id, student_id, university, program_name, application_status, intake, submitted_date FROM application_record ORDER BY updated_at DESC LIMIT 20"
 
-    # ===== 预约/面谈相关 =====
-    if any(kw in query for kw in ["预约", "面谈", "咨询", "约谈", "见面"]):
-        student_id = None
-        m = re.search(r"学生[#\s]*(\d+)", query)
-        if m:
-            student_id = m.group(1)
-        if student_id:
-            return f"SELECT * FROM appointment WHERE student_id={student_id} ORDER BY appointment_date DESC"
-        elif "今天" in query or "今日" in query:
-            return "SELECT * FROM appointment WHERE DATE(appointment_date) = CURDATE() ORDER BY appointment_date"
-        else:
-            return "SELECT * FROM appointment ORDER BY appointment_date DESC LIMIT 20"
-
     # ===== 材料/文档相关 =====
     if any(kw in query for kw in ["材料", "文档", "文件", "资料", "文书"]):
         app_id = None
@@ -181,6 +169,19 @@ def nl2sql_generate(natural_query: str) -> str:
             return "SELECT * FROM document_checklist WHERE status='pending' ORDER BY deadline ASC"
         else:
             return "SELECT * FROM document_checklist ORDER BY deadline ASC LIMIT 20"
+
+    # ===== 预约/面谈相关 =====
+    if any(kw in query for kw in ["预约", "面谈", "咨询", "约谈", "见面"]):
+        student_id = None
+        m = re.search(r"学生[#\s]*(\d+)", query)
+        if m:
+            student_id = m.group(1)
+        if student_id:
+            return f"SELECT * FROM appointment WHERE student_id={student_id} ORDER BY appointment_date DESC"
+        elif "今天" in query or "今日" in query:
+            return "SELECT * FROM appointment WHERE DATE(appointment_date) = CURDATE() ORDER BY appointment_date"
+        else:
+            return "SELECT * FROM appointment ORDER BY appointment_date DESC LIMIT 20"
 
     # ===== 心理预警相关 =====
     if any(kw in query for kw in ["心理", "预警", "风险学生", "情绪"]):
@@ -214,9 +215,25 @@ def nl2sql_generate(natural_query: str) -> str:
     if any(kw in query for kw in ["员工", "人员"]):
         return "SELECT emp_id, emp_name, dept_id, position, phone, email FROM employee WHERE status=1 ORDER BY emp_id"
 
-    # ===== 学生相关 =====
+    # ===== 学生相关（查 student_info 表） =====
     if "学生" in query:
-        return "SELECT id, name, phone, education, major, school, target_country FROM student ORDER BY id LIMIT 20"
+        kw = None
+        for w in ["搜索", "查找", "找", "查"]:
+            parts = query.split(w, 1)
+            if len(parts) > 1 and parts[1].strip():
+                kw = parts[1].strip()
+                break
+        if not kw:
+            # 尝试从文本中提取院校名（"清华大学的学生" → 清华大学）
+            import re as _re
+            m = _re.search(r'(\w+)的\w*生', query)
+            if m:
+                kw = m.group(1)
+        # 如果关键词是"所有"/"全部"等无意义词，忽略过滤
+        if kw and kw not in ("所有", "全部", "所有学生", "全部学生", "信息", "列表", "名单", "数据", "资料"):
+            safe_kw = kw.replace("'", "\\'")
+            return f"SELECT id, name, phone, education, school, major, project_name, status FROM student_info WHERE name LIKE '%{safe_kw}%' OR school LIKE '%{safe_kw}%' OR project_name LIKE '%{safe_kw}%' ORDER BY id LIMIT 20"
+        return "SELECT id, name, phone, education, school, major, project_name, status FROM student_info ORDER BY id LIMIT 20"
 
     # ===== 账户相关 =====
     if any(kw in query for kw in ["账户", "账号", "登录用户"]):
@@ -298,7 +315,7 @@ def query_nl2sql(req: NL2SQLRequest, db: Session = Depends(get_db)):
             sql = nl2sql_llm(query_text)
 
         if not sql:
-            return ApiResponse(code=400, msg=f"无法理解您的查询：'{query_text}'。请尝试更清晰的描述，例如「查看所有客户」、「查看待审批的请假」、「查询学生成绩」等。")
+            return ApiResponse(code=400, msg=f"嗯…「{query_text}」这个我暂时还不太明白 🤔\n\n你可以试试这样说：\n• 「查看所有客户」\n• 「查看待审批的请假」\n• 「查询学生成绩」\n• 「查所有学生」")
 
         # 强制校验只允许 SELECT
         try:

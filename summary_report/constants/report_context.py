@@ -11,9 +11,9 @@ CUSTOMER_REPORT_CONTEXT: str = """
 【全域客户经营分析报告】
 核心目标：全面覆盖签约、跟进中、已流失三大客群。
 - 意向客户：按 customer_source 分析渠道效果、按 current_status 分布、按 sales_user_id 解析顾问业绩
-- 签约客户：复盘签约路径与高价值画像（target_country/budget/language_level）
+- 签约客户：复盘签约路径与高价值画像（target_country/budget/language_score）
 - 流失客户：智能归因（已流失状态分布、来源渠道流失率）
-数据源：intention_customer / consultations / user_profiles / account / organization
+数据源：intention_customer / consultations / user_profiles / account / department
 输出：从精准获客到流失挽回的全链路决策支持报告
 """
 
@@ -21,10 +21,10 @@ EMPLOYEE_REPORT_CONTEXT: str = """
 【员工日报智能汇总报告】
 核心目标：对全员提交的 employee_daily_report 文本内容进行自动化梳理与提炼。
 - 按 user_id + 关联 account.real_name 统计员工的日报提交情况
-- 按 dept_id + 关联 organization.dept_name 汇总部门产出
+- 按 dept_id + 关联 department.dept_name 汇总部门产出
 - 从 report_content 文本中提取关键成果、风险/阻塞项
 - 帮助管理层快速感知团队整体工作进度与项目健康度
-数据源：employee_daily_report / account / organization
+数据源：employee_daily_report / account / department
 注意：日报内容在 report_content 文本字段，分析时使用 LIKE 匹配关键词
 """
 
@@ -44,9 +44,12 @@ COMPLAINT_REPORT_CONTEXT: str = """
 核心目标：全流程数据追踪，提升服务售后质量与响应效率。
 - 以 student_feedback_ticket 统计本周投诉(ticket_type='complaint')总量及同环比
 - 按 category/priority/status 分类统计分布与处理时效
-- 按 handle_status ENUM('待处理','处理中','已解决','已关闭')统计积压
+- 按 handle_status ENUM('待处理','处理中','已完结','驳回')统计积压，
+  其中"已完结"=已解决/已关闭，"驳回"=已关闭
 - 跟进 satisfaction 满意度评分
 - student_complaint 作为投诉主表补充 complaint_type 维度
+- 两表等价关系：student_complaint.handle_status(中文) ↔ student_feedback_ticket.status(英文)：
+  待处理=pending, 处理中=processing, 已完结=resolved, 驳回=closed
 数据源：student_feedback_ticket / student_complaint / account
 """
 
@@ -59,7 +62,7 @@ GENERAL_REPORT_CONTEXT: str = (
 STUDENT_REPORT_CONTEXT: str = """
 【学生数据分析报告】
 核心目标：面向校内学生群体的全景数据洞察。
-- 留学申请进度：按 stage 分布统计各阶段学生数量、关注 deadline 临近的待办事项
+- 留学申请进度：按 current_step 分布统计各阶段学生数量、关注 estimated_completion 临近的待办事项
 - 学业成绩：按 subject/exam_type 分析成绩分布与趋势
 - 行政审批：请假(leave)审批效率与类型分布
 - 心理健康：基于 student_psych_record 的情绪态势、按 risk_level 识别风险学生分布
@@ -74,6 +77,6 @@ ENTERPRISE_REPORT_CONTEXT: str = """
 - 客户经营：按 customer_source 分析渠道效果、按 current_status 分布（已签约/跟进中/已流失）、按 sales_user_id 解析顾问业绩
 - 员工日报：按 user_id/dept_id 统计日报提交情况、从 report_content 提取关键成果
 - 课程管理：课程按 category/country 分布与定价分析
-数据源：intention_customer / consultations / user_profiles / account / organization / employee_daily_report / courses
+数据源：intention_customer / consultations / user_profiles / account / department / employee_daily_report / courses
 注意：本类查询不涉及学生成绩、心理健康、留学申请等学生模块数据
 """

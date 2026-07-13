@@ -188,10 +188,28 @@ def generate_sql(
 3. 涉及多表查询时使用 JOIN 关联，并写清楚 ON 条件
 4. 聚合查询使用 GROUP BY
 5. 如果有日期范围筛选，使用 BETWEEN 或 >= <=
-6. 如果有同环比计算，使用子查询或窗口函数
-7. 返回格式：["SELECT ... FROM ...", "SELECT ... FROM ..."]
-8. 如果用户的问题与数据库查询完全无关（如聊天、问候、天气、自我介绍、纯数字等），
-   请返回特殊标记：["__CHAT__"]
+6. 时间字段选择规则（重要！根据问题语义选择正确的时间字段）：
+   - create_time 是线索/记录录入时间，仅当问题明确询问"新增/录入/创建/入库"等录入时间时使用。
+   - update_time 是记录最后更新时间，当问题询问状态变更时间时（如"本月已签约"意为"本月状态变为已签约"、
+     "本月已流失"、"何时签约"等），必须使用 update_time 作为状态变更时间的最佳近似，
+     禁止对状态变更类问题使用 create_time，否则会错误地只查出本月新录入的记录而漏掉
+     此前录入、本月才签约/流失的客户。
+   - 判断依据：问"什么时候录入/新增的"→ create_time；问"什么时候变成这个状态的/签约的/流失的"→ update_time。
+7. 相对时间词（本周/近一周/最近一周/本月/近一个月等）必须转换为确定的日期范围表达式，
+   禁止依赖 WEEKDAY() / YEARWEEK() / WEEK() 等"对齐到当前周起始"的函数生成筛选条件，
+   否则周一查询时会定位到当天所在的新空周而漏掉前一周数据。
+   其中 date_column 根据上面第6条规则选择 create_time 或 update_time。
+   推荐用法：
+   - "本周/近一周/最近一周" → date_column >= CURDATE() - INTERVAL 7 DAY
+   - "本月" → date_column >= DATE_FORMAT(CURDATE(), '%Y-%m-01')
+               AND date_column < DATE_FORMAT(CURDATE() + INTERVAL 1 MONTH, '%Y-%m-01')
+   - "上月" → date_column >= DATE_FORMAT(CURDATE() - INTERVAL 1 MONTH, '%Y-%m-01')
+               AND date_column < DATE_FORMAT(CURDATE(), '%Y-%m-01')
+   - "近N天" → date_column >= CURDATE() - INTERVAL N DAY
+8. 如果有同环比计算，使用子查询或窗口函数
+9. 返回格式：["SELECT ... FROM ...", "SELECT ... FROM ..."]
+10. 如果用户的问题与数据库查询完全无关（如聊天、问候、天气、自我介绍、纯数字等），
+    请返回特殊标记：["__CHAT__"]
 
 JSON 格式示例：
 ["SELECT st.name, s.score FROM students st JOIN scores s ON st.id = s.student_id WHERE st.name = '张三'"]
@@ -255,6 +273,7 @@ def polish_report(
         润色后的报告文本。
     """
     formatted = _format_results_for_polish(all_results)
+    period_note = _current_week_period_note()
     prompt = f"""
 你是一个专业的数据分析师和报告撰写助手。根据用户的问题、查询的数据结果，生成一份专业、详细的分析报告。
 
@@ -266,18 +285,42 @@ def polish_report(
 数据查询结果：
 {formatted}
 
+当前时间：{period_note}
+
 要求：
 1. 用专业的报告格式回答，包含标题、分点、数据支撑
-2. 先给出核心结论（1-2句话概括）
-3. 然后分维度详细分析数据
-4. 对于有趋势的数据，指出变化方向和关键节点
-5. 对于有异常的数据，标注风险点和关注事项
-6. 最后给出可落地的建议
-7. 不要解释SQL语句或技术细节
-8. 字数控制在 {REPORT_MAX_CHARS} 字以内，保持简洁有力
-9. 如果有同环比数据，明确指出增长/下降幅度
+2. 报告中的"报告周期"必须使用上面给出的当前真实时间，严禁编造或猜测年份、日期
+3. 所有数字（人数、份数、次数、比例、百分比、提交率、部门数等）必须且只能直接引用
+   "数据查询结果"中出现的数值，严禁对缺漏数据推算、估算、补全或凭空编造；
+   某一维度数据未在结果中出现时，应明确写"该维度数据未提供"，不得用占据位的数字代替
+4. 先给出核心结论（1-2句话概括，只能基于数据查询结果中实际出现的部门/数值）
+5. 然后分维度详细分析数据，不要把查询结果中不存在的部门或数量写入结论
+6. 对于有趋势的数据，指出变化方向和关键节点
+7. 对于有异常的数据，标注风险点和关注事项
+8. 最后给出可落地的建议
+9. 不要解释SQL语句或技术细节
+10. 字数控制在 {REPORT_MAX_CHARS} 字以内，保持简洁有力
+11. 如果有同环比数据，明确指出增长/下降幅度
 """
     return call_llm(prompt).strip()
+
+
+def _current_week_period_note() -> str:
+    """生成当前日期与本周时间范围的自然语言描述，供 prompt 注入使用。
+
+    示例返回：2026-07-13（周一），本周：2026年7月13日—2026年7月19日（周一到周日）
+    """
+    from datetime import date, timedelta
+
+    today = date.today()
+    monday = today - timedelta(days=today.weekday())
+    sunday = monday + timedelta(days=6)
+    weekday_names = ["周一", "周二", "周三", "周四", "周五", "周六", "周日"]
+    return (
+        f"{today.isoformat()}（{weekday_names[today.weekday()]}），"
+        f"本周：{monday.year}年{monday.month}月{monday.day}日—"
+        f"{sunday.year}年{sunday.month}月{sunday.day}日（周一到周日）"
+    )
 
 
 def _regenerate_sql_with_feedback(

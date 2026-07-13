@@ -15,9 +15,12 @@ RETRY_DELAY = 0.5
 CURRENT_USER_ID = 1
 CURRENT_USER_TYPE = "管理者"
 
+# 全局 Bearer Token（由登录接口设置，所有请求自动携带）
+API_TOKEN = ""
 
-def _request(method, path, params=None, body=None, user_id=None, user_type=None):
-    """通用请求：带重试、超时、优雅降级"""
+
+def _request(method, path, params=None, body=None, user_id=None, user_type=None, token=None):
+    """通用请求：带重试、超时、优雅降级。优先使用 Bearer Token 鉴权。"""
     if user_id is None or user_type is None:
         raise ValueError("user_id and user_type are required — do not use defaults")
 
@@ -25,15 +28,21 @@ def _request(method, path, params=None, body=None, user_id=None, user_type=None)
     req_params = {**(params or {}), "current_user_id": user_id, "current_user_type": user_type}
     req_body = {**(body or {}), "current_user_id": user_id, "current_user_type": user_type}
 
+    # 构建请求头（有 token 则带上）
+    headers = {"Content-Type": "application/json"}
+    _token = token or API_TOKEN
+    if _token:
+        headers["Authorization"] = f"Bearer {_token}"
+
     last_error = None
     for attempt in range(MAX_RETRIES + 1):
         try:
             if method == "GET":
-                r = requests.get(url, params=req_params, timeout=10)
+                r = requests.get(url, params=req_params, headers=headers, timeout=10)
             elif method == "POST":
-                r = requests.post(url, json=req_body, timeout=10)
+                r = requests.post(url, json=req_body, headers=headers, timeout=10)
             elif method == "PUT":
-                r = requests.put(url, json=req_body, timeout=10)
+                r = requests.put(url, json=req_body, headers=headers, timeout=10)
             else:
                 return {"code": -1, "msg": f"Unsupported: {method}", "data": None}
             r.raise_for_status()
@@ -161,6 +170,17 @@ def get_score_list(student_id=None, subject="", user_id=None, user_type=None) ->
     if student_id: params["student_id"] = student_id
     if subject: params["subject"] = subject
     return _get("/score/list", params, user_id=user_id, user_type=user_type)
+
+
+def get_student_list(keyword="", status="", page=1, user_id=None, user_type=None) -> dict:
+    params = {"page": page, "page_size": 20}
+    if keyword: params["keyword"] = keyword
+    if status: params["status"] = status
+    return _get("/student/list", params, user_id=user_id, user_type=user_type)
+
+
+def get_student_detail(student_id, user_id=None, user_type=None) -> dict:
+    return _get(f"/student/{student_id}", user_id=user_id, user_type=user_type)
 
 
 def query_knowledge(question, user_id=None, user_type=None) -> dict:

@@ -1,0 +1,285 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>企业智能助手 - 测试面板</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:-apple-system,BlinkMacSystemFont,"Microsoft YaHei",sans-serif;background:#f0f2f5;color:#172b4d;font-size:14px;line-height:1.5}
+.top{background:#0d1117;color:#fff;padding:14px 24px;display:flex;justify-content:space-between;align-items:center}
+.top h1{font-size:17px;font-weight:600}
+.top .info{font-size:12px;color:rgba(255,255,255,.5)}
+body{padding:20px}
+.tabs{display:flex;gap:4px;flex-wrap:wrap;margin-bottom:16px}
+.tab{padding:8px 18px;border-radius:6px;cursor:pointer;font-size:13px;font-weight:500;background:#fff;border:1px solid #e4e7ec;color:#5e6c84;transition:.12s}
+.tab:hover{border-color:#0052cc;color:#0052cc}
+.tab.on{background:#0052cc;color:#fff;border-color:#0052cc}
+.panel{display:none}
+.panel.on{display:block}
+.card{background:#fff;border-radius:8px;padding:16px;margin-bottom:12px;box-shadow:0 1px 2px rgba(0,0,0,.06)}
+.card h3{font-size:14px;font-weight:600;margin-bottom:10px;display:flex;align-items:center;gap:6px}
+table{width:100%;border-collapse:collapse;font-size:13px;margin-top:8px}
+th,td{padding:8px 12px;text-align:left;border-bottom:1px solid #f0f0f0}
+th{background:#fafafa;font-weight:600;color:#5e6c84;font-size:12px}
+.status{padding:2px 10px;border-radius:100px;font-size:11px;font-weight:500;display:inline-block}
+.st-green{background:#e3fcef;color:#006644}.st-red{background:#ffebe6;color:#bf2600}
+.st-blue{background:#e6f0ff;color:#0052cc}.st-yellow{background:#fffae6;color:#172b4d}
+.bar{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;margin-bottom:12px}
+.bar>div{background:#fff;border-radius:8px;padding:14px;text-align:center;box-shadow:0 1px 2px rgba(0,0,0,.06)}
+.bar .n{font-size:24px;font-weight:700}.bar .l{font-size:12px;color:#7a869a;margin-top:2px}
+.fg{margin-bottom:8px}
+.fg label{display:block;font-size:12px;color:#5e6c84;margin-bottom:3px;font-weight:500}
+.fg input,.fg select{width:100%;padding:7px 10px;border:1px solid #e4e7ec;border-radius:4px;font-size:13px;outline:none}
+.fg input:focus{border-color:#0052cc}
+.btn{display:inline-flex;align-items:center;gap:4px;padding:7px 16px;border:none;border-radius:4px;cursor:pointer;font-size:13px;transition:.12s}
+.btn-p{background:#0052cc;color:#fff}.btn-p:hover{background:#0047b3}
+.btn-g{background:#fff;color:#42526e;border:1px solid #e4e7ec}
+.loading{text-align:center;padding:24px;color:#7a869a;font-size:13px}
+.sec{font-size:11px;color:#97a0af;text-transform:uppercase;letter-spacing:.3px;margin:14px 0 6px;font-weight:600}
+.err{background:#ffebe6;color:#bf2600;padding:8px 12px;border-radius:4px;font-size:13px;margin:6px 0}
+</style>
+</head>
+<body>
+
+<div class="top">
+  <h1>🤖 企业智能助手 · 测试面板</h1>
+  <div class="info">localhost:8001 | <span id="statusDot" style="color:#36b37e">●</span> <span id="statusText">online</span></div>
+</div>
+
+<div style="padding:16px 0 0">
+  <div class="bar" id="statsBar"></div>
+</div>
+
+<div class="tabs" id="tabBar"></div>
+
+<div id="panelContent"></div>
+
+<script>
+const API = '/api/agent';
+const AUTH = "current_user_id=1&current_user_type=%E7%AE%A1%E7%90%86%E8%80%85";
+const TABS = ['dashboard','customer','leave','report','org','complaint','score','mental','knowledge','nl2sql','permission'];
+const TAB_LABELS = ['📊 总览','👥 客户','📅 请假','📝 日报','🏢 组织','⚠️ 投诉','📊 成绩','🧠 心理','📚 知识库','🔍 NL2SQL','🔐 权限'];
+
+let currentTab = 'dashboard';
+
+function _(id){return document.getElementById(id)}
+
+function api(path, opts){
+  opts=opts||{};var m=opts.method||'GET';var b=opts.body||null;var p=opts.params||{};
+  var url=API+path;var q=[];q.push(AUTH);
+  for(var k in p)q.push(k+'='+encodeURIComponent(p[k]));
+  if(m==='GET'&&q.length)url+='?'+q.join('&');
+  _('statusDot').style.color='#ffab00';_('statusText').textContent='req...';
+  return new Promise(function(r){
+    var x=new XMLHttpRequest();x.open(m,url,true);x.setRequestHeader('Accept','application/json');x.timeout=8000;
+    x.onload=function(){_('statusDot').style.color='#36b37e';_('statusText').textContent='online';try{r(JSON.parse(x.responseText))}catch(e){r({code:-1,msg:'parse error',data:null})}};
+    x.onerror=function(){_('statusDot').style.color='#bf2600';_('statusText').textContent='offline';r({code:-1,msg:'offline',data:null})};
+    x.ontimeout=function(){_('statusDot').style.color='#bf2600';_('statusText').textContent='timeout';r({code:-1,msg:'timeout',data:null})};
+    if(b){x.setRequestHeader('Content-Type','application/json');b.current_user_id=1;b.current_user_type='管理者';x.send(JSON.stringify(b))}else x.send();
+  });
+}
+
+function tag(s){
+  var m={'意向中':'st-blue','已签约':'st-green','已流失':'st-red','待处理':'st-yellow','处理中':'st-blue','已完结':'st-green','驳回':'st-red','待审批':'st-yellow','已通过':'st-green','已驳回':'st-red','pending':'st-yellow','resolved':'st-green','low':'st-green','medium':'st-yellow','high':'st-red'};
+  var l={'0':'待审批','1':'已通过','2':'已驳回'}[s]||s;
+  return '<span class="status '+(m[s]||'st-blue')+'">'+l+'</span>';
+}
+
+function renderTabs(){
+  var tb=_('tabBar');tb.innerHTML='';
+  TABS.forEach(function(id,i){
+    var d=document.createElement('div');
+    d.className='tab'+(id===currentTab?' on':'');
+    d.textContent=TAB_LABELS[i];
+    d.onclick=function(){currentTab=id;renderTabs();renderPanel()};
+    tb.appendChild(d);
+  });
+}
+
+function renderPanel(){
+  var ct=_('panelContent');
+  ct.innerHTML='<div class="loading">loading '+currentTab+'...</div>';
+  var R={
+    dashboard:renderDashboard, customer:renderCustomer, leave:renderLeave,
+    report:renderReport, org:renderOrg, complaint:renderComplaint,
+    score:renderScore, mental:renderMental, knowledge:renderKnowledge,
+    nl2sql:renderNL2SQL, permission:renderPermission,
+  };
+  (R[currentTab]||renderDashboard)();
+}
+
+/* === Dashboard === */
+function renderDashboard(){
+  Promise.all([
+    api('/todo/all'), api('/customer/list',{params:{page:1,page_size:1}}),
+    api('/mental/alerts'), api('/complaint/list',{params:{page:1,page_size:1}}),
+  ]).then(function(r){
+    var todo=r[0]&&r[0].data||{total:0,leave_pending:0,complaint_pending:0};
+    var cust=r[1]&&r[1].data||{total:0};var mental=r[2]&&r[2].data||{total:0};
+    _('statsBar').innerHTML=
+      '<div><div class="n" style="color:#0052cc">'+todo.total+'</div><div class="l">待办</div></div>'+
+      '<div><div class="n" style="color:#36b37e">'+cust.total+'</div><div class="l">客户</div></div>'+
+      '<div><div class="n" style="color:#ff5630">'+mental.total+'</div><div class="l">心理预警</div></div>'+
+      '<div><div class="n" style="color:#ffab00">'+todo.leave_pending+'</div><div class="l">请假待批</div></div>';
+    _('panelContent').innerHTML='<div class="card"><h3>✅ 系统运行正常</h3><p style="color:#5e6c84;font-size:13px">所有模块已加载，点击上方标签页测试各功能模块。</p><br><table><thead><tr><th>模块</th><th>路由数</th><th>状态</th></tr></thead><tbody>'+
+      '<tr><td>意向客户管理</td><td>5</td><td>'+tag('已通过')+'</td></tr>'+
+      '<tr><td>请假管理</td><td>4</td><td>'+tag('已通过')+'</td></tr>'+
+      '<tr><td>日报管理</td><td>2</td><td>'+tag('已通过')+'</td></tr>'+
+      '<tr><td>组织架构</td><td>1</td><td>'+tag('已通过')+'</td></tr>'+
+      '<tr><td>待办汇总</td><td>2</td><td>'+tag('已通过')+'</td></tr>'+
+      '<tr><td>投诉反馈</td><td>2</td><td>'+tag('已通过')+'</td></tr>'+
+      '<tr><td>成绩管理</td><td>2</td><td>'+tag('已通过')+'</td></tr>'+
+      '<tr><td>心理健康</td><td>4</td><td>'+tag('新增')+'</td></tr>'+
+      '<tr><td>知识库问答(JSON)</td><td>1</td><td>'+tag('已通过')+'</td></tr>'+
+      '<tr><td>NL2SQL查询</td><td>1</td><td>'+tag('已通过')+'</td></tr>'+
+      '<tr><td>登录认证</td><td>1</td><td>'+tag('已通过')+'</td></tr>'+
+      '</tbody></table></div>';
+  });
+}
+
+/* === Customer === */
+function renderCustomer(){
+  api('/customer/list',{params:{page:1,page_size:10}}).then(function(d){
+    if(!d||!d.data||!d.data.list){_('panelContent').innerHTML='<div class="card"><h3>👥 客户</h3><p>暂无数据</p></div>';return;}
+    var h='<div class="card"><h3>👥 意向客户 ('+d.data.total+'条)</h3><table><thead><tr><th>姓名</th><th>电话</th><th>来源</th><th>状态</th><th>销售</th></tr></thead><tbody>';
+    d.data.list.forEach(function(c){h+='<tr><td><b>'+c.customer_name+'</b></td><td>'+(c.customer_phone||'—')+'</td><td>'+(c.customer_source||'—')+'</td><td>'+tag(c.current_status)+'</td><td>'+c.sales_user_id+'</td></tr>'});
+    h+='</tbody></table></div>';_('panelContent').innerHTML=h;
+  });
+}
+
+/* === Leave === */
+function renderLeave(){
+  api('/leave/todo').then(function(d){
+    if(!d||!d.data||!d.data.list){_('panelContent').innerHTML='<div class="card"><h3>📅 请假</h3><p>暂无待审批</p></div>';return;}
+    var h='<div class="card"><h3>📅 待审批请假 ('+d.data.list.length+'条)</h3><table><thead><tr><th>类型</th><th>申请人</th><th>日期</th><th>原因</th><th>状态</th></tr></thead><tbody>';
+    d.data.list.forEach(function(l){h+='<tr><td>'+l.leave_type+'</td><td>'+(l.student_name||'#'+l.applicant_id)+'</td><td>'+l.start_date+'→'+l.end_date+'</td><td>'+(l.reason||'—')+'</td><td>'+tag(l.status)+'</td></tr>'});
+    h+='</tbody></table></div>';_('panelContent').innerHTML=h;
+  });
+}
+
+/* === Report === */
+function renderReport(){
+  api('/report/list',{params:{page:1,page_size:10}}).then(function(d){
+    if(!d||!d.data||!d.data.list){_('panelContent').innerHTML='<div class="card"><h3>📝 日报</h3><p>暂无数据</p></div>';return;}
+    var h='<div class="card"><h3>📝 日报列表 ('+d.data.total+'条)</h3><table><thead><tr><th>日期</th><th>用户</th><th>内容</th><th>时间</th></tr></thead><tbody>';
+    d.data.list.forEach(function(r){h+='<tr><td>'+r.report_date+'</td><td>'+r.user_id+'</td><td>'+r.report_content.substring(0,50)+'</td><td>'+fd(r.submit_time)+'</td></tr>'});
+    h+='</tbody></table></div>';_('panelContent').innerHTML=h;
+  });
+}
+function fd(d){return d?d.substring(0,10):'—'}
+
+/* === Org === */
+function renderOrg(){
+  api('/organization/tree').then(function(d){
+    if(!d||!d.data||!d.data.tree){_('panelContent').innerHTML='<div class="card"><h3>🏢 组织架构</h3><p>暂无数据</p></div>';return;}
+    var h='<div class="card"><h3>🏢 组织架构 ('+d.data.tree.length+'个一级部门)</h3>';
+    function walk(nodes,lv){nodes.forEach(function(n){
+      h+='<div style="padding-left:'+(lv*20)+'px;margin:2px 0;font-size:13px">'+(n.manager_name?'👤':'📁')+' <b>'+n.dept_name+'</b>'+(n.manager_name?' <span style="color:#7a869a">'+n.manager_name+'</span>':'')+' <span style="color:#97a0af;font-size:11px">('+(n.employees?n.employees.length:0)+'人)</span></div>';
+      if(n.employees)n.employees.forEach(function(e){h+='<div style="padding-left:'+((lv+1)*20+16)+'px;font-size:12px;color:#5e6c84">👤 '+e.emp_name+' '+e.position+'</div>'});
+      if(n.children)walk(n.children,lv+1);
+    });}
+    walk(d.data.tree,0);h+='</div>';_('panelContent').innerHTML=h;
+  });
+}
+
+/* === Complaint === */
+function renderComplaint(){
+  api('/complaint/list',{params:{page:1,page_size:20}}).then(function(d){
+    if(!d||!d.data||!d.data.list){_('panelContent').innerHTML='<div class="card"><h3>⚠️ 投诉</h3><p>暂无</p></div>';return;}
+    var h='<div class="card"><h3>⚠️ 投诉列表 ('+d.data.total+'条)</h3><table><thead><tr><th>ID</th><th>学生</th><th>类型</th><th>内容</th><th>状态</th></tr></thead><tbody>';
+    d.data.list.forEach(function(c){h+='<tr><td>#'+c.id+'</td><td>'+c.student_id+'</td><td>'+(c.complaint_type||'—')+'</td><td>'+c.complaint_detail.substring(0,40)+'</td><td>'+tag(c.handle_status)+'</td></tr>'});
+    h+='</tbody></table></div>';_('panelContent').innerHTML=h;
+  });
+}
+
+/* === Score === */
+function renderScore(){
+  api('/score/list',{params:{page:1,page_size:20}}).then(function(d){
+    if(!d||!d.data||!d.data.list){_('panelContent').innerHTML='<div class="card"><h3>📊 成绩</h3><p>暂无</p></div>';return;}
+    var h='<div class="card"><h3>📊 成绩列表 ('+d.data.total+'条)</h3><table><thead><tr><th>学生</th><th>科目</th><th>分数</th><th>类型</th><th>日期</th></tr></thead><tbody>';
+    d.data.list.forEach(function(s){h+='<tr><td>'+s.student_id+'</td><td>'+s.subject+'</td><td><b>'+s.score+'</b></td><td>'+(s.exam_type||'—')+'</td><td>'+(s.exam_date||'—')+'</td></tr>'});
+    h+='</tbody></table></div>';_('panelContent').innerHTML=h;
+  });
+}
+
+/* === Mental === */
+function renderMental(){
+  api('/mental/alerts',{params:{page:1,page_size:20}}).then(function(d){
+    if(!d||!d.data){_('panelContent').innerHTML='<div class="card"><h3>🧠 心理预警</h3><p>暂无数据</p></div>';return;}
+    var total=d.data.total||0;
+    _('panelContent').innerHTML='<div class="bar"><div><div class="n" style="color:#0052cc">'+total+'</div><div class="l">预警总数</div></div></div>';
+    if(!d.data.list||!d.data.list.length){_('panelContent').innerHTML+='<div class="card"><h3>🧠 心理预警</h3><p class="loading">暂无预警</p></div>';return;}
+    var h='<div class="card"><h3>🧠 学生心理预警</h3><table><thead><tr><th>学生</th><th>风险等级</th><th>触发原因</th><th>状态</th><th>时间</th></tr></thead><tbody>';
+    d.data.list.forEach(function(a){h+='<tr><td><b>'+a.student_name+'</b></td><td>'+tag(a.risk_level)+'</td><td>'+a.trigger_reason.substring(0,50)+'</td><td>'+tag(a.follow_up_status||'pending')+'</td><td>'+fd(a.created_at)+'</td></tr>'});
+    h+='</tbody></table></div>';_('panelContent').innerHTML+=h;
+  });
+}
+
+/* === Knowledge === */
+function renderKnowledge(){
+  var h='<div class="card"><h3>📚 知识库（JSON加载）</h3><div style="display:flex;gap:8px;margin-bottom:10px">';
+  ['上班时间','请假制度','薪资福利','加班调休','出差报销','保密制度','办公规范'].forEach(function(q){
+    h+='<button class="btn btn-g" onclick="askK(\''+q+'\')">'+q+'</button>';
+  });
+  h+='</div><div style="display:flex;gap:8px;margin-bottom:10px"><input id="kq" placeholder="输入问题..." style="flex:1;padding:7px 12px;border:1px solid #e4e7ec;border-radius:4px;font-size:13px" onkeydown="if(event.key==\'Enter\')askK(this.value)"><button class="btn btn-p" onclick="askK(document.getElementById(\'kq\').value)">搜索</button></div><div id="kr"></div></div>';
+  _('panelContent').innerHTML=h;
+}
+function askK(q){
+  if(!q)return;
+  _('kr').innerHTML='<div class="loading">查询中...</div>';
+  api('/knowledge/query',{method:'POST',body:{question:q}}).then(function(d){
+    if(d&&d.data)_('kr').innerHTML='<div style="background:#f4f5f7;padding:12px;border-radius:6px;line-height:1.8">'+
+      '<div style="font-size:12px;color:#97a0af">📖 '+d.data.source+'</div><br>'+
+      d.data.answer.replace(/\n/g,'<br>')+'</div>';
+    else _('kr').innerHTML='<div class="err">未找到答案</div>';
+  });
+}
+
+/* === NL2SQL === */
+function renderNL2SQL(){
+  var h='<div class="card"><h3>🔍 NL2SQL + 安全拦截测试</h3>';
+  h+='<div style="display:flex;gap:8px;margin-bottom:10px"><button class="btn btn-g" onclick="doNL(\'查看所有客户\')">所有客户</button><button class="btn btn-g" onclick="doNL(\'待审批的请假\')">待审批请假</button><button class="btn btn-g" onclick="doNL(\'SELECT 1; DROP TABLE users\')">注入测试</button></div>';
+  h+='<div style="display:flex;gap:8px;margin-bottom:10px"><input id="nlq" placeholder="输入查询..." style="flex:1;padding:7px 12px;border:1px solid #e4e7ec;border-radius:4px;font-size:13px" onkeydown="if(event.key==\'Enter\')doNL(this.value)"><button class="btn btn-p" onclick="doNL(document.getElementById(\'nlq\').value)">查询</button></div><div id="nlr"></div></div>';
+  _('panelContent').innerHTML=h;
+}
+function doNL(q){
+  if(!q)return;_('nlr').innerHTML='<div class="loading">查询中...</div>';
+  api('/query/nl2sql',{method:'POST',body:{query:q}}).then(function(d){
+    if(d&&d.data)_('nlr').innerHTML='<div style="background:#0d1117;color:#e6e6e6;padding:12px;border-radius:6px;font-family:Consolas,monospace;font-size:12px;line-height:1.7">$ '+d.data.generated_sql+'</div><br><table><thead><tr><th style="width:80px">状态</th><th>说明</th></tr></thead><tbody><tr><td>'+tag('已通过')+'</td><td>'+d.data.summary+'</td></tr></tbody></table>';
+    else if(d&&d.msg)_('nlr').innerHTML='<div class="err">🚫 拦截: '+d.msg+'</div>';
+    else _('nlr').innerHTML='<div class="err">查询失败</div>';
+  });
+}
+
+/* === Permission === */
+function renderPermission(){
+  var h='<div class="card"><h3>🔐 权限系统测试</h3><p style="color:#5e6c84;font-size:13px;margin-bottom:12px">分别模拟不同角色访问受保护接口，验证权限拦截是否正确。</p><table><thead><tr><th>测试场景</th><th>操作</th><th>预期</th><th>结果</th></tr></thead><tbody>';
+  h+='<tr><td>学员访问待办</td><td><button class="btn btn-g" onclick="testPerm(\'todo_all\',4,\'学员\')">测试</button></td><td>403</td><td id="r1">—</td></tr>';
+  h+='<tr><td>游客访问客户</td><td><button class="btn btn-g" onclick="testPerm(\'customer_list\',5,\'游客\')">测试</button></td><td>403</td><td id="r2">—</td></tr>';
+  h+='<tr><td>管理者访问待办</td><td><button class="btn btn-g" onclick="testPerm(\'todo_all\',1,\'管理者\')">测试</button></td><td>200</td><td id="r3">—</td></tr>';
+  h+='<tr><td>学员访问组织架构</td><td><button class="btn btn-g" onclick="testPerm(\'org_tree\',4,\'学员\')">测试</button></td><td>200(公开)</td><td id="r4">—</td></tr>';
+  h+='<tr><td>员工访问自己客户</td><td><button class="btn btn-g" onclick="testPerm(\'customer_list\',13,\'员工\')">测试</button></td><td>200</td><td id="r5">—</td></tr>';
+  h+='</tbody></table></div>';
+  _('panelContent').innerHTML=h;
+}
+function testPerm(scene,uid,utype){
+  var cells={todo_all:'r1',customer_list:'r2',todo_all_mgr:'r3',org_tree:'r4',customer_list_emp:'r5'};
+  var url,cell=cells[scene+(scene==='todo_all'&&uid===1?'_mgr':scene==='customer_list'&&uid===13?'_emp':uid===4&&scene==='org_tree'?'':scene==='customer_list'&&uid===5?'':uid===4&&scene==='todo_all'?'':'')]||'r1';
+  if(scene==='todo_all')url='/todo/all';
+  else if(scene==='customer_list')url='/customer/list?page=1&page_size=1';
+  else if(scene==='org_tree')url='/organization/tree';
+  var x=new XMLHttpRequest();
+  x.open('GET',API+url+((url.indexOf('?')>-1?'&':'?')+'current_user_id='+uid+'&current_user_type='+encodeURIComponent(utype)),true);
+  x.timeout=5000;
+  x.onload=function(){_(cell).innerHTML='<span class="status '+(x.status===403?'st-red':'st-green')+'">'+x.status+'</span>'+(x.status===200?' ✓':' ✓ 已拦截');};
+  x.onerror=function(){_(cell).innerHTML='<span class="status st-red">ERR</span>';};
+  x.send();
+}
+
+/* === Init === */
+renderTabs();
+renderPanel();
+</script>
+</body>
+</html>

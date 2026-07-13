@@ -46,15 +46,56 @@ def leave_student(req: LeaveStudentRequest, db: Session = Depends(get_db)):
         except HTTPException as e:
             return ApiResponse(code=400, msg=e.detail)
 
+        # 自动匹配审批人：查学生所属的辅导员/顾问
+        approver_name = None
+        try:
+            from enterprise_agent.models import Student
+            student_name = req.student_name.strip()
+            stu = db.query(Student).filter(
+                Student.name == student_name,
+            ).first()
+            if stu and stu.assigned_teacher_id:
+                # 先查 Employee 表
+                teacher = db.query(Employee).filter(
+                    Employee.emp_id == stu.assigned_teacher_id,
+                ).first()
+                if teacher:
+                    approver_name = teacher.emp_name
+                else:
+                    # 再查 Account 表
+                    tea_acc = db.query(Account).filter(
+                        Account.user_id == stu.assigned_teacher_id,
+                    ).first()
+                    if tea_acc:
+                        approver_name = tea_acc.real_name
+
+            # 兜底：学生无辅导员 → 找学生所在部门的负责人
+            if not approver_name and stu:
+                try:
+                    stu_dept = db.query(Department).filter(
+                        Department.manager_id.isnot(None),
+                    ).first()
+                    if stu_dept:
+                        mgr = db.query(Employee).filter(
+                            Employee.emp_id == stu_dept.manager_id,
+                        ).first()
+                        if mgr:
+                            approver_name = mgr.emp_name
+                except Exception:
+                    pass
+        except Exception:
+            pass  # 查不到审批人不影响请假提交
+
         leave = LeaveApplication(
-            student_name=req.student_name.strip(),
             leave_type=req.leave_type,
             start_date=start,
             end_date=end,
             reason=req.reason,
             status=0,
+            student_name=req.student_name.strip(),
             applicant_type="学生",
             applicant_id=req.current_user_id,  # 操作人ID
+            approval_user=approver_name,  # 预填审批人
             create_time=datetime.now(),
             update_time=datetime.now(),
         )
@@ -92,14 +133,52 @@ def leave_employee(req: LeaveEmployeeRequest, db: Session = Depends(get_db)):
         except HTTPException as e:
             return ApiResponse(code=400, msg=e.detail)
 
+        # 从 Account 表查员工真实姓名和部门
+        emp_account = db.query(Account).filter(
+            Account.user_id == req.current_user_id,
+        ).first()
+        emp_name = emp_account.real_name if emp_account else f"用户{req.current_user_id}"
+
+        # 自动匹配审批人：查员工所属部门的负责人
+        approver_name = None
+        if emp_account and emp_account.dept_id:
+            from enterprise_agent.models import Department, Employee
+            dept = db.query(Department).filter(
+                Department.dept_id == emp_account.dept_id,
+                Department.manager_id.isnot(None),
+            ).first()
+            if dept:
+                mgr = db.query(Employee).filter(
+                    Employee.emp_id == dept.manager_id,
+                    Employee.status == 1,
+                ).first()
+                if mgr:
+                    # 防止自己审批自己（部门负责人请假时转给其他部门）
+                    if mgr.emp_name == emp_name:
+                        fallback = db.query(Account.real_name).filter(
+                            Account.user_type == "管理者",
+                            Account.real_name != emp_name,
+                        ).first()
+                        approver_name = fallback[0] if fallback else None
+                    else:
+                        approver_name = mgr.emp_name
+                else:
+                    mgr_acc = db.query(Account).filter(
+                        Account.user_id == dept.manager_id,
+                    ).first()
+                    if mgr_acc:
+                        approver_name = mgr_acc.real_name if mgr_acc.real_name != emp_name else None
+
         leave = LeaveApplication(
             leave_type=req.leave_type,
             start_date=start,
             end_date=end,
             reason=req.reason,
             status=0,
+            student_name=emp_name,  # 员工也填上姓名，方便列表展示
             applicant_type="员工",
             applicant_id=req.current_user_id,
+            approval_user=approver_name,  # 预填审批人
             create_time=datetime.now(),
             update_time=datetime.now(),
         )
@@ -139,13 +218,14 @@ def batch_approve_leave(req: LeaveBatchApproveRequest, db: Session = Depends(get
         if len(req.leave_ids) > 50:
             return ApiResponse(code=400, msg="单次最多审批 50 条记录")
 
-        # 查询所有待审批的请假记录
+        # 只查询指派给当前审批人的待审批记录
         leaves = db.query(LeaveApplication).filter(
             LeaveApplication.id.in_(req.leave_ids),
             LeaveApplication.status == 0,
+            LeaveApplication.approval_user == approver.real_name,
         ).all()
 
-        # 找出哪些ID不在待审批列表中（已被处理或不存在）
+        # 找出哪些ID不在待审批列表中（已被处理、不存在、或不属于自己审批）
         found_ids = {lv.id for lv in leaves}
         skipped_ids = [i for i in req.leave_ids if i not in found_ids]
 
@@ -197,26 +277,52 @@ def todo_leave(
 ):
     """
     待审批列表
-    - 管理者：查看全部 status=0 的申请
-    - 员工：查看自己提交的 status=0 的申请
+    - 管理者：仅查看自己管辖范围内的申请（approval_user 匹配自己姓名）
+    - 员工：查看自己提交的申请
     """
     try:
         require_operator(current_user_type)
         is_mgr = is_manager(current_user_type)
 
-        query = db.query(LeaveApplication).filter(LeaveApplication.status == 0)
+        # 查当前用户的真实姓名（用于过滤审批范围）
+        cur_account = db.query(Account.real_name).filter(
+            Account.user_id == current_user_id,
+        ).first()
+        cur_real_name = cur_account[0] if cur_account else None
 
-        # 员工只看自己提交的
-        if not is_mgr:
-            query = query.filter(LeaveApplication.applicant_id == current_user_id)
+        # LEFT JOIN Account 表获取员工申请人姓名（一次性查询，消灭 N+1）
+        query_with_names = db.query(
+            LeaveApplication,
+            Account.real_name.label("_account_real_name"),
+        ).outerjoin(
+            Account,
+            Account.user_id == LeaveApplication.applicant_id,
+        ).filter(
+            LeaveApplication.status == 0,
+        )
 
-        leaves = query.order_by(LeaveApplication.create_time.desc()).all()
+        if is_mgr and cur_real_name:
+            # 管理者只看指派给自己的待审批
+            query_with_names = query_with_names.filter(
+                LeaveApplication.approval_user == cur_real_name,
+            )
+        elif is_mgr:
+            # 查不到姓名→看不到任何待审批
+            query_with_names = query_with_names.filter(False)
+        else:
+            query_with_names = query_with_names.filter(
+                LeaveApplication.applicant_id == current_user_id,
+            )
+
+        rows = query_with_names.order_by(LeaveApplication.create_time.desc()).all()
 
         data_list = []
-        for lv in leaves:
+        for lv, acct_real_name in rows:
+            applicant_name = lv.student_name or acct_real_name or f"用户{lv.applicant_id}"
             data_list.append({
                 "id": lv.id,
                 "student_name": lv.student_name,
+                "applicant_name": applicant_name,
                 "leave_type": lv.leave_type,
                 "start_date": lv.start_date.strftime("%Y-%m-%d") if lv.start_date else None,
                 "end_date": lv.end_date.strftime("%Y-%m-%d") if lv.end_date else None,

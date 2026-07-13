@@ -10,12 +10,24 @@ from datetime import datetime
 import logging
 
 from enterprise_agent.database import get_db
-from enterprise_agent.models import StudentComplaint
+from enterprise_agent.models import StudentComplaint, Account, Employee
 from enterprise_agent.schemas import ApiResponse, ComplaintHandleRequest
 from enterprise_agent.utils import require_operator, is_manager
 
 logger = logging.getLogger("enterprise_agent.complaint")
 router = APIRouter()
+
+# 辅导员可处理的投诉类型
+_COUNSELOR_COMPLAINT_TYPES = ("后勤", "生活服务", "服务")
+
+
+def _get_user_position(db: Session, user_id: int) -> str:
+    """通过 Account 关联 Employee 获取用户职位"""
+    acct = db.query(Account.real_name).filter(Account.user_id == user_id).first()
+    if not acct or not acct[0]:
+        return ""
+    emp = db.query(Employee.position).filter(Employee.emp_name == acct[0]).first()
+    return emp[0] if emp else ""
 
 
 # ==================== GET /api/agent/complaint/list ====================
@@ -30,8 +42,9 @@ def list_complaint(
 ):
     """
     查询投诉列表
-    - 管理者：查看全部
-    - 员工：只看自己负责的（handler_user_id = current_user_id）
+    - 教务部（教务专员/教务总监）：查看全部
+    - 辅导员：仅查看后勤/生活服务/服务类型的投诉
+    - 其他员工：只看自己负责的（handler_user_id）
     """
     try:
         require_operator(current_user_type)
@@ -39,8 +52,20 @@ def list_complaint(
 
         query = db.query(StudentComplaint)
 
-        # 员工只看自己负责的
-        if not is_mgr:
+        # 查当前用户的部门和职位
+        acct = db.query(Account.dept_id).filter(Account.user_id == current_user_id).first()
+        user_dept_id = acct[0] if acct else None
+        position = _get_user_position(db, current_user_id) if is_mgr else ""
+
+        if is_mgr and user_dept_id == 3:  # 教务部
+            if position == "学生辅导员":
+                # 辅导员只看后勤/生活服务/服务
+                query = query.filter(
+                    StudentComplaint.complaint_type.in_(_COUNSELOR_COMPLAINT_TYPES)
+                )
+            # 教务总监/专员 → 全部可见
+        else:
+            # 非教务部员工/管理者：只看自己负责的
             query = query.filter(StudentComplaint.handler_user_id == current_user_id)
 
         # 状态筛选
@@ -103,8 +128,12 @@ def handle_complaint(req: ComplaintHandleRequest, db: Session = Depends(get_db))
         if not complaint:
             return ApiResponse(code=404, msg="投诉记录不存在")
 
-        # 员工只能操作自己负责的投诉
-        if not is_mgr and complaint.handler_user_id and complaint.handler_user_id != req.current_user_id:
+        if is_mgr:
+            position = _get_user_position(db, req.current_user_id)
+            # 辅导员只能处理生活类投诉
+            if position == "学生辅导员" and complaint.complaint_type not in _COUNSELOR_COMPLAINT_TYPES:
+                return ApiResponse(code=403, msg="辅导员仅可处理后勤/生活服务/服务类型的投诉")
+        elif complaint.handler_user_id and complaint.handler_user_id != req.current_user_id:
             return ApiResponse(code=403, msg="无权操作此投诉工单")
 
         # 更新状态

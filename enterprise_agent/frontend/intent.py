@@ -45,11 +45,16 @@ def recognize(text: str) -> dict:
                 "label": "👤 意向客户"}
 
     # ===== 请假 =====
-    leave_kw = ["请假", "休假", "休息", "休", "调休", "年休"]
+    leave_kw = ["请假", "请病假", "请年假", "请事假", "请婚假",
+                "休假", "休息", "休", "调休", "年休"]
     if any(kw in t for kw in leave_kw):
-        # 审批关键词优先匹配（防止"我要审批请假"被 me_kw 抢走）
+        # 审批关键词优先匹配
         approve_kw = ["审批", "通过", "驳回", "批准", "同意", "拒绝", "不批", "审核"]
         if any(kw in t for kw in approve_kw):
+            # 如果包含数字ID → 直接执行审批，否则显示待审批列表
+            if re.search(r'#?\d+', t):
+                return {"action": "batch_approve_leave", "method": "PARSE", "params": {}, "body": {"text": t},
+                        "label": "✅ 执行审批"}
             return {"action": "get_leave_todo", "method": "GET", "params": {}, "body": None,
                     "label": "📅 请假审批"}
         # 个人请假（含"我"、"申请"等）
@@ -97,6 +102,17 @@ def recognize(text: str) -> dict:
         return {"action": "get_complaint_list", "method": "GET", "params": {"page": 1, "page_size": 20},
                 "label": "💬 投诉反馈"}
 
+    # ===== 学生信息 =====
+    stu_kw = ["学生信息", "查学生", "学生名单", "学员", "查学员", "学生列表",
+              "所有学生", "全部学生", "查看学生", "查找学生", "搜索学生"]
+    if any(kw in t for kw in stu_kw):
+        # 如果包含数字ID就走详情，否则走列表
+        if re.search(r'#?\d+', t):
+            return {"action": "get_student_detail", "method": "GET", "params": {}, "body": {"text": t},
+                    "label": "👤 学生详情"}
+        return {"action": "get_student_list", "method": "GET", "params": {}, "body": {"text": t},
+                "label": "👤 学生列表"}
+
     # ===== 成绩 =====
     score_kw = ["成绩", "分数", "得分", "考试", "考分", "绩", "exam", "score"]
     if any(kw in t for kw in score_kw):
@@ -112,12 +128,32 @@ def recognize(text: str) -> dict:
               "工资", "薪资", "福利", "考勤", "加班", "报销", "入职", "培训",
               "保密", "办公规范", "怎么算", "怎么办", "如何", "什么情况",
               "手册", "员工手册", "政策", "流程", "公司规定", "制度查询",
-              "怎么请", "多少天", "多少钱", "什么条件", "怎么报销", "标准"]
+              "怎么请", "多少天", "多少钱", "什么条件", "怎么报销", "标准",
+              "上班", "下班", "打卡", "迟到", "早退", "休假"]
     if any(kw in t for kw in kb_kw):
         return {"action": "query_knowledge", "method": "POST", "params": {}, "body": {"question": t},
                 "label": "📚 知识库"}
 
-    # ===== NL2SQL（兜底） =====
+    # ===== 审批操作 =====
+    approve_ops = ["通过", "驳回", "批准", "拒绝", "审批"]
+    if any(kw in t for kw in approve_ops):
+        if re.search(r'#?\d+', t):
+            # 有数字ID → 执行审批
+            return {"action": "batch_approve_leave", "method": "PARSE", "params": {}, "body": {"text": t},
+                    "label": "✅ 执行审批"}
+        # 无ID → 显示待审批列表
+        return {"action": "get_leave_todo", "method": "GET", "params": {}, "body": None,
+                "label": "📅 请假审批"}
+
+    # ===== 泛学生查询 =====
+    if "学生" in t and not any(kw in t for kw in ["请假", "成绩", "考试"]):
+        if re.search(r'#?\d+', t):
+            return {"action": "get_student_detail", "method": "GET", "params": {}, "body": {"text": t},
+                    "label": "👤 学生详情"}
+        return {"action": "get_student_list", "method": "GET", "params": {}, "body": {"text": t},
+                "label": "👤 学生列表"}
+
+    # ===== NL2SQL（通用兜底） =====
     return {"action": "query_nl2sql", "method": "POST", "params": {}, "body": {"query": t},
             "label": "🤖 NL2SQL"}
 
@@ -187,12 +223,13 @@ def format_result(action: str, data: dict) -> str:
     # ---- 待办汇总 ----
     if action == "get_todo_all":
         total = d.get("total", 0)
-        lines = [f"📋 **待办汇总**（共 {total} 项）", f"- 待审批请假：{d.get('leave_pending', 0)} 项", f"- 待处理投诉：{d.get('complaint_pending', 0)} 项", ""]
+        lines = [f"📋 **待办汇总**（共 {total} 项）", ""]
         for item in d.get("list", []):
-            lines.append(f"🔸 **{item.get('todo_type')}**")
-            lines.append(f"  内容：{item.get('detail', '')}")
-            lines.append(f"  状态：{item.get('status', '')}")
-            lines.append(f"  时间：{item.get('create_time', '')[:10]}")
+            name = item.get("applicant_name", "")
+            lines.append(f"🔸 **#{item.get('todo_id')}** {item.get('title', '')}")
+            lines.append(f"  👤 {name or '未知'}")
+            lines.append(f"  📝 {item.get('detail', '')}")
+            lines.append(f"  ⏱ {item.get('create_time', '')[:10]}")
             lines.append("")
         return "\n".join(lines) if len(lines) > 3 else "🎉 没有待办，清闲得很！"
 
@@ -236,12 +273,18 @@ def format_result(action: str, data: dict) -> str:
         total = len(d.get("list", []))
         lines = [f"📅 **待审批请假**（共 {total} 条）", ""]
         for lv in d.get("list", []):
-            lines.append(f"🔸 {lv.get('leave_type')} | {lv.get('student_name') or '员工#' + str(lv.get('applicant_id'))}")
-            lines.append(f"  日期：{lv.get('start_date')} → {lv.get('end_date')}")
-            lines.append(f"  原因：{lv.get('reason', '无')}")
+            applicant = lv.get("applicant_name") or lv.get("student_name") or f"用户#{lv.get('applicant_id')}"
+            reason = lv.get("reason") or "空"
+            lines.append(f"🔸 **#{lv.get('id')}** {lv.get('leave_type')}")
+            lines.append(f"  👤 {applicant}")
+            lines.append(f"  📅 {lv.get('start_date')} → {lv.get('end_date')}")
+            lines.append(f"  📝 {reason}")
             lines.append("")
         if not d.get("list"):
             return "🎉 没有待审批的请假"
+        lines.append("💡 **审批操作：**")
+        lines.append("  • `通过 #1,#2,#3` — 批量通过")
+        lines.append("  • `驳回 #4` — 驳回指定申请")
         return "\n".join(lines)
 
     # ---- 请假提交 ----
@@ -250,7 +293,16 @@ def format_result(action: str, data: dict) -> str:
 
     # ---- 批量审批 ----
     if action == "batch_approve_leave":
-        return f"✅ 已处理 {d.get('count', 0)} 条请假记录"
+        action_label = d.get("action", "处理")
+        count = d.get("count", 0)
+        ids = d.get("leave_ids", [])
+        skipped = d.get("skipped_ids", [])
+        lines = [f"✅ 已{action_label} {count} 条记录"]
+        if ids:
+            lines.append(f"  请假ID：{ids}")
+        if skipped:
+            lines.append(f"  ⚠️ 以下ID已跳过（非待审批状态）：{skipped}")
+        return "\n".join(lines)
 
     # ---- 日报列表 ----
     if action == "get_report_list":

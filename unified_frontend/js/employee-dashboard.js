@@ -22,12 +22,39 @@ document.addEventListener('DOMContentLoaded', () => {
   document.getElementById('sidebarAvatar').textContent = (name || '员')[0];
   document.getElementById('userTypeTag').textContent = `身份: ${userType}`;
 
+  // ── NL2SQL 响应渲染：将后端返回的 data.data 结构化为可读文本 ──
+  function formatNl2sqlResponse(data) {
+    // 业务报错（code 非 0）直接展示 msg
+    if (data && data.code !== 0 && data.code !== null && data.code !== undefined) {
+      return `❌ 出错了：${data.msg || '未知错误'}`;
+    }
+    const d = data?.data;
+    if (!d) return data?.msg || '(未收到数据)';
+    const lines = [
+      '🔍 **查询结果**',
+      '',
+      `📝 生成的 SQL：\`${d.generated_sql || ''}\``,
+      `📊 ${d.summary || ''}`,
+      '',
+    ];
+    const results = d.results || [];
+    if (results.length === 0) {
+      lines.append('（无结果）');
+    } else {
+      for (const row of results) {
+        lines.push(Object.entries(row).map(([k, v]) => `${k}: ${v}`).join(' | '));
+      }
+    }
+    return lines.join('\n');
+  }
+
   // ── 初始化聊天（调 NL2SQL） ──
   chat = new ChatWidget({
     apiUrl: `${ENTERPRISE_API}/query/nl2sql`,
     container: '#chatMessages',
     input: '#chatInput',
     sendBtn: '#sendBtn',
+    formatResponse: formatNl2sqlResponse,
     onPreSend: (msg) => {
       const auth = Auth.get();
       return {

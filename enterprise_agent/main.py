@@ -162,6 +162,36 @@ def auth_login(req: LoginRequest):
     finally:
         db.close()
 
+# ==================== 当前用户信息 ====================
+@app.get("/api/agent/user/info", tags=["System"])
+def user_info(request: Request, current_user_id: int = None, current_user_type: str = None):
+    """返回当前登录用户的真实姓名和角色"""
+    try:
+        user_data = get_current_user(
+            request=request,
+            current_user_id=current_user_id,
+            current_user_type=current_user_type,
+        )
+    except HTTPException:
+        return JSONResponse(status_code=401, content={"code": 401, "msg": "未登录"})
+
+    # 从数据库查真实姓名
+    from enterprise_agent.database import SessionLocal
+    from enterprise_agent.models import Account
+    db = SessionLocal()
+    try:
+        user = db.query(Account).filter(Account.user_id == user_data["user_id"]).first()
+        if user:
+            return {"code": 0, "msg": "success", "data": {
+                "user_id": user.user_id,
+                "real_name": user.real_name,
+                "user_type": user.user_type,
+                "username": user.username,
+            }}
+        return {"code": 404, "msg": "用户不存在", "data": None}
+    finally:
+        db.close()
+
 # ==================== 前端页面 ====================
 _frontend_dir = os.path.dirname(os.path.abspath(__file__))
 _frontend_file = os.path.join(_frontend_dir, "test_dashboard.html")
@@ -176,7 +206,7 @@ async def index_page():
 # ==================== 注册路由 ====================
 from enterprise_agent.routers import (
     auth, customer, leave, report, organization, todo,
-    complaint, score, knowledge, nl2sql, mental_health,
+    complaint, score, knowledge, nl2sql, mental_health, application,
 )
 
 app.include_router(auth.router, prefix="/api/agent", tags=["认证"])
@@ -190,6 +220,7 @@ app.include_router(score.router, prefix="/api/agent", tags=["成绩管理"])
 app.include_router(knowledge.router, prefix="/api/agent", tags=["知识库问答"])
 app.include_router(nl2sql.router, prefix="/api/agent", tags=["NL2SQL自然语言查询"])
 app.include_router(mental_health.router, prefix="/api/agent", tags=["心理健康管理"])
+app.include_router(application.router, prefix="/api/agent", tags=["留学申请管理"])
 
 logger.info(
     "Routes registered: /api/agent/* (%d modules)",

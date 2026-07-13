@@ -7,7 +7,7 @@ from sqlalchemy.orm import Session
 import logging
 
 from enterprise_agent.database import get_db
-from enterprise_agent.models import LeaveApplication, StudentComplaint
+from enterprise_agent.models import LeaveApplication, StudentComplaint, Account, Employee
 from enterprise_agent.schemas import ApiResponse
 from enterprise_agent.utils import require_operator
 
@@ -33,18 +33,37 @@ def todo_all(
         is_mgr = current_user_type == "管理者"
         items = []
 
+        # 查当前用户的真实姓名（用于过滤审批范围）
+        cur_acct = db.query(Account.real_name).filter(
+            Account.user_id == current_user_id,
+        ).first()
+        cur_real_name = cur_acct[0] if cur_acct else None
+
         # ===== 1. 查询待审批请假 =====
         leave_query = db.query(LeaveApplication).filter(LeaveApplication.status == 0)
-        if not is_mgr:
+        if is_mgr and cur_real_name:
+            # 管理者只看指派给自己的审批
+            leave_query = leave_query.filter(
+                LeaveApplication.approval_user == cur_real_name,
+            )
+        elif is_mgr:
+            leave_query = leave_query.filter(False)  # 查不到姓名→看不到
+        else:
             leave_query = leave_query.filter(LeaveApplication.applicant_id == current_user_id)
 
         pending_leaves = leave_query.order_by(LeaveApplication.create_time.desc()).all()
         for lv in pending_leaves:
+            # 申请人姓名
+            _app_name = lv.student_name
+            if not _app_name and lv.applicant_type == "员工":
+                _acct = db.query(Account.real_name).filter(Account.user_id == lv.applicant_id).scalar()
+                _app_name = _acct or f"用户{lv.applicant_id}"
             items.append({
                 "todo_type": "请假审批",
                 "todo_id": lv.id,
-                "title": f"{lv.applicant_type}请假",
-                "detail": f"类型：{lv.leave_type}，{lv.start_date} 至 {lv.end_date}",
+                "title": f"{_app_name} - {lv.leave_type}",
+                "detail": f"{lv.leave_type}，{lv.start_date} 至 {lv.end_date}，{lv.reason or '空'}",
+                "applicant_name": _app_name,
                 "applicant_type": lv.applicant_type,
                 "applicant_id": lv.applicant_id,
                 "status": "待审批",
@@ -55,8 +74,22 @@ def todo_all(
         complaint_query = db.query(StudentComplaint).filter(
             StudentComplaint.handle_status.in_(["待处理", "处理中"])
         )
-        if not is_mgr:
-            # 员工查看自己负责的投诉
+        # 查当前用户的部门和职位 → 决定投诉可见范围
+        _dept = db.query(Account.dept_id).filter(Account.user_id == current_user_id).scalar()
+        if is_mgr and cur_real_name and _dept == 3:
+            _pos = db.query(Employee.position).filter(
+                Employee.emp_name == cur_real_name,
+            ).scalar()
+            if _pos == "学生辅导员":
+                complaint_query = complaint_query.filter(
+                    StudentComplaint.complaint_type.in_(["后勤", "生活服务", "服务"])
+                )
+            # 教务总监/专员 → 全部可见
+        elif not is_mgr or _dept != 3:
+            # 非教务部员工/管理者：只看自己负责的
+            complaint_query = complaint_query.filter(
+                StudentComplaint.handler_user_id == current_user_id
+            )
             complaint_query = complaint_query.filter(
                 StudentComplaint.handler_user_id == current_user_id
             )
