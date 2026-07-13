@@ -18,15 +18,25 @@ import time
 import signal
 import argparse
 from pathlib import Path
+from typing import TypedDict
+
+
+class ServiceConfig(TypedDict):
+    name: str
+    module: str
+    port: int
+    dir: str
+    cmd: list[str]
 
 ROOT = Path(__file__).resolve().parent
 
-SERVICES = {
+SERVICES: dict[str, ServiceConfig] = {
     "study_abroad": {
         "name": "课程推荐引擎",
         "module": "study_abroad_agent.app",
         "port": 5000,
-        "dir": "study_abroad_agent",
+        # 必须从项目根目录运行：-m 需要从 sys.path 找到顶层包 study_abroad_agent
+        "dir": ".",
         "cmd": ["python", "-m", "study_abroad_agent.app"],
     },
     "student": {
@@ -47,8 +57,9 @@ SERVICES = {
         "name": "研判服务",
         "module": "Assessment.main_ass",
         "port": 8002,
-        "dir": "Assessment",
-        "cmd": ["python", "main_ass.py"],
+        # 必须从项目根目录以模块方式运行：内部 import Assessment.* 需从顶层找到包
+        "dir": ".",
+        "cmd": ["python", "-m", "Assessment.main_ass"],
     },
     "report": {
         "name": "智能报告",
@@ -164,11 +175,14 @@ def start_service(key, svc):
     cwd = ROOT / svc["dir"]
     print(f"  [START] 启动 {svc['name']} (:{svc['port']})...", end=" ", flush=True)
     try:
+        # Windows：用 sys.executable（当前 venv 的解释器）启动子进程，
+        # 避免 subprocess 走 PATH 找到系统 Python 而缺少 pymysql/uvicorn 等依赖。
+        actual_cmd = [sys.executable if c == "python" else c for c in svc["cmd"]]
         log_dir = ROOT / "logs"
         log_dir.mkdir(exist_ok=True)
         log_file = (log_dir / f"{key}.log").open("a", encoding="utf-8")
         proc = subprocess.Popen(
-            svc["cmd"],
+            actual_cmd,
             cwd=str(cwd),
             stdout=log_file,
             stderr=subprocess.STDOUT,

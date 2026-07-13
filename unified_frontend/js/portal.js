@@ -106,7 +106,7 @@ function initLoginForms() {
 // LLM 语气：学生视角 (student_view=true → 温暖亲近)
 
 // 评估服务地址
-const P_DIAGNOSE_API = 'http://localhost:8080/api/agent';
+const P_DIAGNOSE_API = 'http://localhost:8002/api/agent';
 // 门户 学生视角 样本 占位 宽容度
 const P_FIT_CHARTS = new WeakMap();
 let resumeFile = null;

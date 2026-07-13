@@ -8,7 +8,7 @@
 """
 import pymysql
 from pymysql.cursors import DictCursor
-from config import config
+from study_abroad_agent.config import config
 
 
 class Database:

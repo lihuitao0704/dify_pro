@@ -4,7 +4,7 @@
  */
 
 const ENTERPRISE_API = 'http://localhost:8001/api/agent';
-const FIT_API = 'http://localhost:8080/api/agent';  // 契合度评估服务入口
+const FIT_API = 'http://localhost:8002/api/agent';  // 契合度评估服务入口
 let chat;
 
 // 图表实例池（每个结果容器一份）
