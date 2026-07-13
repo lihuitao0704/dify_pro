@@ -37,7 +37,7 @@ EMPLOYEE_SCHEMA: str = """
    - dept_id: BIGINT PK
    - dept_name: VARCHAR(50), 部门名称
    - dept_desc: TEXT, 部门描述
-   - manager_id: BIGINT, 部门负责人ID（关联 employee.emp_id）
+   - manager_id: BIGINT, 部门负责人ID（关联 account.user_id）
    - parent_dept_id: BIGINT, 上级部门ID
    - status: TINYINT, 状态
    - create_time: DATETIME

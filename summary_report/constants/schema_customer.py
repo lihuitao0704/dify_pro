@@ -23,8 +23,8 @@ CUSTOMER_SCHEMA: str = """
    - follow_record: TEXT, 跟进记录
    - current_status: ENUM('已签约','跟进中','已流失'), 当前状态
    - sales_user_id: BIGINT, 关联销售顾问 account.user_id
-   - create_time: DATETIME, 创建时间
-   - update_time: DATETIME, 更新时间
+   - create_time: DATETIME, 线索录入时间（非签约时间）
+   - update_time: DATETIME, 记录最后更新时间（状态变更时也会更新，可近似代表"已签约/已流失"等状态的发生时间）
 
 2. consultations（咨询记录表）
    - id: INT PK
