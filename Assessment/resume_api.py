@@ -1,15 +1,36 @@
 """
-简历信息录入 - FastAPI 接口 + 前端页面
+学生信息录入 - FastAPI 接口 + 前端页面
 路由前缀：/api/agent
-"""
-from fastapi import APIRouter, FastAPI
-from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import HTMLResponse
 
-from resume import ResumeRequest, generate_insert_instruction
+流程：表单提交 / 简历上传 → 写入 user_profiles → 触发研判 → 返回研判结论
+"""
+
+import os
+import sys
+from pathlib import Path
+from typing import Optional
+import json
+import traceback
+import pymysql
+from pymysql.cursors import DictCursor
+from fastapi import APIRouter, FastAPI, UploadFile, File, Form
+from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse, HTMLResponse
+
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+
+# 兼容两种运行方式：
+#   python resume_api.py          → 相对导入
+#   python -m Assessment.resume_api → 绝对导入
+try:
+    from resume import ResumeRequest
+    from Assessment.assessment import run_targeted_assessment, PASS_SCORE
+except ImportError:
+    from Assessment.resume import ResumeRequest
+    from Assessment.assessment import run_targeted_assessment, PASS_SCORE
 
 router = APIRouter()
-app = FastAPI(title="学生信息录入 API", version="1.0.0")
+app = FastAPI(title="学生信息录入 API", version="2.0.0")
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -19,23 +40,590 @@ app.add_middleware(
 )
 app.include_router(router, prefix="/api/agent")
 
-# Dify 接口地址
-DIFY_API_URL = "http://192.168.48.121/v1/chat-messages"
+DB_CONFIG = {
+    "host": os.getenv("DB_HOST", "192.168.48.121"),
+    "port": int(os.getenv("DB_PORT", 3306)),
+    "user": os.getenv("DB_USER", "offer"),
+    "password": os.getenv("DB_PASSWORD", "123456"),
+    "database": os.getenv("DB_NAME", "dify_pro"),
+    "charset": "utf8mb4",
+}
 
 
 # ============================================
-# 后端接口：接收表单数据 → 生成文本 → 调用 Dify
+# 后端接口：接收表单数据 → 入库 → 研判 → 返回结论
 # ============================================
 @router.post("/resume/add")
 def add_resume(req: ResumeRequest):
     """
-    接收学生信息表格数据，生成自然语言指令文本。
+    接收学生信息表格数据：
+    1. 写入 user_profiles 表
+    2. 触发画像研判评估
+    3. 返回自然语言研判结论
     """
+    d = req.dict()
+    conn = pymysql.connect(**DB_CONFIG, cursorclass=DictCursor)
     try:
-        generated_text = generate_insert_instruction(req)
-        return {"code": 0, "msg": "success", "data": {"generated_text": generated_text}}
+        with conn.cursor() as cur:
+            cur.execute("""
+                INSERT INTO user_profiles
+                (name, age, major, education, target_major, language_score,
+                 target_country, gpa, budget, phone, development, abilities,
+                 `is_Closed_loop`, wechat, email, assess)
+                VALUES
+                (%(name)s, %(age)s, %(major)s, %(education)s, %(target_major)s,
+                 %(language_score)s, %(target_country)s, %(gpa)s, %(budget)s,
+                 %(phone)s, %(development)s, %(abilities)s, %(is_Closed_loop)s,
+                 %(wechat)s, %(email)s, '待研判')
+            """, d)
+            conn.commit()
+            new_user_id = cur.lastrowid
+    finally:
+        conn.close()
+
+    # 按 ID 精准触发研判（只研判这一个新用户）
+    sql_filter = "`id` = %s" % int(new_user_id)
+    try:
+        assessment_result = run_targeted_assessment(sql_filter=sql_filter, student_view=True)
     except Exception as e:
-        return {"code": 500, "msg": str(e), "data": None}
+        return JSONResponse(status_code=200, content={
+            "code": 500,
+            "msg": "研判失败: %s" % str(e),
+            "data": {"user_id": new_user_id, "assessment_result": None}
+        })
+
+    return {
+        "code": 0,
+        "msg": "success",
+        "data": {
+            "user_id": new_user_id,
+            "assessment_result": assessment_result,
+        }
+    }
+
+
+# ============================================
+# 简历上传接口：文件 → LLM 提取 → 入库 → 研判
+# ============================================
+import importlib.util as _ilu
+# 动态引用 LLM 客户端配置（与 assessment.py 共享同一个 API Key 和 base_url）
+_openai_client = None
+
+
+def _get_openai_client():
+    """获取 OpenAI 兼容客户端（通义千问）"""
+    global _openai_client
+    if _openai_client is not None:
+        return _openai_client
+    # 优先从 assessment 模块取已初始化的配置
+    try:
+        from Assessment import assessment as _assess_mod
+        _openai_client = _assess_mod._get_client()
+        return _openai_client
+    except Exception:
+        pass
+    # 备用：自行初始化
+    from openai import OpenAI
+    api_key = os.getenv("DASHSCOPE_API_KEY", "")
+    base_url = os.getenv(
+        "LLM_BASE_URL",
+        "https://ws-80gz91pjbhgouudd.cn-beijing.maas.aliyuncs.com/compatible-mode/v1"
+    )
+    _openai_client = OpenAI(api_key=api_key, base_url=base_url)
+    return _openai_client
+
+
+def _extract_text_from_file(filename: str, content: bytes) -> str:
+    """
+    从上传的文件中提取纯文本。
+    支持：.txt / .pdf / .docx
+    """
+    suffix = filename.rsplit(".", 1)[-1].lower() if "." in filename else ""
+
+    if suffix == "txt":
+        # 多种编码尝试
+        for enc in ("utf-8", "gbk", "gb2312", "utf-16", "latin-1"):
+            try:
+                return content.decode(enc)
+            except (UnicodeDecodeError, LookupError):
+                continue
+        return content.decode("utf-8", errors="replace")
+
+    elif suffix == "pdf":
+        import io
+        from PyPDF2 import PdfReader
+        reader = PdfReader(io.BytesIO(content))
+        parts = []
+        for page in pages if (pages := reader.pages) else []:
+            try:
+                parts.append(page.extract_text() or "")
+            except Exception:
+                continue
+        return "\n".join(parts)
+
+    elif suffix == "docx":
+        import io
+        import docx
+        doc = docx.Document(io.BytesIO(content))
+        return "\n".join(p.text for p in doc.paragraphs if p.text.strip())
+
+    else:
+        raise ValueError(f"不支持的文件格式: .{suffix}，仅支持 txt / pdf / .docx")
+
+
+def _extract_fields_from_resume(resume_text: str) -> dict:
+    """
+    调用 LLM 从简历文本中提取结构化字段。
+    """
+    client = _get_openai_client()
+    model = os.getenv("LLM_MODEL", "qwen-plus")
+
+    prompt = f"""你是一名资深的留学顾问。请仔细阅读以下中国学生的简历内容，提取并整理出留学申请所需的关键信息。
+
+【简历内容】
+{resume_text}
+
+【需要提取的字段】
+请从简历中识别以下信息。如果简历中没有明确提到，请根据上下文合理推断；完全无法推断的字段请留 null：
+- name: 姓名（字符串）
+- age: 年龄（整数，若只有出生年份请推算为 2026 年时的年龄）
+- major: 当前专业 / 所学专业（字符串）
+- education: 当前学历（只能从以下选项中选择：高中 / 本科 / 硕士 / 博士 / 其他）
+- target_major: 目标申请专业 / 意向专业（字符串，简历中未提及则沿用当前专业）
+- language_score: 语言成绩（字符串，如"雅思 7.0"、"托福 100"、"CET-6 550"；未提及则留 null）
+- target_country: 目标留学国家 / 意向国家（字符串，简历中未提及则留 null）
+- gpa: GPA 成绩（浮点数，如 3.5；4 分制；未提及则留 null）
+- budget: 留学预算 / 可承担的留学费用（整数，单位：元人民币；未提及则留 null）
+- phone: 联系电话 / 手机（字符串；未提及则留 null）
+- is_Closed_loop: 是否接受封闭式实训（"是" 或 "否"，简历中无法判断则默认"否"）
+- wechat: 微信号（字符串；未提及则留 null）
+- email: 电子邮箱（字符串；未提及则留 null）
+- development: 发展需求 / 职业规划（总结客户的职业发展需求和规划，100 字以内）
+- abilities: 综合能力（根据客户的工作经历 / 实习经历 / 项目经历 / 学习经历 / 获奖证书 / 技能证书 / 兴趣爱好等方面的描述，综合总结客户的综合能力，150 字以内。重点关注：专业技能、实践能力、沟通协作、学习创新能力等）
+
+【返回格式】
+严格输出 JSON 对象，不要 markdown 代码块，不要其他文字：
+{{"name":"张三","age":22,"major":"车辆工程","education":"本科","target_major":"人工智能","language_score":"雅思 7.0","target_country":"新加坡","gpa":3.5,"budget":200000,"phone":"138xxxx","is_Closed_loop":"否","wechat":null,"email":"<EMAIL>":"希望从事 AI 行业的技术研发工作，在硕士阶段深入学习机器学习方向","abilities":"具备扎实的编程基础，熟练掌握 Python 和 C++，曾在互联网公司实习，具有良好的团队协作能力和自主学习能力"}}
+"""
+    resp = client.chat.completions.create(
+        model=model,
+        messages=[
+            {"role": "system", "content": "你是一名资深留学顾问，擅长从中国学生的简历中提取结构化信息。"},
+            {"role": "user", "content": prompt},
+        ],
+        temperature=0.1,
+    )
+    raw = (resp.choices[0].message.content or "").strip()
+    # 清理 markdown 代码块
+    raw = raw.strip("`").removeprefix("json").removeprefix("JSON").strip()
+    return json.loads(raw)
+
+
+@router.post("/resume/upload")
+async def upload_resume(file: UploadFile = File(...)):
+    """
+    上传简历文件（txt/pdf/docx）→ LLM 提取字段 → 入库 → 研判 → 返回结论
+    """
+    # 1. 检查文件格式
+    filename = file.filename or ""
+    suffix = filename.rsplit(".", 1)[-1].lower() if "." in filename else ""
+    if suffix not in ("txt", "pdf", "docx"):
+        return JSONResponse(status_code=400, content={
+            "code": 400, "msg": f"不支持的文件格式 .{suffix}，仅支持 txt / pdf / docx", "data": None
+        })
+
+    try:
+        content = await file.read()
+        if len(content) > 10 * 1024 * 1024:  # 10 MB 限制
+            return JSONResponse(status_code=400, content={
+                "code": 400, "msg": "文件过大，请上传 10MB 以内的文件", "data": None
+            })
+
+        # 2. 提取文本
+        resume_text = _extract_text_from_file(filename, content)
+        if not resume_text.strip():
+            return JSONResponse(status_code=400, content={
+                "code": 400, "msg": "未能从文件中提取到有效文本，请检查文件内容", "data": None
+            })
+
+        # 3. LLM 提取字段
+        fields = _extract_fields_from_resume(resume_text)
+
+        # 验证必填字段
+        if not fields.get("name"):
+            return JSONResponse(status_code=400, content={
+                "code": 400, "msg": "未能从简历中识别出姓名，请检查简历内容", "data": None
+            })
+
+        # 4. 写入 user_profiles 表（只保留 INSERT 需要的字段，忽略多余的）
+        insert_keys = ['name', 'age', 'major', 'education', 'target_major',
+                       'language_score', 'target_country', 'gpa', 'budget',
+                       'phone', 'development', 'abilities', 'is_Closed_loop',
+                       'wechat', 'email']
+        # 字段长度上限（与数据库 VARCHAR 一致），超长自动截断
+        max_lens = {
+            'name': 50, 'major': 100, 'education': 50, 'target_major': 100,
+            'language_score': 50, 'target_country': 50, 'phone': 30,
+            'development': 300, 'abilities': 500, 'is_Closed_loop': 100,
+            'wechat': 50, 'email': 100,
+        }
+        clean_fields = {}
+        for k in insert_keys:
+            v = fields.get(k)
+            if v is None or v == '':
+                clean_fields[k] = None
+            elif isinstance(v, str) and k in max_lens and len(v) > max_lens[k]:
+                clean_fields[k] = v[:max_lens[k]]
+            else:
+                clean_fields[k] = v
+
+        conn = pymysql.connect(**DB_CONFIG, cursorclass=DictCursor)
+        try:
+            with conn.cursor() as cur:
+                cur.execute("""
+                    INSERT INTO user_profiles
+                    (name, age, major, education, target_major, language_score,
+                     target_country, gpa, budget, phone, development, abilities,
+                     `is_Closed_loop`, wechat, email, assess)
+                    VALUES
+                    (%(name)s, %(age)s, %(major)s, %(education)s, %(target_major)s,
+                     %(language_score)s, %(target_country)s, %(gpa)s, %(budget)s,
+                     %(phone)s, %(development)s, %(abilities)s, %(is_Closed_loop)s,
+                     %(wechat)s, %(email)s, '待研判')
+                """, clean_fields)
+                conn.commit()
+                new_user_id = cur.lastrowid
+        finally:
+            conn.close()
+
+        # 5. 触发研判
+        sql_filter = "`id` = %s" % int(new_user_id)
+        try:
+            assessment_result = run_targeted_assessment(sql_filter=sql_filter, student_view=True)
+        except Exception as e:
+            return JSONResponse(status_code=200, content={
+                "code": 500,
+                "msg": "研判失败: %s" % str(e),
+                "data": {"user_id": new_user_id, "assessment_result": None}
+            })
+
+        return {
+            "code": 0,
+            "msg": "success",
+            "data": {
+                "user_id": new_user_id,
+                "assessment_result": assessment_result,
+            }
+        }
+
+    except json.JSONDecodeError:
+        return JSONResponse(status_code=500, content={
+            "code": 500, "msg": "大模型解析简历失败，请检查简历内容是否完整", "data": None
+        })
+    except ValueError as ve:
+        return JSONResponse(status_code=400, content={
+            "code": 400, "msg": str(ve), "data": None
+        })
+    except Exception as e:
+        import traceback
+        print("RESUME_UPLOAD_ERROR:", traceback.format_exc())
+        return JSONResponse(status_code=500, content={
+            "code": 500, "msg": "处理失败: %s" % str(e), "data": None
+        })
+
+
+# ============================================
+# 项目契合度分析（工作台入口）：结构化分数接口
+# 支持两种输入：表单字段 / 简历文件
+# ============================================
+@router.post("/evaluation/detail")
+async def evaluation_detail(
+    # 文件模式（二选一）：传 file 则走简历解析流程
+    file: Optional[UploadFile] = File(None),
+    # 表单字段模式（与 user_profiles 表字段对齐，name 必填）
+    name:           Optional[str]   = Form(None),
+    age:            Optional[str]   = Form(None),
+    major:          Optional[str]   = Form(None),
+    education:      Optional[str]   = Form(None),
+    target_major:   Optional[str]   = Form(None),
+    language_score: Optional[str]   = Form(None),
+    target_country: Optional[str]   = Form(None),
+    gpa:            Optional[str]   = Form(None),
+    budget:         Optional[str]   = Form(None),
+    phone:          Optional[str]   = Form(None),
+    development:    Optional[str]   = Form(None),
+    abilities:      Optional[str]   = Form(None),
+    is_Closed_loop: Optional[str]   = Form(None),
+    wechat:         Optional[str]   = Form(None),
+    email:          Optional[str]   = Form(None),
+    # 评估模式：student_view=False 为正式（专业简练），True 为学生端（温暖）
+    student_view:   Optional[str]   = Form(None),
+):
+    """
+    项目契合度分析 - 工作台入口
+
+    与「智能诊断」复用同一套评估规则引擎（portrait_rule + study_project），
+    区别：返回结构化分数（契合徽章 + 百分制 + 维度得分 + LLM 文本），
+    供前端绘制契合徽章 / 百分制环 / 雷达图 / LLM 文本四合一。
+
+    调用方式：
+    - 表单：Content-Type: multipart/form-data，body 字段即上表参数
+    - 文件：Content-Type: multipart/form-data，file 字段为 txt/pdf/docx
+
+    返回 JSON：
+    {
+      "code": 0,
+      "msg": "success",
+      "data": {
+        "user_id": 42,
+        "summary": "…LLM NL…",
+        "pass_threshold": 60,
+        "results": [
+          {
+            "project_id": 1,
+            "project_name": "德国 TU9 精英硕士项目",
+            "total_score": 85,
+            "max_score": 100,
+            "pass_threshold": 60,
+            "is_pass": true,
+            "dimensions": [
+              { "key": "gpa_3.5_plus", "name": "GPA",  "score": 25, "max": 30 },
+              { "key": "testdaf_4",   "name": "德语", "score": 20, "max": 25 }
+            ]
+          }
+        ]
+      }
+    }
+    """
+    # ── 参数校验：name 与 file 二选一 ──
+    view = (student_view or "").lower() in ("1", "true", "yes")
+    if file is not None and file.filename:
+        return await _evaluation_by_file(file, view)
+    if not name or not name.strip():
+        return JSONResponse(status_code=400, content={
+            "code": 400, "msg": "name 不能为空，请填写姓名或上传简历", "data": None
+        })
+    return _evaluation_by_form({
+        "name": name, "age": age, "major": major, "education": education,
+        "target_major": target_major, "language_score": language_score,
+        "target_country": target_country, "gpa": gpa, "budget": budget,
+        "phone": phone, "development": development, "abilities": abilities,
+        "is_Closed_loop": is_Closed_loop, "wechat": wechat, "email": email,
+    }, view)
+
+
+def _evaluation_by_form(fields: dict, student_view: bool):
+    """表单模式：提取 user_profiles 字段 → 入库 → 研判 → 结构化返回"""
+    # 1. 字段清洗（截断，超长与 None 兼容）
+    insert_keys = ['name', 'age', 'major', 'education', 'target_major',
+                   'language_score', 'target_country', 'gpa', 'budget',
+                   'phone', 'development', 'abilities', 'is_Closed_loop',
+                   'wechat', 'email']
+    max_lens = {
+        'name': 50, 'major': 100, 'education': 50, 'target_major': 100,
+        'language_score': 50, 'target_country': 50, 'phone': 30,
+        'development': 300, 'abilities': 500, 'is_Closed_loop': 100,
+        'wechat': 50, 'email': 100, 'age': None, 'gpa': None, 'budget': None,
+    }
+    clean = {}
+    for k in insert_keys:
+        v = fields.get(k)
+        if v is None or v == '':
+            if k in ('age', 'gpa', 'budget'):
+                clean[k] = None
+            else:
+                clean[k] = None
+        elif k in max_lens and max_lens[k] and isinstance(v, str) and len(v) > max_lens[k]:
+            clean[k] = v[:max_lens[k]]
+        else:
+            try:
+                if k in ('age', 'budget'):
+                    clean[k] = int(float(v)) if v else None
+                elif k == 'gpa':
+                    clean[k] = round(float(v), 2) if v else None
+                else:
+                    clean[k] = v
+            except (ValueError, TypeError):
+                clean[k] = v
+
+    if not clean.get("name"):
+        return JSONResponse(status_code=400, content={
+            "code": 400, "msg": "name 不能为空", "data": None
+        })
+
+    # 2. 写入 user_profiles
+    conn = pymysql.connect(**DB_CONFIG, cursorclass=DictCursor)
+    try:
+        with conn.cursor() as cur:
+            cur.execute("""
+                INSERT INTO user_profiles
+                (name, age, major, education, target_major, language_score,
+                 target_country, gpa, budget, phone, development, abilities,
+                 `is_Closed_loop`, wechat, email, assess)
+                VALUES
+                (%(name)s, %(age)s, %(major)s, %(education)s, %(target_major)s,
+                 %(language_score)s, %(target_country)s, %(gpa)s, %(budget)s,
+                 %(phone)s, %(development)s, %(abilities)s, %(is_Closed_loop)s,
+                 %(wechat)s, %(email)s, '待研判')
+            """, clean)
+            conn.commit()
+            new_user_id = cur.lastrowid
+    except Exception as e:
+        conn.close()
+        return JSONResponse(status_code=500, content={
+            "code": 500, "msg": "用户信息入库失败: %s" % str(e), "data": None
+        })
+    finally:
+        try:
+            conn.close()
+        except Exception:
+            pass
+
+    # 3. 触发研判（结构化）
+    sql_filter = "`id` = %s" % int(new_user_id)
+    try:
+        detail = run_targeted_assessment(
+            sql_filter=sql_filter,
+            student_view=student_view,
+            detail_view=True,
+        )
+    except ValueError as e:
+        # 重复诊断（理论上同一 id 不会触发，但保险起见）
+        return JSONResponse(status_code=409, content={
+            "code": 409, "msg": str(e), "data": None
+        })
+    except Exception as e:
+        return JSONResponse(status_code=500, content={
+            "code": 500, "msg": "研判失败: %s" % str(e),
+            "data": None,
+        })
+
+    return {
+        "code": 0,
+        "msg": "success",
+        "data": {
+            "user_id": new_user_id,
+            "pass_threshold": PASS_SCORE,
+            "summary": detail.get("summary"),
+            "results": detail.get("results", []),
+        },
+    }
+
+
+async def _evaluation_by_file(file: UploadFile, student_view: bool):
+    """文件模式：复用 resume/upload 的文本提取 + LLM 字段解析 + 入库 + 结构化研判"""
+    # 1. 格式校验
+    filename = file.filename or ""
+    suffix = filename.rsplit(".", 1)[-1].lower() if "." in filename else ""
+    if suffix not in ("txt", "pdf", "docx"):
+        return JSONResponse(status_code=400, content={
+            "code": 400,
+            "msg": "不支持的文件格式 .%s，仅支持 txt / pdf / docx" % suffix,
+            "data": None,
+        })
+
+    try:
+        content = await file.read()
+        if len(content) > 10 * 1024 * 1024:
+            return JSONResponse(status_code=400, content={
+                "code": 400, "msg": "文件过大，请上传 10MB 以内的文件", "data": None
+            })
+
+        # 2. 文本提取
+        resume_text = _extract_text_from_file(filename, content)
+        if not resume_text.strip():
+            return JSONResponse(status_code=400, content={
+                "code": 400, "msg": "未能从文件中提取到有效文本，请检查文件内容", "data": None
+            })
+
+        # 3. LLM 字段提取（复用 upload_resume 的 _extract_fields_from_resume）
+        fields = _extract_fields_from_resume(resume_text)
+        if not fields.get("name"):
+            return JSONResponse(status_code=400, content={
+                "code": 400, "msg": "未能从简历中识别出姓名，请检查简历内容", "data": None
+            })
+
+        # 4. 入库（复用 add_resume 的清洗逻辑）
+        insert_keys = ['name', 'age', 'major', 'education', 'target_major',
+                       'language_score', 'target_country', 'gpa', 'budget',
+                       'phone', 'development', 'abilities', 'is_Closed_loop',
+                       'wechat', 'email']
+        max_lens = {
+            'name': 50, 'major': 100, 'education': 50, 'target_major': 100,
+            'language_score': 50, 'target_country': 50, 'phone': 30,
+            'development': 300, 'abilities': 500, 'is_Closed_loop': 100,
+            'wechat': 50, 'email': 100,
+        }
+        clean = {}
+        for k in insert_keys:
+            v = fields.get(k)
+            if v is None or v == '':
+                clean[k] = None
+            elif isinstance(v, str) and k in max_lens and len(v) > max_lens[k]:
+                clean[k] = v[:max_lens[k]]
+            else:
+                clean[k] = v
+
+        conn = pymysql.connect(**DB_CONFIG, cursorclass=DictCursor)
+        try:
+            with conn.cursor() as cur:
+                cur.execute("""
+                    INSERT INTO user_profiles
+                    (name, age, major, education, target_major, language_score,
+                     target_country, gpa, budget, phone, development, abilities,
+                     `is_Closed_loop`, wechat, email, assess)
+                    VALUES
+                    (%(name)s, %(age)s, %(major)s, %(education)s, %(target_major)s,
+                     %(language_score)s, %(target_country)s, %(gpa)s, %(budget)s,
+                     %(phone)s, %(development)s, %(abilities)s, %(is_Closed_loop)s,
+                     %(wechat)s, %(email)s, '待研判')
+                """, clean)
+                conn.commit()
+                new_user_id = cur.lastrowid
+        finally:
+            conn.close()
+
+        # 5. 结构化研判
+        sql_filter = "`id` = %s" % int(new_user_id)
+        try:
+            detail = run_targeted_assessment(
+                sql_filter=sql_filter,
+                student_view=student_view,
+                detail_view=True,
+            )
+        except ValueError as e:
+            return JSONResponse(status_code=409, content={
+                "code": 409, "msg": str(e), "data": None
+            })
+        except Exception as e:
+            return JSONResponse(status_code=500, content={
+                "code": 500, "msg": "研判失败: %s" % str(e), "data": None
+            })
+
+        return {
+            "code": 0,
+            "msg": "success",
+            "data": {
+                "user_id": new_user_id,
+                "pass_threshold": PASS_SCORE,
+                "summary": detail.get("summary"),
+                "results": detail.get("results", []),
+            },
+        }
+
+    except json.JSONDecodeError:
+        return JSONResponse(status_code=500, content={
+            "code": 500, "msg": "大模型解析简历失败，请检查简历内容是否完整", "data": None
+        })
+    except ValueError as ve:
+        return JSONResponse(status_code=400, content={
+            "code": 400, "msg": str(ve), "data": None
+        })
+    except Exception as e:
+        print("EVALUATION_DETAIL_ERROR:", traceback.format_exc())
+        return JSONResponse(status_code=500, content={
+            "code": 500, "msg": "处理失败: %s" % str(e), "data": None
+        })
 
 
 # ============================================
@@ -159,7 +747,23 @@ def index():
             font-size: 13px;
             color: #333;
             line-height: 1.7;
+            max-height: 300px;
+            overflow-y: auto;
+            padding-right: 8px;
         }
+        .result-box pre::-webkit-scrollbar { width: 6px; }
+        .result-box pre::-webkit-scrollbar-thumb { background: #ccc; border-radius: 3px; }
+        .result-box pre::-webkit-scrollbar-track { background: transparent; }
+        .result-box.success {
+            background: #f0f9eb;
+            border-color: #e1f3d8;
+        }
+        .result-box.success h3 { color: #67c23a; }
+        .result-box.fail {
+            background: #fef0f0;
+            border-color: #fde2e2;
+        }
+        .result-box.fail h3 { color: #f56c6c; }
         .error-msg {
             color: #e74c3c;
             font-size: 13px;
@@ -177,7 +781,7 @@ def index():
 <body>
     <div class="container">
         <h1>学生信息录入</h1>
-        <p class="subtitle">请填写以下信息，提交后将通过 AI 助手进行分析</p>
+        <p class="subtitle">请填写以下信息，提交后将自动进行画像研判评估</p>
 
         <form id="resumeForm">
             <!-- 基本信息 -->
@@ -255,8 +859,8 @@ def index():
 
             <div class="form-row">
                 <div class="form-group">
-                    <label>封闭式实训 <span class="required">*</span></label>
-                    <select id="closed_loop" required>
+                    <label>是否接受封闭式实训 <span class="required">*</span></label>
+                    <select id="is_Closed_loop" required>
                         <option value="">请选择</option>
                         <option value="是">是</option>
                         <option value="否">否</option>
@@ -293,15 +897,12 @@ def index():
         <div class="error-msg" id="errorMsg"></div>
 
         <div class="result-box" id="resultBox">
-            <h3>AI 回复结果</h3>
+            <h3 id="resultTitle">研判结论</h3>
             <pre id="resultContent"></pre>
         </div>
     </div>
 
     <script>
-        const DIFY_API_URL = "http://192.168.48.121/v1/chat-messages";
-        const DIFY_API_KEY = "app-qRMvQywnR0juwptiOwIDilKc";
-
         document.getElementById('resumeForm').addEventListener('submit', async function(e) {
             e.preventDefault();
 
@@ -309,11 +910,12 @@ def index():
             const loading = document.getElementById('loading');
             const errorMsg = document.getElementById('errorMsg');
             const resultBox = document.getElementById('resultBox');
+            const resultTitle = document.getElementById('resultTitle');
             const resultContent = document.getElementById('resultContent');
 
             // 隐藏之前的结果
             errorMsg.style.display = 'none';
-            resultBox.classList.remove('show');
+            resultBox.classList.remove('show', 'success', 'fail');
             submitBtn.disabled = true;
             loading.style.display = 'block';
 
@@ -331,47 +933,38 @@ def index():
                 phone: document.getElementById('phone').value,
                 development: document.getElementById('development').value,
                 abilities: document.getElementById('abilities').value,
-                closed_loop: document.getElementById('closed_loop').value,
+                is_Closed_loop: document.getElementById('is_Closed_loop').value,
                 wechat: document.getElementById('wechat').value || null,
                 email: document.getElementById('email').value || null,
                 conversation_id: document.getElementById('conversation_id').value || null
             };
 
             try {
-                // 先生成本地文本
-                const localRes = await fetch('/api/agent/resume/add', {
+                // 只调一次后端：入库 + 研判
+                const res = await fetch('/api/agent/resume/add', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(formData)
                 });
-                const localData = await localRes.json();
+                const data = await res.json();
 
-                if (localData.code !== 0) {
-                    throw new Error(localData.msg || '生成文本失败');
+                if (data.code !== 0) {
+                    throw new Error(data.msg || '提交失败');
                 }
 
-                const generatedText = localData.data.generated_text;
+                // 直接展示研判结论（支持换行）
+                const raw = data.data.assessment_result || '研判完成，无详细结论。';
+                resultContent.innerHTML = raw.replace(/\\n/g, '\n').replace(/\n/g, '<br>');
 
-                // 调用 Dify API
-                const difyRes = await fetch(DIFY_API_URL, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'Authorization': 'Bearer ' + DIFY_API_KEY
-                    },
-                    body: JSON.stringify({
-                        inputs: { profile_text: generatedText },
-                        query: generatedText,
-                        response_mode: "blocking",
-                        conversation_id: formData.conversation_id || "",
-                        user: "student-form"
-                    })
-                });
+                // 根据结论判断是"通过"还是"未通过"
+                if (result.includes('已通过') && !result.includes('已通过 0 人')) {
+                    resultBox.classList.add('success');
+                    resultTitle.textContent = '研判结论 - 已通过（已转为意向客户）';
+                } else {
+                    resultBox.classList.add('fail');
+                    resultTitle.textContent = '研判结论 - 未通过';
+                }
 
-                const difyData = await difyRes.json();
-
-                // 显示结果
-                resultContent.textContent = JSON.stringify(difyData, null, 2);
                 resultBox.classList.add('show');
 
             } catch (err) {
@@ -392,9 +985,8 @@ def index():
 # 独立运行入口（直接 python resume_api.py 即可启动）
 # ============================================
 if __name__ == "__main__":
-    import os
     import uvicorn
 
     host = os.getenv("HOST", "0.0.0.0")
-    port = int(os.getenv("PORT", "8080"))
-    uvicorn.run("resume_api:app", host=host, port=port, reload=True)
+    port = int(os.getenv("PORT", "8007"))
+    uvicorn.run("Assessment.resume_api:app", host=host, port=port, reload=True)

@@ -14,7 +14,7 @@ COMPLAINT_SCHEMA: str = """
    - student_id: BIGINT, 学生ID
    - complaint_detail: TEXT, 投诉详情
    - complaint_type: VARCHAR(32), 投诉类型（签证办理/院校申请/生活服务/课程质量/费用问题等）
-   - handle_status: ENUM('待处理','处理中','已解决','已关闭'), 处理状态
+   - handle_status: ENUM('待处理','处理中','已完结','驳回'), 处理状态
    - handler_user_id: BIGINT, 处理人ID，关联 account.user_id
    - create_time: DATETIME, 创建时间
    - update_time: DATETIME, 更新时间
@@ -27,7 +27,7 @@ COMPLAINT_SCHEMA: str = """
    - title: VARCHAR(255), 标题
    - content: TEXT, 内容
    - detail: TEXT, 详情
-   - status: ENUM('pending','processing','resolved','closed'), 状态（待处理/处理中/已解决/已关闭）
+   - status: ENUM('pending','processing','resolved','closed'), 状态（待处理/处理中/已完结/驳回）
    - priority: ENUM('low','medium','high','urgent'), 优先级（低/中/高/紧急）
    - assignee_id: BIGINT, 受理人ID
    - solution: TEXT, 解决方案

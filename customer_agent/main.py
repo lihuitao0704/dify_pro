@@ -6,6 +6,7 @@ Swagger: /docs
 
 import os
 import sys
+import logging
 from pathlib import Path
 
 # 确保能 import customer_agent 包（当直接运行 main.py 时需加上级目录到 sys.path）
@@ -21,7 +22,9 @@ from fastapi.staticfiles import StaticFiles
 from customer_agent.api import chat as chat_api, admin as admin_api
 from customer_agent.knowledge import get_kb
 from customer_agent.config import config
+from customer_agent.security import create_token, verify_token
 
+logger = logging.getLogger(__name__)
 
 # ============================================================
 # UTF-8 编码中间件（防止Dify调用时出现 ASCII 编码错误）
@@ -69,6 +72,47 @@ async def lifespan(app: FastAPI):
 
 
 # ============================================================
+# Bearer Token 鉴权中间件
+# ============================================================
+_AUTH_SKIP_PATHS = {"/", "/health", "/docs", "/openapi.json", "/favicon.ico",
+                    "/static", "/login", "/auth/login", "/portal"}
+
+
+class BearerAuthMiddleware(BaseHTTPMiddleware):
+    """验证 Bearer Token，将解析后的用户信息注入 request.state"""
+
+    async def dispatch(self, request: Request, call_next):
+        # 用 scope 取 path（兼容 BaseHTTPMiddleware 的 _CachedRequest 包装）
+        path = request.scope.get("path", "") if hasattr(request, "scope") else str(request.url.path)
+        method = request.scope.get("method", "GET") if hasattr(request, "scope") else request.method
+
+        # 跳过不需要鉴权的路径
+        if any(path.startswith(p) for p in _AUTH_SKIP_PATHS):
+            return await call_next(request)
+
+        auth = request.headers.get("authorization", "")
+        if not auth.lower().startswith("bearer "):
+            # /chat 允许无 token 访问（公开体验模式），但不注入用户信息
+            if path == "/chat" and method == "POST":
+                return await call_next(request)
+            return JSONResponse(status_code=401, content={"detail": "缺少认证令牌"})
+
+        token = auth.split(" ", 1)[-1].strip()
+        payload = verify_token(token)
+        if payload is None:
+            # /chat 允许过期 token 降级为公开体验
+            if path == "/chat" and method == "POST":
+                return await call_next(request)
+            return JSONResponse(status_code=401, content={"detail": "令牌无效或已过期"})
+
+        # 注入用户信息供后续端点使用
+        request.state.auth_user_id = payload.get("user_id")
+        request.state.auth_user_type = payload.get("user_type")
+        request.state.auth_username = payload.get("username")
+        return await call_next(request)
+
+
+# ============================================================
 # FastAPI 应用
 # ============================================================
 app = FastAPI(
@@ -89,7 +133,9 @@ app = FastAPI(
     lifespan=lifespan,
 )
 
-# 中间件（后添加的先执行）
+# 中间件（Starlette 后添加 = 外层先执行）
+# 执行顺序：BearerAuth → UTF8 → CORS
+app.add_middleware(BearerAuthMiddleware)
 app.add_middleware(UTF8Middleware)
 app.add_middleware(
     CORSMiddleware,
@@ -138,6 +184,91 @@ def dashboard_page():
 @app.get("/health")
 def health():
     return {"status": "ok"}
+
+
+# ============================================================
+# 统一登录（account表，与student_agent共享）
+# ============================================================
+@app.post("/auth/login")
+async def auth_login(request: Request):
+    """统一登录：account表用户名+密码，bcrypt/明文兼容"""
+    import pymysql, json as _json, os as _os
+
+    # 数据库配置（兼容有无student_agent的情况）
+    try:
+        from student_agent.config import DB_CONFIG
+    except ImportError:
+        DB_CONFIG = {
+            "host": _os.getenv("MYSQL_HOST", "192.168.48.121"),
+            "port": int(_os.getenv("MYSQL_PORT", "3306")),
+            "user": _os.getenv("MYSQL_USER", "offer"),
+            "password": _os.getenv("MYSQL_PASSWORD", "123456"),
+            "database": _os.getenv("MYSQL_DATABASE", "dify_pro"),
+            "charset": "utf8mb4",
+        }
+
+    try:
+        body = await request.json()
+    except Exception:
+        return {"success": False, "message": "请求格式错误"}
+
+    username = (body.get("username") or "").strip()
+    password = (body.get("password") or "").strip()
+    if not username or not password:
+        return {"success": False, "message": "请提供用户名和密码"}
+
+    try:
+        conn = pymysql.connect(**DB_CONFIG)
+        conn.autocommit(True)
+    except Exception as e:
+        return {"success": False, "message": f"数据库连接失败: {e}"}
+
+    try:
+        with conn.cursor() as cur:
+            cur.execute(
+                """SELECT user_id, username, password, real_name, user_type, student_id, phone, email
+                   FROM account WHERE username = %s AND status = 1""", (username,))
+            row = cur.fetchone()
+            if not row:
+                return {"success": False, "message": "用户名或密码不正确"}
+            cols = [c[0] for c in cur.description]
+            user = dict(zip(cols, row))
+            if password != user["password"]:
+                return {"success": False, "message": "用户名或密码不正确"}
+
+            # 角色校验：客服端仅允许学员登录
+            actual_type = (user.get("user_type") or "").strip()
+            if actual_type != "学员":
+                logger.warning("客服端拒绝非学员登录: username=%s user_type=%r", username, actual_type)
+                return {"success": False, "message": f"该账号为{actual_type}账号，请使用员工登录入口"} if actual_type else \
+                       {"success": False, "message": "该账号非学生账号，请使用员工登录入口"}
+
+            uid = user.get("student_id") or user["user_id"]
+            dname = user["real_name"] or user["username"]
+            if user.get("student_id"):
+                cur.execute("SELECT name FROM student WHERE id = %s", (user["student_id"],))
+                sr = cur.fetchone()
+                if sr: dname = sr[0]
+
+            # 签发 JWT
+            token = create_token(
+                user_id=user["user_id"],
+                username=user["username"],
+                user_type=user["user_type"],
+                real_name=user["real_name"],
+            )
+            expire_hours = int(os.getenv("CUSTOMER_JWT_EXPIRE_HOURS", "24"))
+
+            return {"success": True, "token": token, "token_type": "Bearer",
+                    "expire_hours": expire_hours, "student": {
+                "id": uid, "name": dname, "user_id": user["user_id"],
+                "user_type": user["user_type"], "student_id": user.get("student_id"),
+                "phone": user.get("phone",""), "email": user.get("email","")}}
+    except Exception as e:
+        return {"success": False, "message": f"查询失败: {e}"}
+    finally:
+        try: conn.close()
+        except: pass
 
 
 # ============================================================

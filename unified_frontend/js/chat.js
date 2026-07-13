@@ -15,11 +15,15 @@
 class ChatWidget {
   constructor(opts) {
     this.apiUrl = opts.apiUrl;
+    this.streamUrl = opts.streamUrl || null;
     this.container = document.querySelector(opts.container);
     this.input = document.querySelector(opts.input);
     this.sendBtn = document.querySelector(opts.sendBtn);
     this.onPreSend = opts.onPreSend || ((msg) => ({ message: msg }));
     this.onReply = opts.onReply || (() => {});
+    // 可选：自定义响应渲染（将服务端返回的 raw data 转为展示文本）
+    // 未设置时沿用 data.reply || data.answer || data.msg 的默认逻辑
+    this.formatResponse = opts.formatResponse || null;
     this.sessionId = null;
     this.isProcessing = false;
 
@@ -52,9 +56,25 @@ class ChatWidget {
     this._addMsg(text, 'user');
 
     const typingEl = this._addTyping();
+    const payload = this.onPreSend(text);
 
+    // 优先流式
+    if (this.streamUrl) {
+      try {
+        await this._streamSend(payload, typingEl);
+      } catch (err) {
+        typingEl.remove();
+        this._addMsg('连接失败，请稍后重试～', 'bot');
+      } finally {
+        this.isProcessing = false;
+        if (this.sendBtn) this.sendBtn.disabled = false;
+        this.input?.focus();
+      }
+      return;
+    }
+
+    // 非流式 fallback
     try {
-      const payload = this.onPreSend(text);
       const r = await fetch(this.apiUrl, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -64,7 +84,10 @@ class ChatWidget {
 
       typingEl.remove();
 
-      const reply = data.reply || data.answer || data.msg || '(未收到回复)';
+      // 优先使用调用方自定义的响应渲染，否则沿用默认字段回退链
+      const reply = this.formatResponse
+        ? this.formatResponse(data)
+        : (data.reply || data.answer || data.msg || '(未收到回复)');
       this.sessionId = data.session_id || this.sessionId;
       this._addMsg(reply, 'bot', data.intents || []);
 
@@ -77,6 +100,109 @@ class ChatWidget {
       if (this.sendBtn) this.sendBtn.disabled = false;
       this.input?.focus();
     }
+  }
+
+  async _streamSend(payload, typingEl) {
+    const r = await fetch(this.streamUrl, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    });
+    if (!r.ok) throw new Error('HTTP ' + r.status);
+
+    const reader = r.body.getReader();
+    const decoder = new TextDecoder();
+    let buffer = '';
+    let replyText = '';
+    let bubbleEl = null;
+    let meta = null;
+
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      buffer += decoder.decode(value, { stream: true });
+      const lines = buffer.split('\n');
+      buffer = lines.pop(); // keep incomplete line in buffer
+
+      for (const line of lines) {
+        if (!line.startsWith('data: ')) continue;
+        const data = JSON.parse(line.slice(6));
+
+        if (data.type === 'meta') {
+          meta = data;
+          this.sessionId = data.session_id || this.sessionId;
+          continue;
+        }
+        if (data.type === 'token') {
+          if (!bubbleEl) {
+            typingEl.remove();
+            bubbleEl = this._createStreamBubble();
+          }
+          replyText += data.text;
+          bubbleEl.innerHTML = this._renderMarkdown(replyText);
+          this._scrollBottom();
+          continue;
+        }
+        if (data.type === 'done') {
+          if (!bubbleEl && meta) {
+            // 空回复兜底
+            typingEl.remove();
+            bubbleEl = this._createStreamBubble();
+            bubbleEl.innerHTML = '(收到空回复)';
+          }
+          if (bubbleEl) {
+            if (meta && meta.intents && meta.intents.length > 0) {
+              const names = meta.intents.map(i => i.intent || i).join(', ');
+              bubbleEl.innerHTML += `<div class="meta">意图: ${names}</div>`;
+            }
+          }
+        }
+      }
+    }
+    // 处理剩余 buffer
+    if (buffer.startsWith('data: ')) {
+      try {
+        const data = JSON.parse(buffer.slice(6));
+        if (data.type === 'done' && !bubbleEl) {
+          typingEl.remove();
+          this._addMsg('(收到空回复)', 'bot', meta?.intents || []);
+        }
+      } catch(e) {}
+    }
+
+    if (meta) {
+      this.onReply({
+        reply: replyText,
+        intents: meta.intents || [],
+        emotion: meta.emotion || {},
+        session_id: meta.session_id || '',
+      });
+    }
+  }
+
+  _createStreamBubble() {
+    const div = document.createElement('div');
+    div.className = 'msg bot';
+    div.innerHTML = '<div class="avatar">🤖</div><div class="bubble stream-bubble"></div>';
+    this.container.appendChild(div);
+    return div.querySelector('.stream-bubble');
+  }
+
+  _renderMarkdown(text) {
+    let html = escapeHTML(text);
+    // 简单 markdown 渲染
+    html = html.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
+    html = html.replace(/^- (.+)$/gm, '· $1');
+    html = html.replace(/^(#{1,3})\s+(.+)$/gm, (_, h, t) => {
+      const sz = [20, 17, 15][h.length - 1] || 14;
+      return `<div style="font-size:${sz}px;font-weight:700;margin:8px 0 4px">${t}</div>`;
+    });
+    html = html.replace(/\n/g, '<br/>');
+    return html;
+  }
+
+  _scrollBottom() {
+    this.container.scrollTop = this.container.scrollHeight;
   }
 
   _addMsg(text, who, intents = []) {
@@ -110,10 +236,6 @@ class ChatWidget {
     this.container.appendChild(div);
     this._scrollBottom();
     return div;
-  }
-
-  _scrollBottom() {
-    this.container.scrollTop = this.container.scrollHeight;
   }
 
   /** 外部可直接调用添加消息 */

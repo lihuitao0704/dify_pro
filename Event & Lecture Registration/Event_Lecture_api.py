@@ -3,13 +3,18 @@
 提供唯一的 /nl2sql 端点，接收自然语言，返回 SQL 及执行结果。
 """
 
-from fastapi import FastAPI
+import sys
+import os
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+
+from fastapi import FastAPI, Request
 from fastapi.responses import JSONResponse, Response
 from fastapi.middleware.cors import CORSMiddleware
 from starlette.middleware.base import BaseHTTPMiddleware
 from pydantic import BaseModel
 
 from Event_Lecture import nl2sql, _ensure_unique_constraints
+from shared.auth import verify_jwt, bearer_token
 
 
 class UTF8JSONResponse(JSONResponse):
@@ -35,6 +40,31 @@ app = FastAPI(
     default_response_class=UTF8JSONResponse,
 )
 
+# ── 鉴权中间件 ──
+_AUTH_SKIP_PATHS = {"/health", "/docs", "/openapi.json", "/favicon.ico"}
+
+
+class BearerAuthMiddleware(BaseHTTPMiddleware):
+    """验证 Bearer Token（与 shared/auth.py 共用密钥）"""
+
+    async def dispatch(self, request: Request, call_next):
+        path = request.scope.get("path", "") if hasattr(request, "scope") else str(request.url.path)
+
+        if any(path.startswith(p) for p in _AUTH_SKIP_PATHS):
+            return await call_next(request)
+
+        token = bearer_token(dict(request.headers))
+        if not token:
+            return JSONResponse(status_code=401, content={"detail": "缺少认证令牌"})
+
+        payload = verify_jwt(token)
+        if payload is None:
+            return JSONResponse(status_code=401, content={"detail": "令牌无效或已过期"})
+
+        request.state.auth_user_id = payload.get("user_id")
+        request.state.auth_user_type = payload.get("user_type")
+        return await call_next(request)
+
 
 @app.on_event("startup")
 def _startup():
@@ -43,6 +73,7 @@ def _startup():
 
 
 # ── 中间件（注意顺序：后添加的先执行）──
+app.add_middleware(BearerAuthMiddleware)
 app.add_middleware(UTF8Middleware)
 app.add_middleware(
     CORSMiddleware,

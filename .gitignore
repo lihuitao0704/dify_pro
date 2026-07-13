@@ -23,10 +23,21 @@ env/
 
 # IDE / 编辑器
 .vscode/
-.idea/
+.idea/*
+!.idea/codeStyles/
+!.idea/runConfigurations/
+.idea/workspace.xml
+.idea/tasks.xml
+.idea/usage.statistics.xml
+.idea/shelf/
 *.swp
 *.swo
 *~
+
+# 日志文件（运行时生成，不入库）
+logs/
+*.log
+server.log
 
 # 系统文件
 .DS_Store

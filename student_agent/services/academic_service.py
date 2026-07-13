@@ -119,14 +119,52 @@ def _format_schedule(schedule: list[dict]) -> str:
     return "\n".join(lines)
 
 
+def query_scores(student_id: int) -> list[dict]:
+    """
+    查询学生成绩（student_score 表）。
+
+    参数:
+        student_id: 学生ID
+
+    返回:
+        成绩记录列表，按 exam_date 降序
+    """
+    return db.query(
+        """SELECT subject, score, exam_type, exam_date
+           FROM student_score
+           WHERE student_id = %s
+           ORDER BY exam_date DESC""",
+        (student_id,)
+    )
+
+
+def _format_scores(scores: list[dict]) -> str:
+    """将成绩列表格式化为用户可读文本"""
+    if not scores:
+        return "还没有你的成绩记录～"
+
+    lines = ["📊 你的成绩："]
+    for s in scores:
+        lines.append(
+            f"· {s['subject']} — {s['score']}分 "
+            f"({s.get('exam_type', '')}, {str(s.get('exam_date', ''))})"
+        )
+    return "\n".join(lines)
+
+
+def is_score_query(message: str) -> bool:
+    """判断是否为成绩查询"""
+    score_words = ["成绩", "分数", "绩点", "gpa", "GPA", "考了多少", "多少分"]
+    return any(kw in message for kw in score_words)
+
+
 def handle_academic(student_id: int, message: str, params: dict, context: list) -> str:
     """
     处理学业考务查询意图完整 handler。
 
     流程：
-      1. 查询所有未完成日程
-      2. 按消息关键词过滤类型（考试/论文）
-      3. 格式化展示
+      1. 成绩查询 → 返回成绩列表
+      2. 日程查询 → 按类型过滤展示
 
     参数:
         student_id: 学生ID
@@ -137,6 +175,35 @@ def handle_academic(student_id: int, message: str, params: dict, context: list) 
     返回:
         回复文本
     """
+    # ── 成绩查询 ──
+    if is_score_query(message):
+        scores = query_scores(student_id)
+        return _format_scores(scores)
+
+    # ── 课程查询（跨服务表 courses，不存在时降级）──
+    if any(kw in message for kw in ["课程", "项目", "培训", "学什么"]):
+        try:
+            country = None
+            for c in ["新加坡", "德国", "日本", "韩国", "英国", "美国", "澳洲", "加拿大"]:
+                if c in message: country = c; break
+            sql = "SELECT course_name, category, sub_category, country, duration, price, description FROM courses WHERE is_active=1"
+            params = []
+            if country:
+                sql += " AND country=%s"; params.append(country)
+            sql += " ORDER BY id LIMIT 6"
+            rows = db.query(sql, tuple(params) if params else None)
+            if rows:
+                lines = [f"📚 {'关于' + country + '的' if country else ''}课程推荐："]
+                for r in rows:
+                    lines.append(f"· {r['course_name']} | {r['category']}/{r.get('sub_category','')} | {r['duration']} | ¥{r.get('price',0)}")
+                    if r.get('description'):
+                        lines.append(f"  {r['description'][:80]}")
+                return "\n".join(lines)
+        except Exception:
+            pass
+        return f"暂时没有{'关于' + country if country else ''}的课程信息～"
+
+    # ── 日程查询 ──
     schedule = query_schedule(student_id)
 
     if not schedule:
@@ -146,7 +213,6 @@ def handle_academic(student_id: int, message: str, params: dict, context: list) 
     filtered = filter_schedule_by_keyword(schedule, message)
 
     if not filtered:
-        # 尝试从关键词推测意图
         if any(w in message for w in ["考试", "考", "exam"]):
             return "没有找到相关考试日程～"
         elif any(w in message for w in ["论文", "DDL", "deadline", "截止"]):

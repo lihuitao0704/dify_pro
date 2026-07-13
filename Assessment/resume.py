@@ -26,7 +26,7 @@ class ResumeRequest(BaseModel):
     phone: str = Field(..., description="手机号码")
     development: str = Field(..., description="发展需求")
     abilities: str = Field(..., description="综合能力")
-    closed_loop: str = Field(..., description="封闭式实训")
+    is_Closed_loop: str = Field(..., description="是否接受封闭式实训")
 
     # ---- 选填字段 ----
     wechat: Optional[str] = Field(None, description="微信号")
@@ -59,7 +59,7 @@ def generate_insert_instruction(data: ResumeRequest) -> str:
         ("手机号码", data.phone),
         ("发展需求", data.development),
         ("综合能力", data.abilities),
-        ("封闭式实训", data.closed_loop),
+        ("是否接受封闭式实训", data.is_Closed_loop),
         ("微信号", data.wechat),
         ("电子邮箱", data.email),
         ("会话ID", data.conversation_id),

@@ -34,7 +34,10 @@ def _scan_academic_reminders() -> list[dict]:
     for s in schedules:
         deadline = s["deadline"]
         if isinstance(deadline, str):
-            deadline = datetime.strptime(deadline, "%Y-%m-%d %H:%M:%S")
+            try:
+                deadline = datetime.strptime(deadline[:19], "%Y-%m-%d %H:%M:%S")
+            except (ValueError, IndexError):
+                continue
         hours_left = (deadline - now).total_seconds() / 3600
         days_left = hours_left / 24
 
@@ -52,6 +55,14 @@ def _scan_academic_reminders() -> list[dict]:
             update_field = "reminder_7d_sent"
 
         if remind_type and update_field:
+            # 原子更新：只有当前状态为 0 的行才更新，防止并发重复发送
+            affected = _db.execute(
+                f"UPDATE academic_schedule SET {update_field} = 1 "
+                f"WHERE id = %s AND {update_field} = 0",
+                (s["id"],)
+            )
+            if affected == 0:
+                continue  # 并发调度器已处理，跳过
             msg = _build_academic_msg(s, days_left, hours_left)
             _db.insert("reminder_log", {
                 "student_id": s["student_id"],
@@ -60,7 +71,6 @@ def _scan_academic_reminders() -> list[dict]:
                 "remind_channel": "agent",
                 "message": msg,
             })
-            _db.update("academic_schedule", {"id": s["id"]}, {update_field: 1})
             sent.append({"student_id": s["student_id"], "schedule_id": s["id"], "message": msg})
 
     return sent
@@ -127,8 +137,14 @@ def _scan_upgrade_reminders() -> list[dict]:
 def _days_since(dt) -> int:
     """距今天数"""
     if isinstance(dt, str):
-        dt = datetime.strptime(dt[:19], "%Y-%m-%d %H:%M:%S")
-    return (datetime.now() - dt).days
+        try:
+            dt = datetime.strptime(dt[:19], "%Y-%m-%d %H:%M:%S")
+        except (ValueError, IndexError):
+            return 999
+    try:
+        return (datetime.now() - dt).days
+    except TypeError:
+        return 999
 
 
 def _build_academic_msg(s: dict, days_left: float, hours_left: float) -> str:

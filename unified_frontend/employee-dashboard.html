@@ -23,6 +23,9 @@
       <a href="#" data-panel="customers"><span class="icon">👥</span>客户管理</a>
       <a href="#" data-panel="leaves"><span class="icon">📝</span>请假审批</a>
       <a href="#" data-panel="scores"><span class="icon">📊</span>成绩管理</a>
+      <div class="nav-section" style="margin-top:16px">数据分析</div>
+      <a href="#" data-panel="smartReport"><span class="icon">📈</span>智能报告</a>
+      <a href="#" data-action="projectFit"><span class="icon">🎯</span>项目契合度分析</a>
       <div class="nav-section" style="margin-top:16px">快捷操作</div>
       <a href="#" data-action="report"><span class="icon">📄</span>提交日报</a>
       <a href="#" data-action="addCustomer"><span class="icon">➕</span>录入客户</a>
@@ -65,12 +68,70 @@
               <span class="suggestion" onclick="quickSend('查看组织架构')">🏢 组织架构</span>
               <span class="suggestion" onclick="quickSend('查询投诉处理')">📮 投诉处理</span>
               <span class="suggestion" onclick="quickSend('新增客户: 张三, 25岁, 本科, 德国留学')">➕ 录入客户</span>
+              <span class="suggestion" onclick="document.getElementById('batchFileInput').click()">📎 批量导入</span>
             </div>
           </div>
         </div>
+        <!-- 批量导入文件预览区 -->
+        <div class="batch-file-bar" id="batchFileBar" style="display:none">
+          <span class="batch-file-info" id="batchFileInfo"></span>
+          <button class="batch-file-clear" onclick="clearBatchFiles()">×</button>
+        </div>
         <div class="chat-input-area">
-          <input id="chatInput" placeholder="输入消息，Enter 发送..." />
+          <button class="chat-voice-btn" id="voiceBtn" title="语音输入">🎤</button>
+          <button class="chat-attach-btn" onclick="document.getElementById('batchFileInput').click()" title="上传简历">📎</button>
+          <input type="file" id="batchFileInput" accept=".txt,.pdf,.docx" multiple style="display:none">
+          <input id="chatInput" placeholder="输入消息，Enter 发送... 或粘贴客户信息批量导入" />
           <button id="sendBtn">发送</button>
+        </div>
+      </div>
+
+      <!-- Smart Report Panel -->
+      <div class="report-panel" id="smartReportPanel" style="display:none">
+        <div class="report-layout">
+          <!-- 左侧：报告类型选择 -->
+          <div class="report-types">
+            <div class="report-types-title">报告类型</div>
+            <button class="report-type-btn active" data-report="customer_operation">
+              <span class="icon">📊</span>客户经营分析
+            </button>
+            <button class="report-type-btn" data-report="employee_daily">
+              <span class="icon">👥</span>员工日报汇总
+            </button>
+            <button class="report-type-btn" data-report="student_mental">
+              <span class="icon">🧠</span>心理关怀周报
+            </button>
+            <button class="report-type-btn" data-report="complaint_weekly">
+              <span class="icon">📋</span>投诉处理周报
+            </button>
+            <button class="report-type-btn" data-report="nl2sql">
+              <span class="icon">🔍</span>通用数据查询
+            </button>
+          </div>
+          <!-- 右侧：输入 + 报告结果 -->
+          <div class="report-main">
+            <div class="report-suggest" id="reportSuggest">
+              <span class="suggest-label">💡 试试：</span>
+              <span class="suggest-tags" id="suggestTags"></span>
+            </div>
+            <div class="report-input-area">
+              <input type="text" id="reportQuestion" placeholder="或输入你自己的问题..." />
+              <button class="btn btn-primary" id="generateReportBtn" onclick="generateSmartReport()">📈 生成报告</button>
+            </div>
+            <div class="report-loading" id="reportLoading" style="display:none">
+              <div class="typing-dots"><span></span><span></span><span></span></div>
+              <span>正在分析数据，请稍候...</span>
+            </div>
+            <div class="report-result" id="reportResult" style="display:none">
+              <div class="report-answer" id="reportAnswer"></div>
+              <div class="report-tables" id="reportTables"></div>
+            </div>
+            <div class="report-empty" id="reportEmpty">
+              <div class="empty-icon">📈</div>
+              <p>选择左侧报告类型，输入问题后点击"生成报告"</p>
+              <p class="empty-hint">AI 会自动查询数据库并生成专业分析报告</p>
+            </div>
+          </div>
         </div>
       </div>
 
@@ -89,6 +150,124 @@
           <div class="card"><div class="card-title">待处理投诉</div><div class="card-value" id="pendingComplaints">--</div></div>
         </div>
       </div>
+    </div>
+  </div>
+</div>
+
+<!-- ============ 项目契合度分析 Modal ============ -->
+<div class="modal-overlay" id="projectFitModal">
+  <div class="modal fit-modal">
+    <button class="modal-close" onclick="closeFit()">×</button>
+    <h2 class="fit-title">🎯 项目契合度分析</h2>
+    <p class="fit-subtitle">系统将基于画像规则为您评估客户与留学项目的匹配程度</p>
+
+    <div class="fit-tabs">
+      <button class="fit-tab active" id="tabFitForm" onclick="switchFitTab('form')">手动填写</button>
+      <button class="fit-tab" id="tabFitUpload" onclick="switchFitTab('upload')">上传简历</button>
+    </div>
+
+    <!-- 表单 -->
+    <div id="fitFormPanel">
+      <form id="fitForm" class="fit-form">
+        <div class="form-group">
+          <label>客户姓名 <span class="required">*</span></label>
+          <input type="text" id="fit_name" placeholder="请输入客户姓名" required>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label>年龄</label>
+            <input type="number" id="fit_age" placeholder="如：22" min="1" max="100">
+          </div>
+          <div class="form-group">
+            <label>联系电话</label>
+            <input type="tel" id="fit_phone" placeholder="如：13800138000">
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label>当前学历</label>
+            <select id="fit_education">
+              <option value="">请选择</option>
+              <option value="高中">高中</option>
+              <option value="本科">本科</option>
+              <option value="硕士">硕士</option>
+              <option value="博士">博士</option>
+              <option value="其他">其他</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>当前专业</label>
+            <input type="text" id="fit_major" placeholder="如：车辆工程">
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label>目标留学国家</label>
+            <input type="text" id="fit_target_country" placeholder="如：德国">
+          </div>
+          <div class="form-group">
+            <label>目标申请专业 <span class="optional">选填</span></label>
+            <input type="text" id="fit_target_major" placeholder="如：人工智能">
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label>GPA</label>
+            <input type="number" id="fit_gpa" placeholder="如：3.5" step="0.01" min="0" max="4">
+          </div>
+          <div class="form-group">
+            <label>语言成绩</label>
+            <input type="text" id="fit_language_score" placeholder="如：雅思 7.0 / TestDaF 4×4">
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label>留学预算（万元）</label>
+            <input type="number" id="fit_budget" placeholder="如：20" min="0">
+          </div>
+          <div class="form-group">
+            <label>是否接受封闭式实训</label>
+            <select id="fit_is_Closed_loop">
+              <option value="">请选择</option>
+              <option value="是">是</option>
+              <option value="否">否</option>
+            </select>
+          </div>
+        </div>
+        <div class="form-group">
+          <label>发展需求 / 职业规划</label>
+          <textarea id="fit_development" placeholder="请描述客户的职业发展需求和规划..." rows="2"></textarea>
+        </div>
+        <div class="form-group">
+          <label>综合能力 / 经历</label>
+          <textarea id="fit_abilities" placeholder="请描述客户的综合能力、项目经历、获奖证书、技能证书等..." rows="3"></textarea>
+        </div>
+        <button type="submit" class="btn btn-primary btn-submit">开始分析</button>
+      </form>
+      <div id="fitFormLoading" class="fit-loading" style="display:none">
+        <div class="typing-dots"><span></span><span></span><span></span></div>
+        <span>正在研判中，请稍候...</span>
+      </div>
+      <div id="fitFormError" class="fit-error" style="display:none"></div>
+      <div id="fitFormResult" class="fit-result" style="display:none"></div>
+    </div>
+
+    <!-- 文件上传 -->
+    <div id="fitUploadPanel" style="display:none">
+      <div class="fit-upload-zone" id="fitDropZone">
+        <div class="upload-icon">📄</div>
+        <p class="upload-text">拖拽简历到此处，或 <span class="upload-link">点击选择文件</span></p>
+        <p class="upload-hint">支持 .txt / .pdf / .docx，单文件不超过 10MB</p>
+      </div>
+      <input type="file" id="fitFileInput" accept=".txt,.pdf,.docx" style="display:none">
+      <div class="fit-upload-info" id="fitFileInfo" style="display:none"></div>
+      <button class="btn btn-primary btn-submit" id="fitUploadBtn" disabled>开始分析</button>
+      <div id="fitUploadLoading" class="fit-loading" style="display:none">
+        <div class="typing-dots"><span></span><span></span><span></span></div>
+        <span>正在研判中，请稍候...</span>
+      </div>
+      <div id="fitUploadError" class="fit-error" style="display:none"></div>
+      <div id="fitUploadResult" class="fit-result" style="display:none"></div>
     </div>
   </div>
 </div>
@@ -123,9 +302,14 @@
 
 <div id="toastContainer"></div>
 
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
 <script src="/portal/js/utils.js"></script>
 <script src="/portal/js/auth.js"></script>
 <script src="/portal/js/chat.js"></script>
-<script src="/portal/js/employee-dashboard.js"></script>
+<script src="/portal/js/employee-dashboard.js?v=2"></script>
+<script>
+  console.log('[DEBUG] dify_auth:', localStorage.getItem('dify_auth'));
+  console.log('[DEBUG] role:', typeof Auth !== 'undefined' ? Auth.role() : 'Auth not loaded');
+</script>
 </body>
 </html>
