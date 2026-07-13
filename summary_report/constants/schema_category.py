@@ -25,11 +25,16 @@ STUDENT_SCHEMA: str = """
 ═══════════════════════════════════════════════════════════
 
 1. application_progress（留学申请进度）
-   - id BIGINT PK, student_id BIGINT, target_school, target_major,
-     stage ENUM('document_prep','submitted','under_review',
-                'offer_received','visa_processing','enrolled'),
-     progress_detail TEXT, deadline DATE, next_action VARCHAR(255),
-     handler_id BIGINT, create_time, update_time
+   - id INT PK, student_id INT,
+     program_name VARCHAR(200)（申请项目名称）,
+     university VARCHAR(200)（目标院校）,
+     current_step VARCHAR(100)（当前步骤）,
+     step_order INT（步骤序）,
+     steps JSON（步骤明细 [{step,status,completed_at,notes}]）,
+     application_status VARCHAR(30)（in_progress/completed/withdrawn）,
+     submitted_date DATE, estimated_completion DATE,
+     notes TEXT, updated_by VARCHAR(100),
+     created_at DATETIME, updated_at DATETIME
 
 2. academic_deadline（学业截止事项）
    - id BIGINT PK, student_id BIGINT,
@@ -144,24 +149,28 @@ ENTERPRISE_SCHEMA: str = """
      user_feedback VARCHAR(255), status VARCHAR(20), created_at
 
 3. user_profiles（客户画像）
-   - id INT PK, name VARCHAR(50), age INT,
-     education VARCHAR(50), major VARCHAR(100), gpa DECIMAL(3,2),
-     target_country VARCHAR(100), target_major VARCHAR(100),
-     budget DECIMAL(12,2), language_level VARCHAR(30),
-     language_score VARCHAR(50), phone VARCHAR(20), wechat VARCHAR(50),
-     contact_method VARCHAR(50), consultation_status VARCHAR(20),
-     created_at, updated_at
+   - id BIGINT PK, conversation_id VARCHAR(64)（Dify会话ID）,
+     name VARCHAR(50), age INT, major VARCHAR(100), education VARCHAR(50),
+     target_major VARCHAR(100), language_score VARCHAR(50),
+     target_country VARCHAR(100), gpa DECIMAL(3,2), budget INT,
+     phone VARCHAR(20), wechat VARCHAR(50), email VARCHAR(128),
+     consultation_status ENUM('new','recommended','interested','not_interested','consulting'),
+     assess VARCHAR(50), development VARCHAR(50), abilities VARCHAR(50),
+     is_Closed_loop VARCHAR(10),
+     created_at TIMESTAMP, updated_at TIMESTAMP
 
 4. account（账户表，含销售顾问/员工）
    - user_id BIGINT PK, username VARCHAR(64), real_name VARCHAR(64),
      user_type VARCHAR(32)（sales/teacher/student/admin等）,
-     dept_id BIGINT FK→organization.id, student_id BIGINT,
+     dept_id BIGINT FK→department.dept_id, student_id BIGINT,
      phone VARCHAR(20), email VARCHAR(128), status TINYINT,
      create_time, update_time
 
-5. organization（部门表）
-   - id INT PK, dept_name VARCHAR(50), dept_desc TEXT,
-     contact_user VARCHAR(50), contact_phone VARCHAR(20), create_time
+5. department（部门表）
+   - dept_id BIGINT PK, dept_name VARCHAR(50), dept_desc TEXT,
+     manager_id BIGINT（关联 employee.emp_id）,
+     parent_dept_id BIGINT, status TINYINT,
+     create_time, update_time
 
 ═══════════════════════════════════════════════════════════
 二、员工管理模块
@@ -169,7 +178,7 @@ ENTERPRISE_SCHEMA: str = """
 
 6. employee_daily_report（员工日报表）
    - id BIGINT PK, user_id BIGINT FK→account.user_id,
-     dept_id BIGINT FK→organization.id,
+     dept_id BIGINT FK→department.dept_id,
      report_content TEXT（日报正文）,
      submit_time DATETIME, report_date DATE, create_time, update_time
 
@@ -189,9 +198,9 @@ ENTERPRISE_SCHEMA: str = """
 ═══════════════════════════════════════════════════════════
 关联关系：
 - intention_customer.sales_user_id → account.user_id（销售顾问）
-- account.dept_id → organization.id（所属部门）
+- account.dept_id → department.dept_id（所属部门）
 - employee_daily_report.user_id → account.user_id（员工）
-- employee_daily_report.dept_id → organization.id（部门）
+- employee_daily_report.dept_id → department.dept_id（部门）
 - consultations.course_id → courses.id
 ═══════════════════════════════════════════════════════════
 

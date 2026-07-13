@@ -288,7 +288,9 @@ def main():
             time.sleep(1)
     except KeyboardInterrupt:
         stop_all()
-        print("  再见 [BYE]\n")
+        print("  再见"
+              ""
+              " [BYE]\n")
 
 
 if __name__ == "__main__":
