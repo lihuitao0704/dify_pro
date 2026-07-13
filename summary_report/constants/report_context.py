@@ -44,9 +44,12 @@ COMPLAINT_REPORT_CONTEXT: str = """
 核心目标：全流程数据追踪，提升服务售后质量与响应效率。
 - 以 student_feedback_ticket 统计本周投诉(ticket_type='complaint')总量及同环比
 - 按 category/priority/status 分类统计分布与处理时效
-- 按 handle_status ENUM('待处理','处理中','已解决','已关闭')统计积压
+- 按 handle_status ENUM('待处理','处理中','已完结','驳回')统计积压，
+  其中"已完结"=已解决/已关闭，"驳回"=已关闭
 - 跟进 satisfaction 满意度评分
 - student_complaint 作为投诉主表补充 complaint_type 维度
+- 两表等价关系：student_complaint.handle_status(中文) ↔ student_feedback_ticket.status(英文)：
+  待处理=pending, 处理中=processing, 已完结=resolved, 驳回=closed
 数据源：student_feedback_ticket / student_complaint / account
 """
 

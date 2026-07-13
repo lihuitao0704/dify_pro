@@ -100,7 +100,7 @@ FULL_SCHEMA: str = """
 11. student_complaint（投诉单）
     - id BIGINT PK, student_id BIGINT, complaint_detail TEXT,
       complaint_type VARCHAR(32),
-      handle_status ENUM('待处理','处理中','已解决','已关闭'),
+      handle_status ENUM('待处理','处理中','已完结','驳回'),
       handler_user_id BIGINT FK→account.user_id, create_time, update_time
 
 12. student_feedback_ticket（反馈工单：投诉/建议/咨询）
